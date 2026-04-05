@@ -397,7 +397,7 @@ public class UserCreateTets
 
         // Act
 
-        var result = User.Create(
+        var resultUser = User.Create(
             email,
             passwordHash,
             userName,
@@ -407,8 +407,17 @@ public class UserCreateTets
 
         // Assert
 
-        result.Value.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.IsFailure.Should().BeFalse();
+        resultUser.Should().NotBeNull();
+        resultUser.Email.Should().Be(email);
+        resultUser.PasswordHash.Should().Be(passwordHash);
+        resultUser.UserName.Should().Be(userName);
+        resultUser.BirthDate.Should().Be(birthDate);
+        resultUser.Gender.Should().Be(gender);
+
+        resultUser.Phones.Should().HaveCount(1);
+        resultUser.Phones.First().Should().Be(phone);
+        resultUser.Phones.First().IsPrimary.Should().BeTrue();
+
+        resultUser.Status.Should().Be(AccountStatus.PendingEmailConfirmation); ;
     }
 }

@@ -1,7 +1,6 @@
 ﻿using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Abstraction.Records;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
@@ -16,12 +15,12 @@ namespace YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 
 public class User : Entity, IAggregateRoot
 {
-    private readonly Email _email = null!;
-    private readonly UserName _userName = null!;
-    private readonly PasswordHash _passwordHash = null!;
-    private readonly BirthDate _birthDate = null!;
+    private Email _email = null!;
+    private UserName _userName = null!;
+    private PasswordHash _passwordHash = null!;
+    private BirthDate _birthDate = null!;
     private readonly AccountStatus _status;
-    private readonly Gender _gender;
+    private Gender _gender;
     private readonly SuspensionInfo? _suspension;
     private readonly DateTimeOffset _createdAt;
     private readonly DateTimeOffset? _emailConfirmedAt;
@@ -81,10 +80,12 @@ public class User : Entity, IAggregateRoot
         user.AddPhone(initialPhone);
 
         // Dispara evento de usuário registrado
-        user.AddDomainEvent(new UserRegisteredDomainEvent(
+        var userRegisteredEvent = new UserRegisteredDomainEvent(
             UserId: user.Id,
             Email: user.Email.EmailAddress,
-            UserName: user.UserName.Name));
+            UserName: user.UserName.Name);
+
+        user.AddDomainEvent(userRegisteredEvent);
 
         return user;
     }
@@ -134,14 +135,14 @@ public class User : Entity, IAggregateRoot
     {
         if (phone is null)
             throw new DomainException(
-                message: "Phone cannot be null.",
-                identifier: "PHONE_NULL");
+                identifier: "PHONE_NULL",
+                message: "Phone cannot be null.");
 
         // Dedup pelo seu índice (E164)
         if (_phones.Any(p => p.E164 == phone.E164))
             throw new DomainException(
-                message: "Phone already exists.",
-                identifier: "PHONE_ALREADY_EXISTS");
+                identifier: "PHONE_ALREADY_EXISTS",
+                message: "Phone already exists.");
 
         // Se já existe primário e o novo vem como primário, desmarca o atual
         if (phone.IsPrimary)

@@ -11,7 +11,7 @@ public sealed class EmailConfirmationToken : Entity, IAggregateRoot
     private readonly TokenHash _tokenHash = null!;
     private readonly DateTimeOffset _createdAt;
     private readonly DateTimeOffset _expiresAt;
-    private readonly DateTimeOffset? _usedAt;
+    private DateTimeOffset? _usedAt;
 
     public Guid UserId => _userId;
     public TokenHash TokenHash => _tokenHash;
