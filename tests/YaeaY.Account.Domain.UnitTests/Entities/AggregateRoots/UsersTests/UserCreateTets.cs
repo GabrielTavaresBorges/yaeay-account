@@ -346,7 +346,7 @@ public class UserCreateTets
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllUserDataIsValid_ShouldSucceed()
+    public void Create_WhenAllUserDataIsValid_ShouldSuccess()
     {
         // Arrange
 

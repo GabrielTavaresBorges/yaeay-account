@@ -309,7 +309,7 @@ public class EmailConfirmationSettingsCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllDataIsValid_ShouldSucceed()
+    public void Create_WhenAllDataIsValid_ShouldSuccess()
     {
         // Arrange
 

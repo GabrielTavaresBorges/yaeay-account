@@ -110,7 +110,7 @@ public class EmailCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenEmailIsValid_ShouldSucceed()
+    public void Create_WhenEmailIsValid_ShouldSuccess()
     {
         // Arrange
 
@@ -129,7 +129,7 @@ public class EmailCreateTests
     }
 
     [Fact]
-    public void Create_WhenEmailHasLeadingOrTrailingSpaces_ShouldSucceed()
+    public void Create_WhenEmailHasLeadingOrTrailingSpaces_ShouldSuccess()
     {
         // Arrange
 
