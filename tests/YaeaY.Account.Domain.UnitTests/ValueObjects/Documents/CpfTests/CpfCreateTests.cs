@@ -44,7 +44,7 @@ public class CpfCreateTests
     }
 
     [Fact]
-    public void Create_WhenCpfContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenCpfContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 
@@ -118,7 +118,7 @@ public class CpfCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenCpfIsValid_ShouldSucceed()
+    public void Create_WhenCpfIsValid_ShouldSuccess()
     {
         // Arrange
 

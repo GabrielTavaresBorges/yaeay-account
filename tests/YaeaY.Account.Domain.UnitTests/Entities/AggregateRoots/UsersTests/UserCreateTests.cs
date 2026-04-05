@@ -10,7 +10,7 @@ using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.UsersTests;
 
-public class UserCreateTets
+public class UserCreateTests
 {
     // IsFailure
 
@@ -346,7 +346,7 @@ public class UserCreateTets
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllUserDataIsValid_ShouldSucceed()
+    public void Create_WhenAllUserDataIsValid_ShouldSuccess()
     {
         // Arrange
 

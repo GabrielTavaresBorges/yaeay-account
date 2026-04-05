@@ -1,7 +1,6 @@
 ﻿using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Abstraction.Records;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 
 namespace YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
@@ -92,6 +91,6 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
         if (string.IsNullOrWhiteSpace(bodyHtml))
             throw new DomainException(
                 identifier: "BODY_NULL_EMPTY_WHITE_SPACE",
-                message: "Body HTML cannot be null, empty or white space." );
+                message: "Body HTML cannot be null, empty or white space.");
     }
 }

@@ -44,7 +44,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenPasswordPlainTextContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 
@@ -190,7 +190,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextHasLeadingOrTrailingSpaces_ShouldSucceed()
+    public void Create_WhenPasswordPlainTextHasLeadingOrTrailingSpaces_ShouldSuccess()
     {
         // Arrange
 

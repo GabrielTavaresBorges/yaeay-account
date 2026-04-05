@@ -44,7 +44,7 @@ public class UserNameCreateTests
     }
 
     [Fact]
-    public void Create_WhenUserNameContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenUserNameContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 

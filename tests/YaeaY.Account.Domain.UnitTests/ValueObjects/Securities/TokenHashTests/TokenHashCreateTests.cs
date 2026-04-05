@@ -44,7 +44,7 @@ public class TokenHashCreateTests
     }
 
     [Fact]
-    public void Create_WhenTokenHashContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenTokenHashContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 
@@ -100,7 +100,7 @@ public class TokenHashCreateTests
     }
 
     [Fact]
-    public void Create_WhenTokenHashHasLeadingOrTrailingSpaces_ShouldSucceed()
+    public void Create_WhenTokenHashHasLeadingOrTrailingSpaces_ShouldSuccess()
     {
         // Arrange
 

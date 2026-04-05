@@ -9,6 +9,8 @@ public class EmailConfirmationSettingsCreateTests
 {
     // IsFailure
 
+    #region FromEmail
+
     [Fact]
     public void Create_WhenFromEmailIsNull_ShouldThrowDomainException()
     {
@@ -30,6 +32,10 @@ public class EmailConfirmationSettingsCreateTests
         exeption.Identifier.Should().Be("FROM_EMAIL_NULL");
         exeption.Message.Should().Be("From email cannot be null.");
     }
+
+    #endregion
+
+    #region FromName
 
     [Fact]
     public void Create_WhenFromNameIsNull_ShouldThrowDomainException()
@@ -82,7 +88,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenFromNameContainsWhiteSpace_ShouldThrowDomainException()
+    public void Create_WhenFromNameContainsWhiteSpaceOnly_ShouldThrowDomainException()
     {
         // Arrange
 
@@ -130,6 +136,10 @@ public class EmailConfirmationSettingsCreateTests
         exeption.Identifier.Should().Be("FROM_NAME_TOO_LONG");
         exeption.Message.Should().Be("From name cannot be longer than 150 characters.");
     }
+
+    #endregion
+
+    #region Subject
 
     [Fact]
     public void Create_WhenSubjectIsNull_ShouldThrowDomainException()
@@ -182,7 +192,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenSubjectContainsWhiteSpace_ShouldThrowDomainException()
+    public void Create_WhenSubjectContainsWhiteSpaceOnly_ShouldThrowDomainException()
     {
         // Arrange
 
@@ -230,6 +240,10 @@ public class EmailConfirmationSettingsCreateTests
         exeption.Identifier.Should().Be("SUBJECT_TOO_LONG");
         exeption.Message.Should().Be("Subject cannot be longer than 200 characters.");
     }
+
+    #endregion
+
+    #region Body
 
     [Fact]
     public void Create_WhenBodyIsNull_ShouldThrowDomainException()
@@ -282,7 +296,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenBodyContainsWhiteSpace_ShouldThrowDomainException()
+    public void Create_WhenBodyContainsWhiteSpaceOnly_ShouldThrowDomainException()
     {
         // Arrange
 
@@ -306,10 +320,12 @@ public class EmailConfirmationSettingsCreateTests
         exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
     }
 
+    #endregion
+
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllDataIsValid_ShouldSucceed()
+    public void Create_WhenAllDataIsValid_ShouldSuccess()
     {
         // Arrange
 

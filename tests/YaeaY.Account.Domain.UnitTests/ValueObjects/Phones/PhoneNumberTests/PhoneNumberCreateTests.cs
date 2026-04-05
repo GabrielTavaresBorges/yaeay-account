@@ -69,7 +69,7 @@ public class PhoneNumberCreateTests
     }
 
     [Fact]
-    public void Create_WhenPhoneNumberContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenPhoneNumberContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 
