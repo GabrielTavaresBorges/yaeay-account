@@ -44,7 +44,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenPasswordPlainTextContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 

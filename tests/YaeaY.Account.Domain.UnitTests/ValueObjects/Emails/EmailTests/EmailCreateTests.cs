@@ -47,7 +47,7 @@ public class EmailCreateTests
 
 
     [Fact]
-    public void Create_WhenEmailContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenEmailContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 

@@ -44,7 +44,7 @@ public class TokenHashCreateTests
     }
 
     [Fact]
-    public void Create_WhenTokenHashContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenTokenHashContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 

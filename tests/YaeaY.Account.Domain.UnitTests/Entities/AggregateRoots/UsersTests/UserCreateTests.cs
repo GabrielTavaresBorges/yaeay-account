@@ -10,7 +10,7 @@ using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.UsersTests;
 
-public class UserCreateTets
+public class UserCreateTests
 {
     // IsFailure
 

@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using YaeaY.Account.Domain.Abstraction.Entities;
+﻿using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Enumerators;
 
@@ -59,21 +58,24 @@ public sealed class UserPhone : Entity
         string e164,
         bool isPrimary)
     {
-        callingCode = callingCode.Trim();
-        regionCode = regionCode.Trim();
-        areaCode = string.IsNullOrWhiteSpace(areaCode) ? null : areaCode.Trim();
-        phoneNumber = phoneNumber.Trim();
-        e164 = e164.Trim();
+        var normalized = NormalizeParameters(callingCode, regionCode, areaCode, phoneNumber, e164);
 
-        Validate(callingCode, regionCode, areaCode, phoneType, phoneNumber, e164, isPrimary);
-        
-        var userPhone = new UserPhone(
-            callingCode,
-            regionCode,
-            areaCode,
+        Validate(
+            normalized.CallingCode,
+            normalized.RegionCode,
+            normalized.AreaCode,
             phoneType,
-            phoneNumber,
-            e164,
+            normalized.PhoneNumber,
+            normalized.E164,
+            isPrimary);
+
+        var userPhone = new UserPhone(
+            normalized.CallingCode,
+            normalized.RegionCode,
+            normalized.AreaCode,
+            phoneType,
+            normalized.PhoneNumber,
+            normalized.E164,
             isPrimary);
 
         return userPhone;
@@ -112,6 +114,23 @@ public sealed class UserPhone : Entity
         _verifiedAt = null;
     }
 
+    private static (
+        string CallingCode,
+        string RegionCode,
+        string? AreaCode,
+        string PhoneNumber,
+        string E164)
+        NormalizeParameters(string callingCode, string regionCode, string? areaCode, string phoneNumber, string e164)
+    {
+        return (
+            CallingCode: (callingCode ?? string.Empty).Trim(),
+            RegionCode: (regionCode ?? string.Empty).Trim().ToUpperInvariant(),
+            AreaCode: string.IsNullOrWhiteSpace(areaCode) ? null : areaCode.Trim(),
+            PhoneNumber: (phoneNumber ?? string.Empty).Trim(),
+            E164: (e164 ?? string.Empty).Trim()
+        );
+    }
+
     private static void Validate(
         string callingCode,
         string regionCode,
@@ -133,13 +152,13 @@ public sealed class UserPhone : Entity
 
         if (string.IsNullOrWhiteSpace(regionCode))
             throw new DomainException(
-                identifier: "PHONE_REGION_EMPTY",
+                identifier: "PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE",
                 message: "RegionCode cannot be null, empty or white space.");
 
         // ISO2 básico: 2 letras (BR/US/CA)
         if (regionCode.Length != 2 || regionCode.Any(ch => ch < 'A' || ch > 'Z'))
             throw new DomainException(
-                identifier: "PHONE_REGION_INVALID",
+                identifier: "PHONE_REGION_CODE_INVALID",
                 message: "RegionCode must be a valid ISO2 code (e.g., BR, US, CA).");
 
         // AreaCode é opcional (nullable). Se vier preenchido, valida básico: só dígitos.
@@ -152,6 +171,11 @@ public sealed class UserPhone : Entity
             throw new DomainException(
                 identifier: "PHONE_TYPE_UNKNOWN",
                 message: "Phone type cannot be unknown.");
+
+        if (!Enum.IsDefined(typeof(PhoneType), phoneType))
+            throw new DomainException(
+                identifier: "PHONE_TYPE_INVALID",
+                message: "Phone type is invalid.");
 
         if (string.IsNullOrWhiteSpace(phoneNumber))
             throw new DomainException(
