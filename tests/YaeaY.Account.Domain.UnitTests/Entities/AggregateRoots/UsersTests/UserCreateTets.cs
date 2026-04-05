@@ -324,14 +324,6 @@ public class UserCreateTets
         var birthDateResult = BirthDate.Create(birthDateTest);
         var birthDate = birthDateResult.Value;
 
-        var callingCode = "+55";
-        var regionCode = "BR";
-        var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
-        var e164 = "+554812345678";
-        var isPrimary = true;
-
         UserPhone userPhoneInvalid = null!;
 
         // Act
