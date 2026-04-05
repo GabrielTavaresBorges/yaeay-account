@@ -16,17 +16,17 @@ namespace YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 
 public class User : Entity, IAggregateRoot
 {
-    private Email _email = null!;
-    private UserName _userName = null!;
-    private PasswordHash _passwordHash = null!;
-    private BirthDate _birthDate = null!;
-    private AccountStatus _status;
-    private Gender _gender;
-    private SuspensionInfo? _suspension;
-    private DateTimeOffset _createdAt;
-    private DateTimeOffset? _emailConfirmedAt;
-    private DateTimeOffset? _firstLoginAt;
-    private DateTimeOffset? _lastLoginAt;
+    private readonly Email _email = null!;
+    private readonly UserName _userName = null!;
+    private readonly PasswordHash _passwordHash = null!;
+    private readonly BirthDate _birthDate = null!;
+    private readonly AccountStatus _status;
+    private readonly Gender _gender;
+    private readonly SuspensionInfo? _suspension;
+    private readonly DateTimeOffset _createdAt;
+    private readonly DateTimeOffset? _emailConfirmedAt;
+    private readonly DateTimeOffset? _firstLoginAt;
+    private readonly DateTimeOffset? _lastLoginAt;
 
     private readonly List<UserDocument> _documents = new();
     private readonly List<UserPhone> _phones = new();
@@ -65,7 +65,7 @@ public class User : Entity, IAggregateRoot
         _createdAt = DateTimeOffset.UtcNow;
     }
 
-    public static Result<User> Create(
+    public static User Create(
         Email emailAddress,
         PasswordHash passwordHash,
         UserName userName,
@@ -86,7 +86,7 @@ public class User : Entity, IAggregateRoot
             Email: user.Email.EmailAddress,
             UserName: user.UserName.Name));
 
-        return Result<User>.Success(user);
+        return user;
     }
 
     private static void Validate(
@@ -99,33 +99,33 @@ public class User : Entity, IAggregateRoot
     {
         if (emailAddress is null)
             throw new DomainException(
-                message: "Email Address cannot be null.",
-                identifier: "EMAIL_NULL");
+                identifier: "EMAIL_NULL",
+                message: "Email Address cannot be null.");
 
         if (passwordHash is null)
             throw new DomainException(
-                message: "Password cannot be null.",
-                identifier: "PASSWORD_HASH_NULL");
+                identifier: "PASSWORD_HASH_NULL",
+                message: "Password cannot be null.");
 
         if (userName is null)
             throw new DomainException(
-                message: "UserName cannot be null.",
-                identifier: "USER_NAME_NULL");
+                identifier: "USER_NAME_NULL",
+                message: "UserName cannot be null.");
 
         if (birthDate is null)
             throw new DomainException(
-                message: "Birth date cannot be null.",
-                identifier: "BIRTH_DATE_NULL");
+                identifier: "BIRTH_DATE_NULL",
+                message: "Birth date cannot be null.");
 
         if (gender == Gender.Unknown)
             throw new DomainException(
-                message: "Gender cannot be unknown.",
-                identifier: "GENDER_UNKNOWN");
+                identifier: "GENDER_UNKNOWN",
+                message: "Gender cannot be unknown.");
 
         if (initialPhone is null)
             throw new DomainException(
-                message: "Initial phone cannot be null.",
-                identifier: "INITIAL_PHONE_NULL");
+                identifier: "INITIAL_PHONE_NULL",
+                message: "Initial phone cannot be null.");
     }
 
     #region Phones (Aggregate rules)

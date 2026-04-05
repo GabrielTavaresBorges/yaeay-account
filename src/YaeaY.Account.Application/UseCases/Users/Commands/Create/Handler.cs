@@ -74,19 +74,13 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                e164: command.E164,
                isPrimary: true);
 
-            var userResult = User.Create(
+            var user = User.Create(
                 emailAddress: emailResult.Value,
                 passwordHash: passwordHashResult.Value,
                 userName: userNameResult.Value,
                 birthDate: birhDateResult.Value,
                 gender: command.Gender,
                 initialPhone: initialPhone);
-            if (userResult.IsFailure)
-            {
-                return Result<Response>.Failure(userResult.Error);
-            }
-
-            var user = userResult.Value;
 
             await _userRepository.CreateUserAsync(user, cancellationToken);
             await _unitOfWork.CommitAsync();

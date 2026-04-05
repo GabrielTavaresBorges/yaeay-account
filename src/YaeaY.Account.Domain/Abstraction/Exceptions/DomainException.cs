@@ -4,9 +4,9 @@ namespace YaeaY.Account.Domain.Abstraction.Exceptions;
 
 public class DomainException : Exception
 {
-    public string? Identifier { get; }
+    public string Identifier { get; }
 
-    public DomainException(string message, string? identifier = null)
+    public DomainException(string identifier, string message) 
          : base(message)
     {
         Identifier = identifier;
