@@ -144,4 +144,25 @@ public class EmailCreateTests
         result.IsSuccess.Should().BeTrue();
         result.Value.EmailAddress.Should().Be("example@domain.com");
     }
+
+    [Fact]
+    public void Create_WhenEmailHasExactlyMaxLength_ShouldSuccess()
+    {
+        // Arrange
+
+        string prefix = "example@domain";
+        string suffix = ".com";
+        string middle = new string('a', 236);
+
+        string email = prefix + middle + suffix; ;
+
+        // Act
+
+        var result = Email.Create(email);
+
+        // Assert
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+    }
 }

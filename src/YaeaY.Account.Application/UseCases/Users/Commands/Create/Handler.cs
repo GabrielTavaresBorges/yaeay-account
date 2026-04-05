@@ -43,11 +43,11 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                 return Result<Response>.Failure(emailResult.Error);
             }
 
-            var plainPasswordResult = PlainPassword.Create(command.Password);
-            if (plainPasswordResult.IsFailure)
-                return Result<Response>.Failure(plainPasswordResult.Error);
+            var passwordPlainTextResult = PasswordPlainText.Create(command.Password);
+            if (passwordPlainTextResult.IsFailure)
+                return Result<Response>.Failure(passwordPlainTextResult.Error);
 
-            var hashed = _passwordHasher.Hash(plainPasswordResult.Value.Password);
+            var hashed = _passwordHasher.Hash(passwordPlainTextResult.Value.Password);
 
             var passwordHashResult = PasswordHash.Create(hashed);
             if (passwordHashResult.IsFailure)
@@ -74,19 +74,13 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                e164: command.E164,
                isPrimary: true);
 
-            var userResult = User.Create(
+            var user = User.Create(
                 emailAddress: emailResult.Value,
                 passwordHash: passwordHashResult.Value,
                 userName: userNameResult.Value,
                 birthDate: birhDateResult.Value,
                 gender: command.Gender,
                 initialPhone: initialPhone);
-            if (userResult.IsFailure)
-            {
-                return Result<Response>.Failure(userResult.Error);
-            }
-
-            var user = userResult.Value;
 
             await _userRepository.CreateUserAsync(user, cancellationToken);
             await _unitOfWork.CommitAsync();

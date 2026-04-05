@@ -4,7 +4,7 @@ namespace YaeaY.Account.Domain.ValueObjects.Names;
 
 public sealed record UserName
 {
-    private string _name = string.Empty;
+    private readonly string _name = string.Empty;
 
     public string Name => _name;
 

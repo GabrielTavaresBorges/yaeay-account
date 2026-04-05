@@ -4,7 +4,7 @@ namespace YaeaY.Account.Domain.ValueObjects.Dates;
 
 public sealed record BirthDate
 {
-    private DateOnly _date;
+    private readonly DateOnly _date;
 
     public DateOnly Date => _date;
 

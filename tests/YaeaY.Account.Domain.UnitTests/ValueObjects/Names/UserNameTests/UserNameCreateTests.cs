@@ -132,4 +132,39 @@ public class UserNameCreateTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Name.Should().Be("Example Name");
     }
+
+    [Fact]
+    public void Create_WhenUserNameHasExactlyMaxLength_ShouldSuccess()
+    {
+        // Arrange
+
+        string userName = new string('a', 100);
+
+        // Act
+
+        var result = UserName.Create(userName);
+
+        // Assert
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Create_WhenUserNameHasExactlyMinLength_ShouldSuccess()
+    {
+        // Arrange
+
+        string userName = "Ab";
+
+        // Act
+
+        var result = UserName.Create(userName);
+
+        // Assert
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Name.Should().Be(userName);
+    }
 }

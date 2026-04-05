@@ -324,14 +324,6 @@ public class UserCreateTets
         var birthDateResult = BirthDate.Create(birthDateTest);
         var birthDate = birthDateResult.Value;
 
-        var callingCode = "+55";
-        var regionCode = "BR";
-        var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
-        var e164 = "+554812345678";
-        var isPrimary = true;
-
         UserPhone userPhoneInvalid = null!;
 
         // Act
@@ -397,7 +389,7 @@ public class UserCreateTets
 
         // Act
 
-        var result = User.Create(
+        var resultUser = User.Create(
             email,
             passwordHash,
             userName,
@@ -407,8 +399,17 @@ public class UserCreateTets
 
         // Assert
 
-        result.Value.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.IsFailure.Should().BeFalse();
+        resultUser.Should().NotBeNull();
+        resultUser.Email.Should().Be(email);
+        resultUser.PasswordHash.Should().Be(passwordHash);
+        resultUser.UserName.Should().Be(userName);
+        resultUser.BirthDate.Should().Be(birthDate);
+        resultUser.Gender.Should().Be(gender);
+
+        resultUser.Phones.Should().HaveCount(1);
+        resultUser.Phones.First().Should().Be(phone);
+        resultUser.Phones.First().IsPrimary.Should().BeTrue();
+
+        resultUser.Status.Should().Be(AccountStatus.PendingEmailConfirmation); ;
     }
 }

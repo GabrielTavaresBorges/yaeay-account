@@ -1,18 +1,19 @@
 ﻿using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
+using YaeaY.Account.Domain.Abstraction.Records;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 
 namespace YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
 
 public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
 {
-    private Email _fromEmail = null!;
-    private string _fromName = null!;
-    private string _subject = null!;
-    private string _bodyHtml = null!;
-    private bool _isActive;
-    private DateTimeOffset _updatedAt;
+    private readonly Email _fromEmail = null!;
+    private readonly string _fromName = string.Empty;
+    private readonly string _subject = string.Empty;
+    private readonly string _bodyHtml = string.Empty;
+    private readonly bool _isActive;
+    private readonly DateTimeOffset _updatedAt;
 
     public Email FromEmail => _fromEmail;
     public string FromName => _fromName;
@@ -47,29 +48,14 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
     {
         Validate(fromEmail, fromName, subject, bodyHtml);
 
-        return new EmailConfirmationSetting(
+        var emailConfirmationSetting = new EmailConfirmationSetting(
             fromEmail,
-            fromName.Trim(),
-            subject.Trim(),
-            bodyHtml.Trim(),
-            isActive);
-    }
+            fromName,
+            subject,
+            bodyHtml,
+            isActive = true);
 
-    public void Update(
-        Email fromEmail,
-        string fromName,
-        string subject,
-        string bodyHtml,
-        bool isActive)
-    {
-        Validate(fromEmail, fromName, subject, bodyHtml);
-
-        _fromEmail = fromEmail;
-        _fromName = fromName.Trim();
-        _subject = subject.Trim();
-        _bodyHtml = bodyHtml.Trim();
-        _isActive = isActive;
-        _updatedAt = DateTimeOffset.UtcNow;
+        return emailConfirmationSetting;
     }
 
     private static void Validate(
@@ -80,32 +66,32 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
     {
         if (fromEmail is null)
             throw new DomainException(
-                message: "From email cannot be null.",
-                identifier: "EMAIL_CONFIRMATION_SETTING_FROM_EMAIL_NULL");
+                identifier: "FROM_EMAIL_NULL",
+                message: "From email cannot be null.");
 
         if (string.IsNullOrWhiteSpace(fromName))
             throw new DomainException(
-                message: "From name cannot be null or empty.",
-                identifier: "EMAIL_CONFIRMATION_SETTING_FROM_NAME_EMPTY");
-
-        if (string.IsNullOrWhiteSpace(subject))
-            throw new DomainException(
-                message: "Subject cannot be null or empty.",
-                identifier: "EMAIL_CONFIRMATION_SETTING_SUBJECT_EMPTY");
-
-        if (string.IsNullOrWhiteSpace(bodyHtml))
-            throw new DomainException(
-                message: "Body HTML cannot be null or empty.",
-                identifier: "EMAIL_CONFIRMATION_SETTING_BODY_EMPTY");
+                identifier: "FROM_NAME_NULL_EMPTY_WHITE_SPACE",
+                message: "From name cannot be null, empty or white space.");
 
         if (fromName.Trim().Length > 150)
             throw new DomainException(
-                message: "From name cannot be longer than 150 characters.",
-                identifier: "EMAIL_CONFIRMATION_SETTING_FROM_NAME_TOO_LONG");
+                identifier: "FROM_NAME_TOO_LONG",
+                message: "From name cannot be longer than 150 characters.");
+
+        if (string.IsNullOrWhiteSpace(subject))
+            throw new DomainException(
+                identifier: "SUBJECT_NULL_EMPTY_WHITE_SPACE",
+                message: "Subject cannot be null, empty or white space.");
 
         if (subject.Trim().Length > 200)
             throw new DomainException(
-                message: "Subject cannot be longer than 200 characters.",
-                identifier: "EMAIL_CONFIRMATION_SETTING_SUBJECT_TOO_LONG");
+                identifier: "SUBJECT_TOO_LONG",
+                message: "Subject cannot be longer than 200 characters.");
+
+        if (string.IsNullOrWhiteSpace(bodyHtml))
+            throw new DomainException(
+                identifier: "BODY_NULL_EMPTY_WHITE_SPACE",
+                message: "Body HTML cannot be null, empty or white space." );
     }
 }

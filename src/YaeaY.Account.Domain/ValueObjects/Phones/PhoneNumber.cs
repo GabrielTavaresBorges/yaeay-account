@@ -5,10 +5,10 @@ namespace YaeaY.Account.Domain.ValueObjects.Phones;
 
 public sealed record PhoneNumber
 {
-    private CountryCallingCode _ddi;
-    private PhoneType _phoneType;
-    private string _number = string.Empty;
-    private string _e164 = string.Empty;
+    private readonly CountryCallingCode _ddi;
+    private readonly PhoneType _phoneType;
+    private readonly string _number = string.Empty;
+    private readonly string _e164 = string.Empty;
 
     public CountryCallingCode Ddi => _ddi;
     public PhoneType PhoneType => _phoneType;

@@ -3,13 +3,13 @@ using YaeaY.Account.Domain.Abstraction.Records;
 
 namespace YaeaY.Account.Domain.ValueObjects.Securities;
 
-public sealed record PlainPassword
+public sealed record PasswordPlainText
 {
-    private string _password = string.Empty;
+    private readonly string _password = string.Empty;
 
     public string Password => _password;
 
-    private PlainPassword(string password)
+    private PasswordPlainText(string password)
     {
         _password = password;
     }
@@ -19,19 +19,19 @@ public sealed record PlainPassword
     private static readonly Regex DigitRegex = new(@"\d", RegexOptions.Compiled);
     private static readonly Regex SpecialRegex = new("[^A-Za-z0-9]", RegexOptions.Compiled);
 
-    public static Result<PlainPassword> Create(string password)
+    public static Result<PasswordPlainText> Create(string password)
     {
-        var validatedPlainPassword = ValidatePlainPassword(password);
+        var validatedPasswordPlainText = ValidatePasswordPlainText(password);
 
-        if (validatedPlainPassword.IsFailure)
-            return Result<PlainPassword>.Failure(validatedPlainPassword.Error);
+        if (validatedPasswordPlainText.IsFailure)
+            return Result<PasswordPlainText>.Failure(validatedPasswordPlainText.Error);
 
-        var plainPassword = new PlainPassword(validatedPlainPassword.Value);
+        var passwordPlainText = new PasswordPlainText(validatedPasswordPlainText.Value);
 
-        return Result<PlainPassword>.Success(plainPassword);
+        return Result<PasswordPlainText>.Success(passwordPlainText);
     }
 
-    private static Result<string> ValidatePlainPassword(string password)
+    private static Result<string> ValidatePasswordPlainText(string password)
     {
         if (string.IsNullOrWhiteSpace(password))
         {

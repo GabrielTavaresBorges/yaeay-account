@@ -1,7 +1,6 @@
 ﻿using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Abstraction.Records;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
@@ -20,13 +19,13 @@ public class User : Entity, IAggregateRoot
     private UserName _userName = null!;
     private PasswordHash _passwordHash = null!;
     private BirthDate _birthDate = null!;
-    private AccountStatus _status;
+    private readonly AccountStatus _status;
     private Gender _gender;
-    private SuspensionInfo? _suspension;
-    private DateTimeOffset _createdAt;
-    private DateTimeOffset? _emailConfirmedAt;
-    private DateTimeOffset? _firstLoginAt;
-    private DateTimeOffset? _lastLoginAt;
+    private readonly SuspensionInfo? _suspension;
+    private readonly DateTimeOffset _createdAt;
+    private readonly DateTimeOffset? _emailConfirmedAt;
+    private readonly DateTimeOffset? _firstLoginAt;
+    private readonly DateTimeOffset? _lastLoginAt;
 
     private readonly List<UserDocument> _documents = new();
     private readonly List<UserPhone> _phones = new();
@@ -65,7 +64,7 @@ public class User : Entity, IAggregateRoot
         _createdAt = DateTimeOffset.UtcNow;
     }
 
-    public static Result<User> Create(
+    public static User Create(
         Email emailAddress,
         PasswordHash passwordHash,
         UserName userName,
@@ -81,12 +80,14 @@ public class User : Entity, IAggregateRoot
         user.AddPhone(initialPhone);
 
         // Dispara evento de usuário registrado
-        user.AddDomainEvent(new UserRegisteredDomainEvent(
+        var userRegisteredEvent = new UserRegisteredDomainEvent(
             UserId: user.Id,
             Email: user.Email.EmailAddress,
-            UserName: user.UserName.Name));
+            UserName: user.UserName.Name);
 
-        return Result<User>.Success(user);
+        user.AddDomainEvent(userRegisteredEvent);
+
+        return user;
     }
 
     private static void Validate(
@@ -99,33 +100,33 @@ public class User : Entity, IAggregateRoot
     {
         if (emailAddress is null)
             throw new DomainException(
-                message: "Email Address cannot be null.",
-                identifier: "EMAIL_NULL");
+                identifier: "EMAIL_NULL",
+                message: "Email Address cannot be null.");
 
         if (passwordHash is null)
             throw new DomainException(
-                message: "Password cannot be null.",
-                identifier: "PASSWORD_HASH_NULL");
+                identifier: "PASSWORD_HASH_NULL",
+                message: "Password cannot be null.");
 
         if (userName is null)
             throw new DomainException(
-                message: "UserName cannot be null.",
-                identifier: "USER_NAME_NULL");
+                identifier: "USER_NAME_NULL",
+                message: "UserName cannot be null.");
 
         if (birthDate is null)
             throw new DomainException(
-                message: "Birth date cannot be null.",
-                identifier: "BIRTH_DATE_NULL");
+                identifier: "BIRTH_DATE_NULL",
+                message: "Birth date cannot be null.");
 
         if (gender == Gender.Unknown)
             throw new DomainException(
-                message: "Gender cannot be unknown.",
-                identifier: "GENDER_UNKNOWN");
+                identifier: "GENDER_UNKNOWN",
+                message: "Gender cannot be unknown.");
 
         if (initialPhone is null)
             throw new DomainException(
-                message: "Initial phone cannot be null.",
-                identifier: "INITIAL_PHONE_NULL");
+                identifier: "INITIAL_PHONE_NULL",
+                message: "Initial phone cannot be null.");
     }
 
     #region Phones (Aggregate rules)
@@ -134,14 +135,14 @@ public class User : Entity, IAggregateRoot
     {
         if (phone is null)
             throw new DomainException(
-                message: "Phone cannot be null.",
-                identifier: "PHONE_NULL");
+                identifier: "PHONE_NULL",
+                message: "Phone cannot be null.");
 
         // Dedup pelo seu índice (E164)
         if (_phones.Any(p => p.E164 == phone.E164))
             throw new DomainException(
-                message: "Phone already exists.",
-                identifier: "PHONE_ALREADY_EXISTS");
+                identifier: "PHONE_ALREADY_EXISTS",
+                message: "Phone already exists.");
 
         // Se já existe primário e o novo vem como primário, desmarca o atual
         if (phone.IsPrimary)

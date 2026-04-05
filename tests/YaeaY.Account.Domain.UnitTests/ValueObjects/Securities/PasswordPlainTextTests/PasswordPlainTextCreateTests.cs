@@ -1,22 +1,22 @@
 ﻿using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
-namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PlainPasswordTests;
+namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordPlainTextTests;
 
-public class PlainPasswordCreateTests
+public class PasswordPlainTextCreateTests
 {
     // IsFailure
 
     [Fact]
-    public void Create_WhenPlainPasswordIsNull_ShouldFailure()
+    public void Create_WhenPasswordPlainTextIsNull_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = null!;
+        string password = null!;
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -26,15 +26,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordIsEmpty_ShouldFailure()
+    public void Create_WhenPasswordPlainTextIsEmpty_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = string.Empty;
+        string password = string.Empty;
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -44,15 +44,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordContainsWhiteSpace_ShouldFailure()
+    public void Create_WhenPasswordPlainTextContainsWhiteSpace_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = " ";
+        string password = " ";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -62,15 +62,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordIsTooShort_ShouldFailure()
+    public void Create_WhenPasswordPlainTextIsTooShort_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = "Ab1@abc";
+        string password = "Ab1@abc";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -80,15 +80,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordDoesNotContainUppercase_ShouldFailure()
+    public void Create_WhenPasswordPlainTextDoesNotContainUppercase_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = "abc123@x";
+        string password = "abc123@x";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -98,15 +98,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordDoesNotContainLowercase_ShouldFailure()
+    public void Create_WhenPasswordPlainTextDoesNotContainLowercase_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = "ABC123@X";
+        string password = "ABC123@X";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -116,15 +116,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordDoesNotContainDigit_ShouldFailure()
+    public void Create_WhenPasswordPlainTextDoesNotContainDigit_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = "Abcdef@X";
+        string password = "Abcdef@X";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -134,15 +134,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordDoesNotContainSpecialCharacter_ShouldFailure()
+    public void Create_WhenPasswordPlainTextDoesNotContainSpecialCharacter_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = "Abcdef12";
+        string password = "Abcdef12";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -152,15 +152,15 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordIsTooLong_ShouldFailure()
+    public void Create_WhenPasswordPlainTextIsTooLong_ShouldFailure()
     {
         // Arrange
 
-        string plainPassword = "Aa1@" + new string('b', 253);
+        string password = "Aa1@" + new string('b', 253);
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -172,15 +172,15 @@ public class PlainPasswordCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenPlainPasswordIsValid_ShouldSuccess()
+    public void Create_WhenPasswordPlainTextIsValid_ShouldSuccess()
     {
         // Arrange
 
-        string plainPassword = "Abc123@x";
+        string password = "Abc123@x";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
@@ -190,20 +190,37 @@ public class PlainPasswordCreateTests
     }
 
     [Fact]
-    public void Create_WhenPlainPasswordHasLeadingOrTrailingSpaces_ShouldSucceed()
+    public void Create_WhenPasswordPlainTextHasLeadingOrTrailingSpaces_ShouldSucceed()
     {
         // Arrange
 
-        string plainPassword = " Abc123@x ";
+        string password = " Abc123@x ";
 
         // Act
 
-        var result = PlainPassword.Create(plainPassword);
+        var result = PasswordPlainText.Create(password);
 
         // Assert
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value.Password.Should().Be("Abc123@x");
+    }
+
+    [Fact]
+    public void Create_WhenPasswordPlainTextHasExactlyMaxLength_ShouldSuccess()
+    {
+        // Arrange
+
+        string password = "Aa1!" + new string('a', 252);
+
+        // Act
+
+        var result = PasswordPlainText.Create(password);
+
+        // Assert
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
     }
 }

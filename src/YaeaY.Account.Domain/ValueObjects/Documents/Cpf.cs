@@ -4,7 +4,7 @@ namespace YaeaY.Account.Domain.ValueObjects.Documents;
 
 public sealed partial record Cpf
 {
-    private string _number = string.Empty;
+    private readonly string _number = string.Empty;
 
     public string Number => _number;
 

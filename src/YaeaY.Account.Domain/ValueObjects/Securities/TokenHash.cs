@@ -4,7 +4,7 @@ namespace YaeaY.Account.Domain.ValueObjects.Securities;
 
 public sealed record TokenHash
 {
-    private string _token = string.Empty;
+    private readonly string _token = string.Empty;
 
     public string Token=> _token;
 

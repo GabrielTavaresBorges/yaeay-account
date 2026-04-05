@@ -5,7 +5,7 @@ namespace YaeaY.Account.Domain.ValueObjects.Emails;
 
 public sealed partial record Email
 {
-    private string _emailAddress = string.Empty;
+    private readonly string _emailAddress = string.Empty;
 
     public string EmailAddress => _emailAddress;
 
@@ -19,7 +19,7 @@ public sealed partial record Email
         var validatedEmail = ValidateEmail(emailAddress);
 
         if (validatedEmail.IsFailure)
-            return Result<Email>.Failure(validatedEmail.Error);        
+            return Result<Email>.Failure(validatedEmail.Error);
 
         var email = new Email(validatedEmail.Value);
 
