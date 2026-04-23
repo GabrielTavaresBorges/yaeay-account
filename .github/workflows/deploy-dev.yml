@@ -7,22 +7,22 @@ on:
 
 jobs:
   deploy-dev:
-    name: Deploy to Dev
-    runs-on: [self-hosted, yaeay-account, dev-deploy]
+    runs-on: self-hosted
 
     steps:
-      - name: Go to repository and update develop
+      - name: Update source
         run: |
           cd /opt/yaeay/apps/yaeay-account/source
+          git fetch origin
           git checkout develop
-          git pull origin develop
+          git reset --hard origin/develop
 
-      - name: Build and start dev environment
+      - name: Deploy dev
         run: |
           cd /opt/yaeay/apps/yaeay-account/environments/dev/compose
           docker compose up -d --build
 
-      - name: Show running containers
+      - name: Show containers
         run: |
           cd /opt/yaeay/apps/yaeay-account/environments/dev/compose
           docker compose ps
