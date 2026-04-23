@@ -45,7 +45,7 @@
                     </h1>
 
                     <div class="hero-slogan">
-                      <p>Uma conta.</p>
+                      <p>Uma contAaa.</p>
                       <p>Um ecossistema.</p>
                       <p class="hero-slogan__highlight">
                         Uma experiência simples, rápida e segura.
