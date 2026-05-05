@@ -8,6 +8,8 @@
     mdiArrowRight,
     mdiHelpCircleOutline,
   } from '@mdi/js'
+  import AppTopbar from '@/components/layout/AppTopbar.vue'
+  import AppFooter from '@/components/layout/AppFooter.vue'
 
   const showPassword = ref<boolean>(false)
   const rememberMe = ref<boolean>(false)
@@ -16,22 +18,7 @@
 <template>
   <v-main class="login-page">
     <section class="login-shell">
-      <div class="topbar">
-        <div class="topbar__content">
-          <div class="brand-mini">
-            <span class="brand-mini__strong">YaeaY</span>
-            <span class="brand-mini__light">Account</span>
-          </div>
-
-          <v-btn variant="text"
-                 class="topbar__help"
-                 :ripple="false"
-                 to="/forgot-password">
-            Ajuda
-          </v-btn>
-        </div>
-      </div>
-
+      <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
       <v-container class="login-content">
         <v-row class="ma-0" align="center" justify="center">
           <v-col cols="12" lg="11" xl="10">
@@ -45,7 +32,7 @@
                     </h1>
 
                     <div class="hero-slogan">
-                      <p>Uma contAaa.</p>
+                      <p>Uma conta.</p>
                       <p>Um ecossistema.</p>
                       <p class="hero-slogan__highlight">
                         Uma experiência simples, rápida e segura.
@@ -130,8 +117,8 @@
                     <v-btn block
                            size="x-large"
                            rounded="pill"
-                           class="login-button">
-                      <v-icon :icon="mdiLogin" start />
+                           class="login-button"
+                           :prepend-icon="mdiLogin">
                       Entrar
                     </v-btn>
                   </v-form>
@@ -145,6 +132,7 @@
                     <v-btn block
                            size="large"
                            variant="flat"
+                           tile
                            class="mobile-cta__button"
                            :to="{ name: 'user-create' }">
                       Criar conta
@@ -163,19 +151,14 @@
         </v-row>
       </v-container>
 
-      <footer class="footer-bar">
-        <div class="footer-bar__content">
-          <p class="footer-bar__copy">
-            © 2026 YaeaY Software ®
-          </p>
+      <AppFooter copyright="© 2026 YaeaY Software ®"
+                 text-one="Privacidade"
+                 href-one="#"
+                 text-two="Termos"
+                 href-two="#"
+                 text-three="Segurança"
+                 href-three="#" />
 
-          <div class="footer-bar__links">
-            <a href="#">Privacidade</a>
-            <a href="#">Termos</a>
-            <a href="#">Segurança</a>
-          </div>
-        </div>
-      </footer>
     </section>
   </v-main>
 </template>
@@ -190,51 +173,6 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-  }
-
-  .topbar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    backdrop-filter: blur(16px);
-    background: rgba(255, 255, 255, 0.72);
-    border-bottom: 1px solid rgba(24, 55, 41, 0.08);
-  }
-
-  .topbar__content {
-    width: 100%;
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .brand-mini {
-    display: flex;
-    align-items: baseline;
-    color: #183729;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-
-  .brand-mini__strong {
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-  }
-
-  .brand-mini__light {
-    font-size: 1.5rem;
-    font-weight: 300;
-    margin-left: 4px;
-  }
-
-  .topbar__help {
-    color: #3e564f;
-    text-transform: none;
-    letter-spacing: 0.01em;
-    font-weight: 500;
-    flex-shrink: 0;
   }
 
   .login-content {
@@ -313,8 +251,7 @@
     color: #ebebeb;
     text-transform: uppercase;
     letter-spacing: 0.16em;
-    font-weight: 800;
-    border-radius: 0;
+    font-weight: 800;   
     padding-inline: 28px;
   }
 
@@ -494,52 +431,6 @@
     background: #bfc8c4;
   }
 
-  .footer-bar {
-    margin-top: auto;
-    background: #f9f9f9;
-    border-top: 1px solid rgba(24, 55, 41, 0.08);
-  }
-
-  .footer-bar__content {
-    width: 100%;
-    padding: 28px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .footer-bar__copy {
-    margin: 0;
-    color: #3e564f;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
-
-  .footer-bar__links {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 28px;
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-
-    .footer-bar__links a {
-      color: #3e564f;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-decoration: none;
-    }
-
-      .footer-bar__links a:hover {
-        color: #183729;
-      }
-
   .mobile-only {
     display: none;
   }
@@ -637,18 +528,6 @@
   }
 
   @media (max-width: 600px), (orientation: portrait) {
-    .topbar__content,
-    .footer-bar__content {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-
-    .topbar__content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
     .form-panel {
       padding: 24px;
     }
