@@ -4,15 +4,10 @@
   import { computed, reactive, ref, watch, nextTick } from 'vue'
   import {
     mdiAccountCircleOutline,
-    mdiInformationOutline,
-    mdiEmail,
-    mdiLock,
-    mdiEye,
-    mdiEyeOff,
+    mdiInformationOutline,    
     mdiHelpCircleOutline,
     mdiShieldLockOutline,
     mdiCheckCircle,
-    mdiCircleOutline,
     mdiCalendar
   } from '@mdi/js'
 
@@ -20,10 +15,10 @@
   import { rules } from '@/validators'
   import AppTopbar from '@/components/layout/AppTopbar.vue'
   import AppFooter from '@/components/layout/AppFooter.vue'
-  import { EmailField, PasswordField, GenderSelect, UserPhonesField } from '@/components/inputs'
-  import { PasswordHelpDialog } from '@/components/dialogs'
+  import { EmailField, PasswordField, GenderSelect, UserPhonesField } from '@/components/inputs'  
   import type { Gender } from '@/constants/gender'
   import type { PhoneModel } from '@/models/phone-model'
+  import { PasswordRequirements } from '@/components/feedback'
 
 
   type VForm = { validate: () => Promise<{ valid: boolean }> }
@@ -46,10 +41,7 @@
   const loading = ref(false)
 
   /* password */
-  const showPassword = ref(false)
-  const showConfirmPassword = ref(false)
-  const passwordHelp = ref(false)
-
+  
   /* snackbar (visual) */
   const snackbar = reactive({ show: false, text: '' })
   function notify(text: string) {
@@ -276,15 +268,6 @@
                                          rounded="0"
                                          bg-color="#e2e2e2"
                                          clearable>
-                            <template #append>
-                              <v-btn variant="text"
-                                     class="help-icon-btn"
-                                     :ripple="false"
-                                     @click="passwordHelp = true"
-                                     aria-label="Ver requisitos de senha">
-                                <v-icon :icon="mdiHelpCircleOutline" size="20" />
-                              </v-btn>
-                            </template>
                           </PasswordField>
                         </v-col>
 
@@ -301,6 +284,10 @@
                                          clearable />
                         </v-col>
                       </v-row>
+
+                      <!-- Requisitos Mínimos -->
+                      <PasswordRequirements :rules="passwordChecklist" />
+
                     </v-expansion-panel-text>
                   </v-expansion-panel>
 
@@ -388,10 +375,6 @@
                     <v-btn variant="text" @click="snackbar.show = false">Fechar</v-btn>
                   </template>
                 </v-snackbar>
-
-                <!-- DIALOG AJUDA SENHA -->
-                <PasswordHelpDialog v-model="passwordHelp"
-                                    :rules="passwordChecklist" />
               </v-form>
             </div>
           </v-card>
@@ -440,7 +423,7 @@
   :deep(.access-field .v-field__input) {
     min-height: 56px;
     color: #183729;
-  }
+  }  
 
   /* ===== CARD ===== */
   .shell {
@@ -484,16 +467,11 @@
 
   .section-title {
     color: #214b3a;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.125rem;
     font-weight: 650;
     letter-spacing: 0.15px;
-  }
-
-  /* help icon button inside input */
-  .help-icon-btn {
-    padding: 0;
-    min-width: auto;
-    color: rgba(33, 75, 58, 0.85);
-  }
+  }  
 
   /* ===== BUTTONS ===== */
   .btn-primary {

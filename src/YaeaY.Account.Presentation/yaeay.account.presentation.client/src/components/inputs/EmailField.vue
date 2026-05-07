@@ -42,6 +42,7 @@
 <template>
   <v-text-field v-bind="attrs"
                 v-model="model"
+                class="email-field"
                 :label="label"
                 :placeholder="placeholder"
                 :rules="rules"
@@ -54,3 +55,33 @@
                 autocapitalize="none"
                 @blur="onBlur" />
 </template>
+
+<style scoped>
+  :deep(.email-field .v-field) {
+    background-color: #e2e2e2;
+  }
+
+  :deep(.email-field .v-field__overlay) {
+    background-color: transparent;
+  }
+
+  :deep(.email-field .v-field__input) {
+    color: #183729;
+  }
+
+  :deep(.email-field .v-field__prepend-inner),
+  :deep(.email-field .v-field__append-inner),
+  :deep(.email-field .v-field__clearable) {
+    color: #183729;
+  }
+
+  :deep(.email-field input:-webkit-autofill),
+  :deep(.email-field input:-webkit-autofill:hover),
+  :deep(.email-field input:-webkit-autofill:focus),
+  :deep(.email-field input:-webkit-autofill:active) {
+    -webkit-box-shadow: 0 0 0 1000px #e2e2e2 inset;
+    -webkit-text-fill-color: #183729;
+    caret-color: #183729;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+</style>
