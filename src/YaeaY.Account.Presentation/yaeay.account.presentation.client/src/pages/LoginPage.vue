@@ -114,12 +114,22 @@
                       </v-btn>
                     </div>
 
+                    <!--<v-btn block
+         size="x-large"
+         rounded="pill"
+         class="login-button"
+         :prepend-icon="mdiLogin">
+    Entrar
+  </v-btn>-->
+
                     <v-btn block
                            size="x-large"
                            rounded="pill"
-                           class="login-button"
-                           :prepend-icon="mdiLogin">
-                      Entrar
+                           class="login-button-disabled-dev"
+                           :prepend-icon="mdiLogin"
+                           type="button"
+                           disabled>
+                      Entrar - DESABILITADO (Desenv em andamento)
                     </v-btn>
                   </v-form>
 

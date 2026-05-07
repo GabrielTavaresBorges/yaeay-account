@@ -361,11 +361,10 @@
                 <v-btn block
                        size="large"
                        rounded="pill"
-                       class="btn-primary mt-2"
-                       type="submit"
-                       :loading="loading"
-                       :disabled="loading">
-                  Criar conta
+                       class="btn-disabled-dev mt-2"
+                       type="button"
+                       disabled>
+                  Criar conta - DESABILITADO (Desenvolvimento em andamento)
                 </v-btn>
 
                 <!-- SNACKBAR -->
@@ -389,7 +388,18 @@
   </v-main>
 </template>
 
-<style scoped> 
+<style scoped>
+  .btn-disabled-dev {
+  background-color: #ba1a1a !important;
+  color: #ffffff !important;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+
   /* ===== PAGE ===== */
   .page {
     min-height: 100vh;
