@@ -34,7 +34,7 @@
   ])
 
   /* panels */
-  const openedPanels = ref<string[]>(['accessData'])
+  const openedPanels = ref<string[]>(['accessData', 'personalData'])
 
   /* refs */
   const formRef = ref<VForm | null>(null)
@@ -292,20 +292,74 @@
                   </v-expansion-panel>
 
                   <!-- DADOS PESSOAIS -->
+                  <!--<v-expansion-panel class="panel" value="personalData">
+    <v-expansion-panel-title class="section-title">
+      Dados pessoais
+    </v-expansion-panel-title>
+
+    <v-expansion-panel-text eager>
+      <v-text-field v-model="form.fullName"
+                    label="Nome completo"
+                    class="mb-4"
+                    variant="outlined"
+                    rounded="lg"
+                    density="comfortable"
+                    clearable
+                    :rules="rules.fullName" />
+      <v-row>
+        <v-col cols="12" sm="7">
+          <v-menu v-model="birthMenu"
+                  :close-on-content-click="false"
+                  location="bottom"
+                  transition="scale-transition"
+                  min-width="auto">
+            <template #activator="{ props }">
+              <v-text-field v-bind="props"
+                            :model-value="birthLabel"
+                            label="Data de nascimento"
+                            readonly
+                            variant="outlined"
+                            rounded="lg"
+                            density="comfortable"
+                            clearable
+                            :rules="birthDateFieldRules"
+                            :prepend-inner-icon="mdiCalendar" />
+            </template>
+
+            <v-card min-width="300" max-width="340" elevation="12" rounded="lg">
+              <v-date-picker :model-value="form.birthDate"
+                             locale="pt-BR"
+                             hide-header
+                             flat
+                             @update:model-value="(val) => { form.birthDate = val; birthMenu.value = false }" />
+            </v-card>
+          </v-menu>
+        </v-col>
+
+        <v-col cols="12" sm="5">
+          <GenderSelect v-model="form.gender" :rules="rules.gender" clearable />
+        </v-col>
+      </v-row>
+    </v-expansion-panel-text>
+  </v-expansion-panel>-->
+                  <!-- DADOS PESSOAIS -->
                   <v-expansion-panel class="panel" value="personalData">
                     <v-expansion-panel-title class="section-title">
                       Dados pessoais
                     </v-expansion-panel-title>
 
-                    <v-expansion-panel-text eager>
+                    <v-expansion-panel-text>
                       <v-text-field v-model="form.fullName"
                                     label="Nome completo"
-                                    class="mb-4"
-                                    variant="outlined"
-                                    rounded="lg"
+                                    placeholder="Informe seu nome completo"
+                                    class="mb-6 access-field"
+                                    variant="solo-filled"
                                     density="comfortable"
+                                    rounded="0"
+                                    bg-color="#e2e2e2"
                                     clearable
                                     :rules="rules.fullName" />
+
                       <v-row>
                         <v-col cols="12" sm="7">
                           <v-menu v-model="birthMenu"
@@ -317,10 +371,12 @@
                               <v-text-field v-bind="props"
                                             :model-value="birthLabel"
                                             label="Data de nascimento"
+                                            class="access-field"
                                             readonly
-                                            variant="outlined"
-                                            rounded="lg"
+                                            variant="solo-filled"
                                             density="comfortable"
+                                            rounded="0"
+                                            bg-color="#e2e2e2"
                                             clearable
                                             :rules="birthDateFieldRules"
                                             :prepend-inner-icon="mdiCalendar" />
@@ -331,13 +387,21 @@
                                              locale="pt-BR"
                                              hide-header
                                              flat
-                                             @update:model-value="(val) => { form.birthDate = val; birthMenu.value = false }" />
+                                             @update:model-value="(val) => { form.birthDate = val; birthMenu = false }" />
                             </v-card>
                           </v-menu>
                         </v-col>
 
                         <v-col cols="12" sm="5">
-                          <GenderSelect v-model="form.gender" :rules="rules.gender" clearable />
+                          <GenderSelect v-model="form.gender"
+                                        :rules="rules.gender"
+                                        label="Gênero"
+                                        class="access-field"
+                                        variant="solo-filled"
+                                        density="comfortable"
+                                        rounded="0"
+                                        bg-color="#e2e2e2"
+                                        clearable />
                         </v-col>
                       </v-row>
                     </v-expansion-panel-text>
