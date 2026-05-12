@@ -1,23 +1,24 @@
-                     <!-- src/components/inputs/UserPhonesField.vue -->
+<!-- src/components/inputs/UserPhonesField.vue -->
 
-<script setup lang="ts">import { computed, watch } from 'vue'
+<script setup lang="ts">
+  import { computed, watch } from 'vue'
 
-  import { phoneTypeItems } from '@/constants/phoneType'
   import { callingCodeItems, type CallingCode } from '@/constants/callingCode'
   import { countryItems, type CountryCode } from '@/constants/country'
+  import { phoneTypeItems } from '@/constants/phoneType'
   import { brazilAreaCodes } from '@/constants/areaCode'
 
   import type { PhoneModel } from '@/models/phone-model'
-  import { validateUserPhone } from '@/validators/fields/userPhone'
 
-  import { getCallingCodeByCountry, resolveCountryFromCallingCode, } from '@/services/phoneCountry/phone-country-service'
-  import { formatPhoneNumber, getPhoneNumberMaxLength, } from '@/services/phoneFormat/phone-format-service'
+  import {
+    getCallingCodeByCountry,
+    resolveCountryFromCallingCode,
+  } from '@/services/phoneCountry/phone-country-service'
 
-  const props = defineProps<{
-    rules?: Array<(v: unknown) => true | string>
-    multiple?: boolean
-    required?: boolean
-  }>()
+  import {
+    formatPhoneNumber,
+    getPhoneNumberMaxLength,
+  } from '@/services/phoneFormat/phone-format-service'
 
   const model = defineModel<PhoneModel>({
     default: {
@@ -29,36 +30,94 @@
     },
   })
 
-  /* ===== Validation rules (campo inteiro) ===== */
-  const internalRules = computed(() => {
-    const base = props.rules ?? []
-
-    const myRule = () => validateUserPhone(model.value)
-
-    return [...base, myRule]
+  const callingCode = computed<PhoneModel['callingCode']>({
+    get: () => model.value.callingCode,
+    set: (value) => {
+      model.value = {
+        ...model.value,
+        callingCode: value,
+      }
+    },
   })
+
+  const country = computed<PhoneModel['country']>({
+    get: () => model.value.country,
+    set: (value) => {
+      model.value = {
+        ...model.value,
+        country: value,
+      }
+    },
+  })
+
+  const phoneType = computed<PhoneModel['phoneType']>({
+    get: () => model.value.phoneType,
+    set: (value) => {
+      model.value = {
+        ...model.value,
+        phoneType: value,
+      }
+    },
+  })
+
+  const areaCode = computed<PhoneModel['areaCode']>({
+    get: () => model.value.areaCode,
+    set: (value) => {
+      model.value = {
+        ...model.value,
+        areaCode: value,
+      }
+    },
+  })
+
+  const number = computed<PhoneModel['number']>({
+    get: () => model.value.number,
+    set: (value) => {
+      model.value = {
+        ...model.value,
+        number: formatPhoneNumber({
+          callingCode: model.value.callingCode,
+          country: model.value.country,
+          phoneType: model.value.phoneType,
+          value,
+        }),
+      }
+    },
+  })
+
+  const isBrazil = computed(() => model.value.country === 'BR')
 
   const numberPlaceholder = computed(() => {
     if (model.value.callingCode === '+55' && model.value.country === 'BR') {
       return model.value.phoneType === 'Landline'
-        ? '0000-00-00'
-        : '00000-00-00'
+        ? '0000-0000'
+        : '00000-0000'
     }
 
     return ''
   })
 
-  /* ===== Sync country <-> callingCode ===== */
+  const numberMaxLength = computed(() =>
+    getPhoneNumberMaxLength(
+      model.value.callingCode,
+      model.value.country,
+      model.value.phoneType,
+    ),
+  )
+
   let syncing = false
 
   watch(
     () => model.value.country,
-    (country) => {
+    (value) => {
       if (syncing) return
+
       syncing = true
 
-      // País define o DDI
-      model.value.callingCode = getCallingCodeByCountry(country)
+      model.value = {
+        ...model.value,
+        callingCode: getCallingCodeByCountry(value),
+      }
 
       syncing = false
     }
@@ -66,13 +125,19 @@
 
   watch(
     () => model.value.callingCode,
-    (callingCode) => {
+    (value) => {
       if (syncing) return
+
       syncing = true
 
-      // DDI define (ou resolve) país
-      const resolved = resolveCountryFromCallingCode(callingCode, model.value.country)
-      if (resolved) model.value.country = resolved
+      const resolvedCountry = resolveCountryFromCallingCode(value, model.value.country)
+
+      if (resolvedCountry) {
+        model.value = {
+          ...model.value,
+          country: resolvedCountry,
+        }
+      }
 
       syncing = false
     }
@@ -81,124 +146,194 @@
   watch(
     () => model.value.phoneType,
     () => {
-      model.value.number = ''
+      model.value = {
+        ...model.value,
+        number: '',
+      }
     }
   )
-
-  /* ===== Helpers ===== */
-
-  const isBrazil = computed(() => model.value.country === 'BR')
-
-  function onNumberInput(v: string) {
-    model.value.number = formatPhoneNumber({
-      callingCode: model.value.callingCode,
-      country: model.value.country,
-      phoneType: model.value.phoneType,
-      value: v,
-    })
-  }
-
-  const numberMaxLength = computed(() =>
-    getPhoneNumberMaxLength(
-      model.value.callingCode,
-      model.value.country,
-      model.value.phoneType,
-    ),
-  )</script>
+</script>
 
 <template>
-  <v-row>
+  <div class="user-phones-field">
+    <div class="phone-grid">
+      <!-- DDI -->
+      <label class="phone-field">
+        <span>DDI</span>
 
-    <!-- DDI -->
-    <v-col cols="12" md="2">
-      <v-select v-model="model.callingCode"
-                label="DDI"
-                :items="callingCodeItems"
-                item-title="title"
-                item-value="value"
-                :rules="internalRules"
-                variant="outlined"
-                rounded="lg"
-                density="comfortable" />
-    </v-col>
+        <div class="phone-select-wrapper">
+          <select v-model="callingCode">
+            <option v-for="item in callingCodeItems"
+                    :key="item.value"
+                    :value="item.value">
+              {{ item.title }}
+            </option>
+          </select>
+        </div>
+      </label>
 
-    <!-- País -->
-    <v-col cols="12" md="2">
-      <v-select v-model="model.country"
-                label="País"
-                :items="countryItems"
-                item-title="title"
-                item-value="value"
-                :rules="internalRules"
-                variant="outlined"
-                rounded="lg"
-                density="comfortable">
-        <template #selection="{ item }">
-          <v-img :src="item.raw.flagSrc"
-                 :alt="item.raw.alt"
-                 width="24"
-                 height="16"
-                 cover
-                 style="display:inline-block" />
-        </template>
+      <!-- País -->
+      <label class="phone-field">
+        <span>País</span>
 
-        <template #item="{ props, item }">
-          <v-list-item v-bind="props">
-            <template #prepend>
-              <v-img :src="item.raw.flagSrc"
-                     :alt="item.raw.alt"
-                     width="24"
-                     height="16"
-                     cover />
-            </template>
-          </v-list-item>
-        </template>
-      </v-select>
-    </v-col>
+        <div class="phone-select-wrapper">
+          <select v-model="country">
+            <option v-for="item in countryItems"
+                    :key="item.value"
+                    :value="item.value">
+              {{ item.title }}
+            </option>
+          </select>
+        </div>
+      </label>
 
-    <!-- Tipo -->
-    <v-col cols="12" md="2">
-      <v-select v-model="model.phoneType"
-                label="Tipo"
-                :items="phoneTypeItems"
-                item-title="title"
-                item-value="value"
-                variant="outlined"
-                rounded="lg"
-                density="comfortable" />
-    </v-col>
+      <!-- Tipo -->
+      <label class="phone-field">
+        <span>Tipo</span>
 
-    <!-- DDD -->
-    <v-col cols="12" md="2">
-      <v-select v-if="isBrazil"
-                v-model="model.areaCode"
-                label="DDD"
-                :items="brazilAreaCodes"
-                variant="outlined"
-                rounded="lg"
-                density="comfortable"
-                clearable />
-      <v-text-field v-else
-                    v-model="model.areaCode"
-                    label="Área"
-                    variant="outlined"
-                    rounded="lg"
-                    density="comfortable"
-                    clearable />
-    </v-col>
+        <div class="phone-select-wrapper">
+          <select v-model="phoneType">
+            <option v-for="item in phoneTypeItems"
+                    :key="item.value"
+                    :value="item.value">
+              {{ item.title }}
+            </option>
+          </select>
+        </div>
+      </label>
 
-    <!-- Número -->
-    <v-col cols="12" md="4">
-      <v-text-field v-model="model.number"
-                    label="Número"
-                    variant="outlined"
-                    rounded="lg"
-                    density="comfortable"
-                    clearable
-                    :placeholder="numberPlaceholder"
-                    :maxlength="numberMaxLength"
-                    @update:model-value="onNumberInput" />
-    </v-col>
+      <!-- DDD / Área -->
+      <label class="phone-field">
+        <span>{{ isBrazil ? 'DDD' : 'Área' }}</span>
 
-  </v-row>
+        <div v-if="isBrazil" class="phone-select-wrapper">
+          <select v-model="areaCode">
+            <option value="">
+              Selecione
+            </option>
+
+            <option v-for="item in brazilAreaCodes"
+                    :key="item"
+                    :value="item">
+              {{ item }}
+            </option>
+          </select>
+        </div>
+
+        <input v-else
+               v-model="areaCode"
+               type="text"
+               placeholder="Área" />
+      </label>
+
+      <!-- Número -->
+      <label class="phone-field phone-field--number">
+        <span>Número</span>
+
+        <input v-model="number"
+               class="phone-number-input"
+               type="text"
+               :placeholder="numberPlaceholder" />
+      </label>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+  .user-phones-field {
+    width: 100%;
+    padding: 16px 0 4px;
+  }
+
+  .phone-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+  }
+
+  .phone-field {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .phone-field--number {
+    grid-column: span 4;
+  }
+
+  .phone-field span {
+    color: #424844;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .phone-field input {
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1px solid rgba(24, 55, 41, 0.42);
+    border-radius: 12px;
+    
+    color: #183729;
+    outline: none;
+    font-size: 1rem;
+  }
+
+  .phone-select-wrapper {
+    width: 100%;
+    min-height: 56px;
+    border: 1px solid rgba(24, 55, 41, 0.42);
+    border-radius: 12px;
+    background-color: #ffffff;
+    overflow: hidden;
+  }
+
+    .phone-select-wrapper select {
+      width: 100%;
+      min-height: 56px;
+      padding: 0 40px 0 16px;
+      border: none;
+      background-color: #ffffff;
+      color: #183729;
+      outline: none;
+      font-size: 1rem;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+      .phone-select-wrapper select option {
+        background-color: #ffffff;
+        color: #183729;
+      }
+
+  .phone-field input:focus {
+    border-color: #183729;
+  }
+
+  .phone-select-wrapper:focus-within {
+    border-color: #183729;
+  }
+
+  @media (max-width: 960px) {
+    .phone-field,
+    .phone-field--number {
+      grid-column: span 6;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .phone-field,
+    .phone-field--number {
+      grid-column: span 12;
+    }
+  }
+
+  .phone-number-input {
+    background-color: #ffffff !important;
+  }
+</style>

@@ -342,9 +342,8 @@
                   <!-- CONTATO -->
                   <v-expansion-panel class="panel" value="contact">
                     <v-expansion-panel-title class="section-title">
-                      Contato
+                      Dados de Contato
                     </v-expansion-panel-title>
-
                     <v-expansion-panel-text>
                       <UserPhonesField v-model="form.phones"
                                        :multiple="false"

@@ -14,7 +14,7 @@ export {
   GenderSelect,
   CpfField,
   UserPhonesField,
-  FullNameField
+  FullNameField,
 }
 
 export const inputs = {
@@ -23,5 +23,5 @@ export const inputs = {
   GenderSelect,
   CpfField,
   UserPhonesField,
-  FullNameField
+  FullNameField,
 } as const
