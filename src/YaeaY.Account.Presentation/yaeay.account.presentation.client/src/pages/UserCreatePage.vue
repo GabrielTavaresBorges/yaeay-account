@@ -4,7 +4,7 @@
   import { computed, reactive, ref, watch, nextTick } from 'vue'
   import {
     mdiAccountCircleOutline,
-    mdiInformationOutline,    
+    mdiInformationOutline,
     mdiHelpCircleOutline,
     mdiShieldLockOutline,
     mdiCheckCircle,
@@ -15,7 +15,13 @@
   import { rules } from '@/validators'
   import AppTopbar from '@/components/layout/AppTopbar.vue'
   import AppFooter from '@/components/layout/AppFooter.vue'
-  import { EmailField, PasswordField, GenderSelect, UserPhonesField } from '@/components/inputs'  
+  import {
+    EmailField,
+    PasswordField,
+    GenderSelect,
+    UserPhonesField,
+    FullNameField
+  } from '@/components/inputs'
   import type { Gender } from '@/constants/gender'
   import type { PhoneModel } from '@/models/phone-model'
   import { PasswordRequirements } from '@/components/feedback'
@@ -34,14 +40,14 @@
   ])
 
   /* panels */
-  const openedPanels = ref<string[]>(['accessData', 'personalData'])
+  const openedPanels = ref<string[]>(['accessData'])
 
   /* refs */
   const formRef = ref<VForm | null>(null)
   const loading = ref(false)
 
   /* password */
-  
+
   /* snackbar (visual) */
   const snackbar = reactive({ show: false, text: '' })
   function notify(text: string) {
@@ -209,8 +215,8 @@
   <v-main class="page">
     <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
 
-    <v-container class="py-6 py-md-10">
-      <v-row justify="center" align="start">
+    <v-container fluid class="user-create-container py-6 py-md-10">
+      <v-row class="user-create-row" justify="center" align="start">
         <v-col cols="12" class="user-create-column">
 
           <!-- ALERT -->
@@ -249,24 +255,18 @@
                                   :rules="rules.email"
                                   label="Endereço de e-mail"
                                   placeholder="exemplo@email.com"
-                                  class="mb-6 access-field"
-                                  variant="solo-filled"
+                                  class="access-field"
                                   density="comfortable"
-                                  rounded="0"
-                                  bg-color="#e2e2e2"
                                   clearable />
 
-                      <v-row>
+                      <v-row class="password-row">
                         <v-col cols="12" md="6">
                           <PasswordField v-model="form.password"
                                          :rules="rules.password"
                                          label="Senha"
                                          placeholder="********"
                                          class="access-field"
-                                         variant="solo-filled"
                                          density="comfortable"
-                                         rounded="0"
-                                         bg-color="#e2e2e2"
                                          clearable>
                           </PasswordField>
                         </v-col>
@@ -277,10 +277,7 @@
                                          placeholder="********"
                                          :match="form.password"
                                          class="access-field"
-                                         variant="solo-filled"
                                          density="comfortable"
-                                         rounded="0"
-                                         bg-color="#e2e2e2"
                                          clearable />
                         </v-col>
                       </v-row>
@@ -292,75 +289,17 @@
                   </v-expansion-panel>
 
                   <!-- DADOS PESSOAIS -->
-                  <!--<v-expansion-panel class="panel" value="personalData">
-    <v-expansion-panel-title class="section-title">
-      Dados pessoais
-    </v-expansion-panel-title>
-
-    <v-expansion-panel-text eager>
-      <v-text-field v-model="form.fullName"
-                    label="Nome completo"
-                    class="mb-4"
-                    variant="outlined"
-                    rounded="lg"
-                    density="comfortable"
-                    clearable
-                    :rules="rules.fullName" />
-      <v-row>
-        <v-col cols="12" sm="7">
-          <v-menu v-model="birthMenu"
-                  :close-on-content-click="false"
-                  location="bottom"
-                  transition="scale-transition"
-                  min-width="auto">
-            <template #activator="{ props }">
-              <v-text-field v-bind="props"
-                            :model-value="birthLabel"
-                            label="Data de nascimento"
-                            readonly
-                            variant="outlined"
-                            rounded="lg"
-                            density="comfortable"
-                            clearable
-                            :rules="birthDateFieldRules"
-                            :prepend-inner-icon="mdiCalendar" />
-            </template>
-
-            <v-card min-width="300" max-width="340" elevation="12" rounded="lg">
-              <v-date-picker :model-value="form.birthDate"
-                             locale="pt-BR"
-                             hide-header
-                             flat
-                             @update:model-value="(val) => { form.birthDate = val; birthMenu.value = false }" />
-            </v-card>
-          </v-menu>
-        </v-col>
-
-        <v-col cols="12" sm="5">
-          <GenderSelect v-model="form.gender" :rules="rules.gender" clearable />
-        </v-col>
-      </v-row>
-    </v-expansion-panel-text>
-  </v-expansion-panel>-->
-                  <!-- DADOS PESSOAIS -->
                   <v-expansion-panel class="panel" value="personalData">
                     <v-expansion-panel-title class="section-title">
                       Dados pessoais
                     </v-expansion-panel-title>
 
                     <v-expansion-panel-text>
-                      <v-text-field v-model="form.fullName"
-                                    label="Nome completo"
-                                    placeholder="Informe seu nome completo"
-                                    class="mb-6 access-field"
-                                    variant="solo-filled"
-                                    density="comfortable"
-                                    rounded="0"
-                                    bg-color="#e2e2e2"
-                                    clearable
-                                    :rules="rules.fullName" />
+                      <FullNameField v-model="form.fullName"
+                                     :rules="rules.fullName"
+                                     class="access-field" />
 
-                      <v-row>
+                      <v-row class="personal-data-row">
                         <v-col cols="12" sm="7">
                           <v-menu v-model="birthMenu"
                                   :close-on-content-click="false"
@@ -373,10 +312,8 @@
                                             label="Data de nascimento"
                                             class="access-field"
                                             readonly
-                                            variant="solo-filled"
+                                            variant="outlined"
                                             density="comfortable"
-                                            rounded="0"
-                                            bg-color="#e2e2e2"
                                             clearable
                                             :rules="birthDateFieldRules"
                                             :prepend-inner-icon="mdiCalendar" />
@@ -396,11 +333,6 @@
                           <GenderSelect v-model="form.gender"
                                         :rules="rules.gender"
                                         label="Gênero"
-                                        class="access-field"
-                                        variant="solo-filled"
-                                        density="comfortable"
-                                        rounded="0"
-                                        bg-color="#e2e2e2"
                                         clearable />
                         </v-col>
                       </v-row>
@@ -447,21 +379,30 @@
 
     <AppFooter copyright="© 2026 YaeaY Software ®"
                text-one="Termos"
-               href-one="#"/>
+               href-one="#" />
 
   </v-main>
 </template>
 
 <style scoped>
+
+  .password-row {
+    margin-top: 24px;
+  }
+
+  .personal-data-row {
+    margin-top: 24px;
+  }
+
   .btn-disabled-dev {
-  background-color: #ba1a1a !important;
-  color: #ffffff !important;
-  font-weight: 650;
-  letter-spacing: 0.2px;
-  text-transform: none;
-  opacity: 1;
-  cursor: not-allowed;
-}
+    background-color: #ba1a1a !important;
+    color: #ffffff !important;
+    font-weight: 650;
+    letter-spacing: 0.2px;
+    text-transform: none;
+    opacity: 1;
+    cursor: not-allowed;
+  }
 
 
   /* ===== PAGE ===== */
@@ -470,6 +411,15 @@
     display: flex;
     flex-direction: column;
     background: #ebebeb;
+  }
+
+  .user-create-container {
+    width: 100%;
+  }
+
+  .user-create-row {
+    width: 100%;
+    margin-inline: 0;
   }
 
   .user-create-column {
@@ -497,7 +447,8 @@
   :deep(.access-field .v-field__input) {
     min-height: 56px;
     color: #183729;
-  }  
+    padding-inline-start: 18px;
+  }
 
   /* ===== CARD ===== */
   .shell {
@@ -545,7 +496,7 @@
     font-size: 1.125rem;
     font-weight: 650;
     letter-spacing: 0.15px;
-  }  
+  }
 
   /* ===== BUTTONS ===== */
   .btn-primary {

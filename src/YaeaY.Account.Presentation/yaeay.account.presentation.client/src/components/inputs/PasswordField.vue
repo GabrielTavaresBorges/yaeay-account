@@ -57,7 +57,10 @@
                 :append-inner-icon="show ? mdiEyeOff : mdiEye"
                 @click:append-inner="show = !show"
                 :rules="mergedRules"
-                :clearable="clearable">
+                :clearable="clearable"
+                variant="outlined"
+                rounded="lg">
+
     <!-- Slot dentro do input (melhor visual) -->
     <template v-if="$slots['append-inner']" #append-inner>
       <slot name="append-inner" />

@@ -5,6 +5,7 @@ import PasswordField from './PasswordField.vue'
 import GenderSelect from './GenderSelect.vue'
 import CpfField from './CpfField.vue'
 import UserPhonesField from './UserPhonesField.vue'
+import FullNameField from './FullNameField.vue'
 
 
 export {
@@ -12,7 +13,8 @@ export {
   PasswordField,
   GenderSelect,
   CpfField,
-  UserPhonesField
+  UserPhonesField,
+  FullNameField
 }
 
 export const inputs = {
@@ -21,4 +23,5 @@ export const inputs = {
   GenderSelect,
   CpfField,
   UserPhonesField,
+  FullNameField
 } as const
