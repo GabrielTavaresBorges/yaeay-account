@@ -19,9 +19,9 @@
   <v-main class="login-page">
     <section class="login-shell">
       <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
-      <v-container class="login-content">
-        <v-row class="ma-0" align="center" justify="center">
-          <v-col cols="12" lg="11" xl="10">
+      <v-container fluid class="login-content">
+        <v-row class="login-row" justify="center" align="center">
+          <v-col cols="12" class="login-column">
             <div class="login-grid">
               <section class="hero-panel">
                 <div class="hero-panel__content">
@@ -115,12 +115,12 @@
                     </div>
 
                     <!--<v-btn block
-         size="x-large"
-         rounded="pill"
-         class="login-button"
-         :prepend-icon="mdiLogin">
-    Entrar
-  </v-btn>-->
+                           size="x-large"
+                           rounded="pill"
+                           class="login-button"
+                           :prepend-icon="mdiLogin">
+                      Entrar
+                    </v-btn>-->
 
                     <v-btn block
                            size="x-large"
@@ -174,6 +174,11 @@
 </template>
 
 <style scoped>
+  /* =========================================================
+     PAGE / SHELL
+     Estrutura base da página de login
+  ========================================================= */
+
   .login-page {
     min-height: 100vh;
     background: #ebebeb;
@@ -194,14 +199,50 @@
     padding-bottom: 48px;
   }
 
+  .login-row {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  /*
+    Área total do conteúdo.
+    Aumentei de 800px para 1040px para o texto respirar mais à esquerda,
+    sem deslocar demais o form.
+  */
+  .login-column {
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+  }
+
+  /*
+    Layout desktop:
+    - Texto/hero à esquerda
+    - Form à direita
+    - Conjunto centralizado na tela
+  */
   .login-grid {
+    width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 48px;
+    grid-template-columns: minmax(320px, 380px) minmax(420px, 520px);
+    gap: 64px;
     align-items: center;
   }
 
+
+  /* =========================================================
+     HERO / TEXTO DA ESQUERDA
+     YaeaY Account + slogan + chamada para criar conta
+  ========================================================= */
+
+  .hero-panel {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+
   .hero-panel__content {
+    width: 100%;
     max-width: 560px;
   }
 
@@ -261,12 +302,20 @@
     color: #ebebeb;
     text-transform: uppercase;
     letter-spacing: 0.16em;
-    font-weight: 800;   
+    font-weight: 800;
     padding-inline: 28px;
   }
 
+
+  /* =========================================================
+     FORM WRAPPER
+     Container do card de login + efeitos visuais
+  ========================================================= */
+
   .form-panel-wrapper {
     position: relative;
+    width: 100%;
+    max-width: 520px;
   }
 
   .form-panel__blur {
@@ -292,9 +341,16 @@
     background: rgba(62, 86, 79, 0.12);
   }
 
+
+  /* =========================================================
+     FORM CARD
+     Card principal de acesso
+  ========================================================= */
+
   .form-panel {
     position: relative;
     z-index: 1;
+    width: 100%;
     background: rgba(255, 255, 255, 0.96);
     padding: 36px;
     box-shadow: 0 32px 80px rgba(24, 55, 41, 0.08);
@@ -314,6 +370,12 @@
     flex-direction: column;
     gap: 20px;
   }
+
+
+  /* =========================================================
+     FORM FIELDS
+     Labels e inputs do formulário de login
+  ========================================================= */
 
   .field-block {
     display: flex;
@@ -355,6 +417,12 @@
     display: none;
   }
 
+
+  /* =========================================================
+     FORM OPTIONS
+     Lembrar-me + Esqueci minha senha
+  ========================================================= */
+
   .form-panel__options {
     display: flex;
     align-items: center;
@@ -382,6 +450,12 @@
     letter-spacing: 0;
   }
 
+
+  /* =========================================================
+     BUTTONS
+     Botão de login e botão de criar conta
+  ========================================================= */
+
   .login-button {
     margin-top: 4px;
     background: #183729;
@@ -391,6 +465,23 @@
     letter-spacing: 0.02em;
     box-shadow: 0 14px 28px rgba(24, 55, 41, 0.18);
   }
+
+  .login-button-disabled-dev {
+    margin-top: 4px;
+    background: #8f8f8f !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+
+  /* =========================================================
+     MOBILE CTA
+     Chamada para criar conta exibida em telas menores
+  ========================================================= */
 
   .mobile-cta {
     margin-top: 32px;
@@ -414,7 +505,15 @@
     border-radius: 0;
   }
 
+
+  /* =========================================================
+     TECH STRIPE
+     Barrinhas decorativas abaixo do card
+  ========================================================= */
+
   .tech-stripe {
+    width: 100%;
+    max-width: 520px;
     display: flex;
     gap: 8px;
     margin-top: 20px;
@@ -441,6 +540,12 @@
     background: #bfc8c4;
   }
 
+
+  /* =========================================================
+     VISIBILITY HELPERS
+     Controle de elementos desktop/mobile
+  ========================================================= */
+
   .mobile-only {
     display: none;
   }
@@ -449,9 +554,19 @@
     display: block;
   }
 
+
+  /* =========================================================
+     RESPONSIVE - NOTEBOOKS / TELAS MÉDIAS
+  ========================================================= */
+
   @media (max-width: 1264px) {
+    .login-column {
+      max-width: 960px;
+    }
+
     .login-grid {
-      gap: 32px;
+      grid-template-columns: minmax(300px, 360px) minmax(400px, 500px);
+      gap: 40px;
     }
 
     .hero-panel__content {
@@ -459,28 +574,40 @@
     }
   }
 
+
+  /* =========================================================
+     RESPONSIVE - TABLET / PORTRAIT
+     Aqui vira coluna única igual ao UserCreatePage
+  ========================================================= */
+
   @media (max-width: 960px), (orientation: portrait) {
     .login-content {
       padding-top: 24px;
       padding-bottom: 32px;
     }
 
+    .login-column {
+      max-width: 760px;
+    }
+
     .login-grid {
+      display: grid;
       grid-template-columns: 1fr;
       justify-items: center;
+      gap: 32px;
     }
 
     .hero-panel {
-      order: 1;
       width: 100%;
       display: flex;
       justify-content: center;
+      order: 1;
     }
 
     .hero-panel__content {
       width: 100%;
       max-width: 720px;
-      margin: 0 auto;
+      margin-inline: auto;
       text-align: center;
     }
 
@@ -499,6 +626,7 @@
     .form-panel-wrapper {
       order: 2;
       width: 100%;
+      max-width: 720px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -537,7 +665,12 @@
     }
   }
 
-  @media (max-width: 600px), (orientation: portrait) {
+
+  /* =========================================================
+     RESPONSIVE - MOBILE
+  ========================================================= */
+
+  @media (max-width: 600px) {
     .form-panel {
       padding: 24px;
     }
