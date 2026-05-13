@@ -61,11 +61,15 @@
   })
 
   const areaCode = computed<PhoneModel['areaCode']>({
-    get: () => model.value.areaCode,
+    get: () => {
+      if (model.value.country !== 'BR') return ''
+
+      return model.value.areaCode
+    },
     set: (value) => {
       model.value = {
         ...model.value,
-        areaCode: value,
+        areaCode: model.value.country === 'BR' ? value : '',
       }
     },
   })
@@ -86,6 +90,10 @@
   })
 
   const isBrazil = computed(() => model.value.country === 'BR')
+
+  const selectedCountryItem = computed(() =>
+    countryItems.find((item) => item.value === model.value.country),
+  )
 
   const numberPlaceholder = computed(() => {
     if (model.value.callingCode === '+55' && model.value.country === 'BR') {
@@ -117,10 +125,11 @@
       model.value = {
         ...model.value,
         callingCode: getCallingCodeByCountry(value),
+        areaCode: value === 'BR' ? model.value.areaCode : '',
       }
 
       syncing = false
-    }
+    },
   )
 
   watch(
@@ -136,11 +145,12 @@
         model.value = {
           ...model.value,
           country: resolvedCountry,
+          areaCode: resolvedCountry === 'BR' ? model.value.areaCode : '',
         }
       }
 
       syncing = false
-    }
+    },
   )
 
   watch(
@@ -150,7 +160,7 @@
         ...model.value,
         number: '',
       }
-    }
+    },
   )
 </script>
 
@@ -173,19 +183,32 @@
       </label>
 
       <!-- País -->
-      <label class="phone-field">
+      <!-- País -->
+      <div class="phone-field phone-field--country">
         <span>País</span>
 
-        <div class="phone-select-wrapper">
-          <select v-model="country">
-            <option v-for="item in countryItems"
-                    :key="item.value"
-                    :value="item.value">
-              {{ item.title }}
-            </option>
-          </select>
-        </div>
-      </label>
+        <v-select v-model="country"
+                  :items="countryItems"
+                  item-title="title"
+                  item-value="value"
+                  variant="outlined"
+                  rounded="lg"
+                  density="comfortable"
+                  hide-details
+                  class="phone-country-select">
+          <template #selection>
+            <div class="country-selection country-selection--flag-only">
+              <v-img v-if="selectedCountryItem"
+                     :src="selectedCountryItem.flagSrc"
+                     :alt="selectedCountryItem.alt"
+                     width="24"
+                     height="16"
+                     cover />
+            </div>
+          </template>
+        </v-select>
+      </div>
+
 
       <!-- Tipo -->
       <label class="phone-field">
@@ -233,6 +256,7 @@
         <input v-model="number"
                class="phone-number-input"
                type="text"
+               :maxlength="numberMaxLength"
                :placeholder="numberPlaceholder" />
       </label>
     </div>
@@ -262,7 +286,7 @@
     grid-column: span 4;
   }
 
-  .phone-field span {
+  .phone-field > span {
     color: #424844;
     font-size: 0.72rem;
     font-weight: 700;
@@ -276,7 +300,7 @@
     padding: 0 16px;
     border: 1px solid rgba(24, 55, 41, 0.42);
     border-radius: 12px;
-    
+    background-color: #ffffff;
     color: #183729;
     outline: none;
     font-size: 1rem;
@@ -319,6 +343,55 @@
     border-color: #183729;
   }
 
+  .phone-country-select {
+    width: 100%;
+  }
+
+  :deep(.phone-country-select .v-field) {
+    min-height: 56px;
+    background-color: #ffffff;
+    color: #183729;
+    border-radius: 12px;
+  }
+
+  :deep(.phone-country-select .v-field__input) {
+    min-height: 56px;
+    color: #183729;
+  }
+
+  :deep(.phone-country-select .v-field__outline) {
+    color: rgba(24, 55, 41, 0.42);
+  }
+
+  :deep(.phone-country-select .v-label) {
+    color: #424844;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .country-selection {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #183729;
+    width: 100%;
+    white-space: nowrap;
+  }
+
+    .country-selection span {
+      color: #183729;
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+  .phone-number-input {
+    background-color: #ffffff !important;
+  }
+
   @media (max-width: 960px) {
     .phone-field,
     .phone-field--number {
@@ -331,9 +404,5 @@
     .phone-field--number {
       grid-column: span 12;
     }
-  }
-
-  .phone-number-input {
-    background-color: #ffffff !important;
   }
 </style>

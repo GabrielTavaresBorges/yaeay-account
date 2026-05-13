@@ -129,7 +129,7 @@
                            :prepend-icon="mdiLogin"
                            type="button"
                            disabled>
-                      Entrar - DESABILITADO (Desenv em andamento)
+                      Entrar - DESABILITADO
                     </v-btn>
                   </v-form>
 

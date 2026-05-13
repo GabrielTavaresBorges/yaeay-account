@@ -3,7 +3,7 @@
 <script setup lang="ts">
   import { computed, reactive, ref, watch, nextTick } from 'vue'
   import {
-    mdiAccountCircleOutline,
+    mdiAccountPlusOutline,
     mdiInformationOutline,
     mdiHelpCircleOutline,
     mdiShieldLockOutline,
@@ -25,6 +25,7 @@
   import type { Gender } from '@/constants/gender'
   import type { PhoneModel } from '@/models/phone-model'
   import { PasswordRequirements } from '@/components/feedback'
+  import { countryItems } from '@/constants/country'
 
 
   type VForm = { validate: () => Promise<{ valid: boolean }> }
@@ -226,7 +227,7 @@
                    rounded="lg"
                    border="start"
                    :icon="mdiInformationOutline">
-            Não compartilhamos suas informações com terceiros.
+          Suas informações são protegidas e não serão compartilhadas com terceiros sem sua autorização.
           </v-alert>
 
           <!-- CARD -->
@@ -235,9 +236,19 @@
             <div class="form-avatar">
               <v-avatar size="96"
                         class="form-avatar__circle">
-                <v-icon :icon="mdiAccountCircleOutline"
+                <v-icon :icon="mdiAccountPlusOutline"
                         size="52" />
               </v-avatar>
+            </div>
+
+            <div class="form-heading">
+              <h1 class="form-heading__title">
+                Crie sua conta
+              </h1>
+
+              <p class="form-heading__subtitle">
+                Informe seus dados para criar seu acesso ao YaeaY Account.
+              </p>
             </div>
 
             <!-- FORM -->
@@ -328,7 +339,6 @@
                             </v-card>
                           </v-menu>
                         </v-col>
-
                         <v-col cols="12" sm="5">
                           <GenderSelect v-model="form.gender"
                                         :rules="rules.gender"
@@ -359,7 +369,7 @@
                        class="btn-disabled-dev mt-2"
                        type="button"
                        disabled>
-                  Criar conta - DESABILITADO (Desenvolvimento em andamento)
+                  Criar conta - DESABILITADO
                 </v-btn>
 
                 <!-- SNACKBAR -->
@@ -384,6 +394,28 @@
 </template>
 
 <style scoped>
+  .form-heading {
+    margin: -12px auto 8px;
+    padding-inline: 24px;
+    text-align: center;
+  }
+  .form-heading__title {
+    margin: 0;
+    color: #183729;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .form-heading__subtitle {
+    max-width: 460px;
+    margin: 10px auto 0;
+    color: #3e564f;
+    font-size: 0.98rem;
+    font-weight: 500;
+    line-height: 1.55;
+  }
 
   .password-row {
     margin-top: 24px;
