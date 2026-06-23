@@ -1,4 +1,4 @@
-﻿namespace YaeaY.Account.Infrastructure.Identity.Contants;
+﻿namespace YaeaY.Account.Infrastructure.Identity.Constants;
 
 public static class Roles
 {
