@@ -1,8 +1,8 @@
-<!-- src/components/inputs/EmailField.vue -->
+<!-- src/components/inputs/FullNameField.vue -->
 
 <script setup lang="ts">
   import { computed, useAttrs } from 'vue'
-  import { mdiEmail } from '@mdi/js'
+  import { mdiAccountOutline } from '@mdi/js'
 
   type Rule = (value: any) => true | string
 
@@ -17,8 +17,8 @@
     }>(),
     {
       modelValue: '',
-      label: 'Email',
-      placeholder: 'ex: nome@dominio.com',
+      label: 'Nome completo',
+      placeholder: 'Informe seu nome completo',
       clearable: true,
       trimOnBlur: true,
     }
@@ -44,45 +44,44 @@
 <template>
   <v-text-field v-bind="attrs"
                 v-model="model"
-                class="email-field"
+                class="full-name-field"
                 :label="label"
                 :placeholder="placeholder"
                 :rules="rules"
                 :clearable="clearable"
-                :prepend-inner-icon="mdiEmail"
-                type="email"
-                inputmode="email"
-                autocomplete="email"
+                :prepend-inner-icon="mdiAccountOutline"
+                type="text"
+                autocomplete="name"
                 spellcheck="false"
-                autocapitalize="none"
+                autocapitalize="words"
                 @blur="onBlur"
                 variant="outlined"
                 rounded="lg" />
 </template>
 
 <style scoped>
-  :deep(.email-field .v-field) {
+  :deep(.full-name-field .v-field) {
     background-color: #e2e2e2;
   }
 
-  :deep(.email-field .v-field__overlay) {
+  :deep(.full-name-field .v-field__overlay) {
     background-color: transparent;
   }
 
-  :deep(.email-field .v-field__input) {
+  :deep(.full-name-field .v-field__input) {
     color: #183729;
   }
 
-  :deep(.email-field .v-field__prepend-inner),
-  :deep(.email-field .v-field__append-inner),
-  :deep(.email-field .v-field__clearable) {
+  :deep(.full-name-field .v-field__prepend-inner),
+  :deep(.full-name-field .v-field__append-inner),
+  :deep(.full-name-field .v-field__clearable) {
     color: #183729;
   }
 
-  :deep(.email-field input:-webkit-autofill),
-  :deep(.email-field input:-webkit-autofill:hover),
-  :deep(.email-field input:-webkit-autofill:focus),
-  :deep(.email-field input:-webkit-autofill:active) {
+  :deep(.full-name-field input:-webkit-autofill),
+  :deep(.full-name-field input:-webkit-autofill:hover),
+  :deep(.full-name-field input:-webkit-autofill:focus),
+  :deep(.full-name-field input:-webkit-autofill:active) {
     -webkit-box-shadow: 0 0 0 1000px #e2e2e2 inset;
     -webkit-text-fill-color: #183729;
     caret-color: #183729;

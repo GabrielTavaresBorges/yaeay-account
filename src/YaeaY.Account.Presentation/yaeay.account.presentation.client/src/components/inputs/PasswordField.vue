@@ -50,13 +50,17 @@
 <template>
   <v-text-field v-bind="attrs"
                 v-model="model"
+                class="password-field"
                 :label="label"
                 :type="show ? 'text' : 'password'"
                 :prepend-inner-icon="mdiLock"
                 :append-inner-icon="show ? mdiEyeOff : mdiEye"
                 @click:append-inner="show = !show"
                 :rules="mergedRules"
-                :clearable="clearable">
+                :clearable="clearable"
+                variant="outlined"
+                rounded="lg">
+
     <!-- Slot dentro do input (melhor visual) -->
     <template v-if="$slots['append-inner']" #append-inner>
       <slot name="append-inner" />
@@ -68,3 +72,49 @@
     </template>
   </v-text-field>
 </template>
+
+<style scoped>
+  :deep(.password-field .v-field) {
+    background-color: #e2e2e2;
+  }
+
+  :deep(.password-field .v-field__overlay) {
+    background-color: transparent;
+  }
+
+  :deep(.password-field .v-field__input) {
+    color: #183729;
+  }
+
+  :deep(.password-field .v-field__prepend-inner),
+  :deep(.password-field .v-field__append-inner),
+  :deep(.password-field .v-field__clearable) {
+    color: #183729;
+  }
+
+  :global(.password-field input[type='password']::-ms-reveal),
+  :global(.password-field input[type='password']::-ms-clear) {
+    display: none !important;
+    width: 0;
+    height: 0;
+  }
+
+  :global(.password-field input[type='password']::-webkit-credentials-auto-fill-button) {
+    visibility: hidden !important;
+    display: none !important;
+    pointer-events: none;
+  }
+
+
+  :deep(.password-field input:-webkit-autofill),
+  :deep(.password-field input:-webkit-autofill:hover),
+  :deep(.password-field input:-webkit-autofill:focus),
+  :deep(.password-field input:-webkit-autofill:active) {
+    background-color: transparent !important;
+    -webkit-box-shadow: 0 0 0 1000px #e2e2e2 inset !important;
+    -webkit-text-fill-color: #183729 !important;
+    caret-color: #183729;
+    font-weight: 400;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+</style>

@@ -3,25 +3,30 @@
 <script setup lang="ts">
   import { computed, reactive, ref, watch, nextTick } from 'vue'
   import {
-    mdiAccountCircleOutline,
+    mdiAccountPlusOutline,
     mdiInformationOutline,
-    mdiEmail,
-    mdiLock,
-    mdiEye,
-    mdiEyeOff,
     mdiHelpCircleOutline,
     mdiShieldLockOutline,
     mdiCheckCircle,
-    mdiCircleOutline,
     mdiCalendar
   } from '@mdi/js'
 
   import { createUser } from '@/services/users/users-service'
   import { rules } from '@/validators'
-  import { EmailField, PasswordField, GenderSelect, UserPhonesField } from '@/components/inputs'
-  import { PasswordHelpDialog } from '@/components/dialogs'
+  import AppTopbar from '@/components/layout/AppTopbar.vue'
+  import AppFooter from '@/components/layout/AppFooter.vue'
+  import {
+    EmailField,
+    PasswordField,
+    GenderSelect,
+    UserPhonesField,
+    FullNameField
+  } from '@/components/inputs'
   import type { Gender } from '@/constants/gender'
   import type { PhoneModel } from '@/models/phone-model'
+  import { PasswordRequirements } from '@/components/feedback'
+  import { countryItems } from '@/constants/country'
+
 
   type VForm = { validate: () => Promise<{ valid: boolean }> }
 
@@ -43,9 +48,6 @@
   const loading = ref(false)
 
   /* password */
-  const showPassword = ref(false)
-  const showConfirmPassword = ref(false)
-  const passwordHelp = ref(false)
 
   /* snackbar (visual) */
   const snackbar = reactive({ show: false, text: '' })
@@ -212,38 +214,45 @@
 
 <template>
   <v-main class="page">
-    <v-container class="fill-height py-6 py-md-10">
-      <v-row justify="center" align="start">
-        <v-col cols="12" md="10" lg="9" xl="8">
-          <!-- BRAND -->
-          <div class="text-center brand">
-            <h1 class="brand-title">
-              <span class="brand-one">One</span><span class="brand-account">Account</span>
-            </h1>
-            <p class="brand-lead mt-3">
-              Crie seu usuário para acessar o ecossistema com uma única conta.
-            </p>
-          </div>
+    <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
+
+    <v-container fluid class="user-create-container py-6 py-md-10">
+      <v-row class="user-create-row" justify="center" align="start">
+        <v-col cols="12" class="user-create-column">
 
           <!-- ALERT -->
-          <v-alert class="mb-6 info-alert" variant="tonal" rounded="lg" border="start">
-            <template #prepend>
-              <v-icon :icon="mdiInformationOutline" />
-            </template>
-            Não compartilhamos suas informações com terceiros.
+          <v-alert class="privacy-alert"
+                   color="blue"
+                   variant="tonal"
+                   rounded="lg"
+                   border="start"
+                   :icon="mdiInformationOutline">
+          Suas informações são protegidas e não serão compartilhadas com terceiros sem sua autorização.
           </v-alert>
 
           <!-- CARD -->
           <v-card class="shell" rounded="xl" elevation="14">
             <!-- HEADER -->
-            <div class="card-header">
-              <v-icon :icon="mdiAccountCircleOutline" size="56" class="mb-2" />
-              <h2 class="card-title">Criar usuário</h2>
-              <p class="card-subtitle">Organize seus dados por seção e finalize ao final.</p>
+            <div class="form-avatar">
+              <v-avatar size="96"
+                        class="form-avatar__circle">
+                <v-icon :icon="mdiAccountPlusOutline"
+                        size="52" />
+              </v-avatar>
+            </div>
+
+            <div class="form-heading">
+              <h1 class="form-heading__title">
+                Crie sua conta
+              </h1>
+
+              <p class="form-heading__subtitle">
+                Informe seus dados para criar seu acesso ao YaeaY Account.
+              </p>
             </div>
 
             <!-- FORM -->
-            <div class="pa-6 pa-md-8">
+            <div class="pa-6 pa-md-8 pt-0">
               <v-form ref="formRef" @submit.prevent="createAccount">
                 <v-expansion-panels v-model="openedPanels" multiple class="mb-6 panels">
                   <!-- DADOS DE ACESSO -->
@@ -255,39 +264,38 @@
                     <v-expansion-panel-text>
                       <EmailField v-model="form.email"
                                   :rules="rules.email"
-                                  class="mb-4"
-                                  variant="outlined"
-                                  rounded="lg"
+                                  label="Endereço de e-mail"
+                                  placeholder="exemplo@email.com"
+                                  class="access-field"
                                   density="comfortable"
                                   clearable />
 
-                      <PasswordField v-model="form.password"
-                                     :rules="rules.password"
-                                     label="Senha"
-                                     class="mb-2"
-                                     variant="outlined"
-                                     rounded="lg"
-                                     density="comfortable"
-                                     clearable>
-                        <template #append>
-                          <v-btn variant="text"
-                                 class="help-icon-btn"
-                                 :ripple="false"
-                                 @click="passwordHelp = true"
-                                 aria-label="Ver requisitos de senha">
-                            <v-icon :icon="mdiHelpCircleOutline" size="20" />
-                          </v-btn>
-                        </template>
-                      </PasswordField>
+                      <v-row class="password-row">
+                        <v-col cols="12" md="6">
+                          <PasswordField v-model="form.password"
+                                         :rules="rules.password"
+                                         label="Senha"
+                                         placeholder="********"
+                                         class="access-field"
+                                         density="comfortable"
+                                         clearable>
+                          </PasswordField>
+                        </v-col>
 
-                      <PasswordField v-model="form.confirmPassword"
-                                     label="Confirmar senha"
-                                     :match="form.password"
-                                     class="mb-0"
-                                     variant="outlined"
-                                     rounded="lg"
-                                     density="comfortable"
-                                     clearable />
+                        <v-col cols="12" md="6">
+                          <PasswordField v-model="form.confirmPassword"
+                                         label="Confirmar senha"
+                                         placeholder="********"
+                                         :match="form.password"
+                                         class="access-field"
+                                         density="comfortable"
+                                         clearable />
+                        </v-col>
+                      </v-row>
+
+                      <!-- Requisitos Mínimos -->
+                      <PasswordRequirements :rules="passwordChecklist" />
+
                     </v-expansion-panel-text>
                   </v-expansion-panel>
 
@@ -297,16 +305,12 @@
                       Dados pessoais
                     </v-expansion-panel-title>
 
-                    <v-expansion-panel-text eager>
-                      <v-text-field v-model="form.fullName"
-                                    label="Nome completo"
-                                    class="mb-4"
-                                    variant="outlined"
-                                    rounded="lg"
-                                    density="comfortable"
-                                    clearable
-                                    :rules="rules.fullName" />
-                      <v-row>
+                    <v-expansion-panel-text>
+                      <FullNameField v-model="form.fullName"
+                                     :rules="rules.fullName"
+                                     class="access-field" />
+
+                      <v-row class="personal-data-row">
                         <v-col cols="12" sm="7">
                           <v-menu v-model="birthMenu"
                                   :close-on-content-click="false"
@@ -317,9 +321,9 @@
                               <v-text-field v-bind="props"
                                             :model-value="birthLabel"
                                             label="Data de nascimento"
+                                            class="access-field"
                                             readonly
                                             variant="outlined"
-                                            rounded="lg"
                                             density="comfortable"
                                             clearable
                                             :rules="birthDateFieldRules"
@@ -331,13 +335,15 @@
                                              locale="pt-BR"
                                              hide-header
                                              flat
-                                             @update:model-value="(val) => { form.birthDate = val; birthMenu.value = false }" />
+                                             @update:model-value="(val) => { form.birthDate = val; birthMenu = false }" />
                             </v-card>
                           </v-menu>
                         </v-col>
-
                         <v-col cols="12" sm="5">
-                          <GenderSelect v-model="form.gender" :rules="rules.gender" clearable />
+                          <GenderSelect v-model="form.gender"
+                                        :rules="rules.gender"
+                                        label="Gênero"
+                                        clearable />
                         </v-col>
                       </v-row>
                     </v-expansion-panel-text>
@@ -346,9 +352,8 @@
                   <!-- CONTATO -->
                   <v-expansion-panel class="panel" value="contact">
                     <v-expansion-panel-title class="section-title">
-                      Contato
+                      Dados de Contato
                     </v-expansion-panel-title>
-
                     <v-expansion-panel-text>
                       <UserPhonesField v-model="form.phones"
                                        :multiple="false"
@@ -361,11 +366,10 @@
                 <v-btn block
                        size="large"
                        rounded="pill"
-                       class="btn-primary mt-2"
-                       type="submit"
-                       :loading="loading"
-                       :disabled="loading">
-                  Criar conta
+                       class="btn-disabled-dev mt-2"
+                       type="button"
+                       disabled>
+                  Criar conta - DESABILITADO
                 </v-btn>
 
                 <!-- SNACKBAR -->
@@ -375,65 +379,106 @@
                     <v-btn variant="text" @click="snackbar.show = false">Fechar</v-btn>
                   </template>
                 </v-snackbar>
-
-                <!-- DIALOG AJUDA SENHA -->
-                <PasswordHelpDialog v-model="passwordHelp"
-                                    :rules="passwordChecklist" />
               </v-form>
             </div>
           </v-card>
         </v-col>
       </v-row>
     </v-container>
+
+    <AppFooter copyright="© 2026 YaeaY Software ®"
+               text-one="Termos"
+               href-one="#" />
+
   </v-main>
 </template>
 
 <style scoped>
-  /* ===== PAGE (terra + verde musgo) ===== */
-  .page {
-    background: radial-gradient(1200px 600px at 20% 10%, #ffffff80 0%, transparent 55%), linear-gradient(180deg, #f3e7d3 0%, #ead9bf 100%);
+  .form-heading {
+    margin: -12px auto 8px;
+    padding-inline: 24px;
+    text-align: center;
   }
-
-  /* ===== BRAND ===== */
-  .brand {
-    margin-top: 6px;
-    margin-bottom: 18px;
-  }
-
-  .brand-title {
+  .form-heading__title {
     margin: 0;
-    line-height: 1;
-    letter-spacing: -0.5px;
-    color: #1f1b16;
+    color: #183729;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
-  .brand-one {
-    font-size: 3.2rem;
-    font-weight: 300;
-    font-family: "Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Arial, sans-serif;
+  .form-heading__subtitle {
+    max-width: 460px;
+    margin: 10px auto 0;
+    color: #3e564f;
+    font-size: 0.98rem;
+    font-weight: 500;
+    line-height: 1.55;
   }
 
-  .brand-account {
-    font-size: 3.2rem;
+  .password-row {
+    margin-top: 24px;
+  }
+
+  .personal-data-row {
+    margin-top: 24px;
+  }
+
+  .btn-disabled-dev {
+    background-color: #ba1a1a !important;
+    color: #ffffff !important;
+    font-weight: 650;
+    letter-spacing: 0.2px;
+    text-transform: none;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+
+  /* ===== PAGE ===== */
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #ebebeb;
+  }
+
+  .user-create-container {
+    width: 100%;
+  }
+
+  .user-create-row {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .user-create-column {
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  .access-field {
+    color: #183729;
+  }
+
+  :deep(.access-field .v-field) {
+    box-shadow: none;
+  }
+
+  :deep(.access-field .v-label) {
+    color: #424844;
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 1.2px;
-    margin-left: 2px;
-    font-family: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
-  .brand-lead {
-    max-width: 62ch;
-    margin: 0 auto;
-    color: #3a2f24;
-    opacity: 0.9;
-    font-size: 1.02rem;
-  }
-
-  /* ===== ALERT ===== */
-  .info-alert {
-    border-color: rgba(33, 75, 58, 0.35);
-    color: rgba(58, 47, 36, 0.9);
-    background: rgba(255, 255, 255, 0.55);
+  :deep(.access-field .v-field__input) {
+    min-height: 56px;
+    color: #183729;
+    padding-inline-start: 18px;
   }
 
   /* ===== CARD ===== */
@@ -444,22 +489,23 @@
     backdrop-filter: blur(10px);
   }
 
-  .card-header {
-    padding: 22px 24px;
-    text-align: center;
-    color: #ffffff;
-    background: linear-gradient(145deg, #214b3a 0%, #2e5e45 60%, #3f7a57 120%);
+  .form-avatar {
+    display: flex;
+    justify-content: center;
+    padding-top: 36px;
+    margin-bottom: 32px;
   }
 
-  .card-title {
-    margin: 0;
-    font-weight: 700;
-    letter-spacing: 0.2px;
+  .form-avatar__circle {
+    background: #e8e8e8;
+    color: #3e564f;
+    border: 4px solid #f9f9f9;
+    box-shadow: 0 4px 12px rgba(24, 55, 41, 0.08);
   }
 
-  .card-subtitle {
-    margin: 6px 0 0;
-    opacity: 0.92;
+  /* ===== ALERT ===== */
+  .privacy-alert {
+    margin-bottom: 48px;
   }
 
   /* ===== PANELS ===== */
@@ -477,15 +523,10 @@
 
   .section-title {
     color: #214b3a;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.125rem;
     font-weight: 650;
     letter-spacing: 0.15px;
-  }
-
-  /* help icon button inside input */
-  .help-icon-btn {
-    padding: 0;
-    min-width: auto;
-    color: rgba(33, 75, 58, 0.85);
   }
 
   /* ===== BUTTONS ===== */

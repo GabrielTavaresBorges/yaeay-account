@@ -1,237 +1,687 @@
 <!-- src/pages/LoginPage.vue -->
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { mdiEmail, mdiLock, mdiEye, mdiEyeOff, mdiLogin, mdiHelpCircleOutline } from '@mdi/js'
+  import {
+    mdiEye,
+    mdiEyeOff,
+    mdiLogin,
+    mdiArrowRight,
+    mdiHelpCircleOutline,
+  } from '@mdi/js'
+  import AppTopbar from '@/components/layout/AppTopbar.vue'
+  import AppFooter from '@/components/layout/AppFooter.vue'
 
-  const showPassword = ref(false)
+  const showPassword = ref<boolean>(false)
+  const rememberMe = ref<boolean>(false)
 </script>
 
 <template>
-  <v-main class="page">
-    <v-container class="fill-height py-10">
-      <v-row justify="center" align="start">
-        <v-col cols="12" md="10" lg="9" xl="8">
-          <!-- BRAND -->
-          <div class="text-center brand">
-            <h1 class="brand-title">
-              <span class="brand-one">One</span><span class="brand-account">Account</span>
-            </h1>
+  <v-main class="login-page">
+    <section class="login-shell">
+      <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
+      <v-container fluid class="login-content">
+        <v-row class="login-row" justify="center" align="center">
+          <v-col cols="12" class="login-column">
+            <div class="login-grid">
+              <section class="hero-panel">
+                <div class="hero-panel__content">
+                  <header class="hero-panel__header">
+                    <h1 class="hero-title">
+                      <span class="hero-title__strong">YaeaY</span>
+                      <span class="hero-title__light">Account</span>
+                    </h1>
 
-            <p class="brand-lead mt-3">
-              Uma conta. Um ecossistema. Uma experiência simples, rápida e segura.
-            </p>
-          </div>
+                    <div class="hero-slogan">
+                      <p>Uma conta.</p>
+                      <p>Um ecossistema.</p>
+                      <p class="hero-slogan__highlight">
+                        Uma experiência simples, rápida e segura.
+                      </p>
+                    </div>
+                  </header>
 
-          <!-- CARD -->
-          <v-card class="shell" rounded="xl" elevation="14">
-            <v-row no-gutters>
-              <!-- LOGIN -->
-              <v-col cols="12" md="6" class="left pa-8 pa-md-10">
-                <h2 class="section-title mb-2">Acessar</h2>
-                <p class="section-sub mb-8">
-                  Use seu e-mail e senha para entrar nos serviços integrados do OneAccount.
-                </p>
+                  <div class="hero-cta desktop-only">
+                    <p class="hero-cta__text">
+                      Quer explorar nossos serviços?<br>
+                      Junte-se a nós e simplifique sua rotina.<br>
+                      Crie seu acesso gratuito em poucos segundos.
+                    </p>
 
-                <v-form>
-                  <v-text-field label="Email"
-                                type="email"
-                                :prepend-inner-icon="mdiEmail"
-                                variant="outlined"
-                                rounded="lg"
-                                density="comfortable"
-                                color="white"
-                                base-color="white"
-                                class="mb-5" />
-
-                  <v-text-field label="Senha"
-                                :type="showPassword ? 'text' : 'password'"
-                                :prepend-inner-icon="mdiLock"
-                                :append-inner-icon="showPassword ? mdiEyeOff : mdiEye"
-                                @click:append-inner="showPassword = !showPassword"
-                                variant="outlined"
-                                rounded="lg"
-                                density="comfortable"
-                                color="white"
-                                base-color="white"
-                                class="mb-6" />
-
-                  <!-- BOTÃO ENTRAR (Material 3 "pill") -->
-                  <v-btn block
-                         size="large"
-                         rounded="pill"
-                         class="btn-login">
-                    <v-icon :icon="mdiLogin" start />
-                    Entrar
-                  </v-btn>
-
-                  <!-- LINK AJUDA -->
-                  <div class="text-center mt-4">
-                    <v-btn variant="text"
-                           class="help-btn"
-                           :ripple="false"
-                           to="/forgot-password">
-                      <v-icon :icon="mdiHelpCircleOutline" start size="18" />
-                      Problemas para entrar? Clique aqui.
+                    <v-btn size="large"
+                           variant="flat"
+                           class="hero-cta__button"
+                           :append-icon="mdiArrowRight"
+                           :to="{ name: 'user-create' }">
+                      Criar conta
                     </v-btn>
                   </div>
-                </v-form>
-              </v-col>
-
-              <!-- RIGHT / CTA -->
-              <v-col cols="12"
-                     md="6"
-                     class="right pa-8 pa-md-10 d-flex flex-column justify-center">
-                <h3 class="text-h5 font-weight-medium mb-3">
-                  Quer explorar nossos serviços?
-                </h3>
-
-                <p class="text-body-1 mb-7 right-text">
-                  Junte-se a nós e simplifique sua rotina.<br />
-                  Crie seu acesso gratuito em poucos segundos.
-                </p>
-
-                <div class="d-flex flex-column ga-3">
-                  <!-- BOTÃO CRIAR CONTA -->
-                  <v-btn size="large"
-                         rounded="0"
-                         variant="outlined"
-                         class="btn-register"
-                         :v-btn :to="{ name: 'user-create' }">
-                    Criar conta
-                  </v-btn>
                 </div>
-              </v-col>
-            </v-row>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
+              </section>
+
+              <section class="form-panel-wrapper">
+                <div class="form-panel__blur form-panel__blur--top" />
+                <div class="form-panel__blur form-panel__blur--bottom" />
+
+                <v-card class="form-panel"
+                        rounded="xl"
+                        elevation="0">
+                  <h2 class="form-panel__title">
+                    Acessar
+                  </h2>
+
+                  <v-form class="form-panel__form">
+                    <div class="field-block">
+                      <label class="field-block__label">
+                        Email
+                      </label>
+
+                      <v-text-field placeholder="nome@exemplo.com"
+                                    type="email"
+                                    variant="plain"
+                                    density="comfortable"
+                                    hide-details
+                                    class="login-input" />
+                    </div>
+
+                    <div class="field-block">
+                      <label class="field-block__label">
+                        Senha
+                      </label>
+
+                      <v-text-field :type="showPassword ? 'text' : 'password'"
+                                    placeholder="••••••••"
+                                    variant="plain"
+                                    density="comfortable"
+                                    hide-details
+                                    class="login-input"
+                                    :append-inner-icon="showPassword ? mdiEyeOff : mdiEye"
+                                    @click:append-inner="showPassword = !showPassword" />
+                    </div>
+
+                    <div class="form-panel__options">
+                      <v-checkbox v-model="rememberMe"
+                                  label="Lembrar-me"
+                                  density="compact"
+                                  hide-details
+                                  class="remember-checkbox" />
+
+                      <v-btn variant="text"
+                             class="forgot-link"
+                             :prepend-icon="mdiHelpCircleOutline"
+                             :ripple="false"
+                             to="/forgot-password">
+                        Esqueci minha senha
+                      </v-btn>
+                    </div>
+
+                    <!--<v-btn block
+                           size="x-large"
+                           rounded="pill"
+                           class="login-button"
+                           :prepend-icon="mdiLogin">
+                      Entrar
+                    </v-btn>-->
+
+                    <v-btn block
+                           size="x-large"
+                           rounded="pill"
+                           class="login-button-disabled-dev"
+                           :prepend-icon="mdiLogin"
+                           type="button"
+                           disabled>
+                      Entrar - DESABILITADO
+                    </v-btn>
+                  </v-form>
+
+                  <div class="mobile-cta mobile-only">
+                    <p class="mobile-cta__text">
+                      Quer explorar nossos serviços?<br>
+                      Crie seu acesso gratuito em poucos segundos.
+                    </p>
+
+                    <v-btn block
+                           size="large"
+                           variant="flat"
+                           tile
+                           class="mobile-cta__button"
+                           :to="{ name: 'user-create' }">
+                      Criar conta
+                    </v-btn>
+                  </div>
+                </v-card>
+
+                <div class="tech-stripe" aria-hidden="true">
+                  <span class="tech-stripe__item tech-stripe__item--primary" />
+                  <span class="tech-stripe__item tech-stripe__item--secondary" />
+                  <span class="tech-stripe__item tech-stripe__item--muted" />
+                </div>
+              </section>
+            </div>
+          </v-col>
+        </v-row>
+      </v-container>
+
+      <AppFooter copyright="© 2026 YaeaY Software ®"
+                 text-one="Privacidade"
+                 href-one="#"
+                 text-two="Termos"
+                 href-two="#"
+                 text-three="Segurança"
+                 href-three="#" />
+
+    </section>
   </v-main>
 </template>
 
 <style scoped>
-  /* ===== PALETA (terra + verde musgo) =====
-     Fundo areia:        #F3E7D3
-     Areia mais quente:  #EAD9BF
-     Verde terra escuro: #214B3A
-     Verde folha:        #2E5E45
-     Verde destaque:     #3F7A57
-     Marrom texto:       #3A2F24
-     Café (link):        #5b4636
-  */
+  /* =========================================================
+     PAGE / SHELL
+     Estrutura base da página de login
+  ========================================================= */
 
-  /* ===== PAGE ===== */
-  .page {
-    background: radial-gradient(1200px 600px at 20% 10%, #ffffff80 0%, transparent 55%), linear-gradient(180deg, #f3e7d3 0%, #ead9bf 100%);
+  .login-page {
+    min-height: 100vh;
+    background: #ebebeb;
   }
 
-  /* ===== BRAND ===== */
-  .brand {
-    margin-top: 6px;
-    margin-bottom: 18px;
+  .login-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
-  .brand-title {
-    margin: 0;
-    line-height: 1;
-    letter-spacing: -0.5px;
-    color: #1f1b16;
-  }
-
-  .brand-one {
-    font-size: 3.2rem;
-    font-weight: 300;
-    font-family: "Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Arial, sans-serif;
-  }
-
-  .brand-account {
-    font-size: 3.2rem;
-    font-weight: 700;
-    letter-spacing: 1.2px;
-    margin-left: 2px;
-    font-family: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  }
-
-  .brand-lead {
-    max-width: 58ch;
-    margin: 0 auto;
-    color: #3a2f24;
-    opacity: 0.92;
-    font-size: 1.02rem;
-  }
-
-  /* ===== CARD SHELL ===== */
-  .shell {
-    overflow: hidden;
-    border: 1px solid rgba(31, 27, 22, 0.08);
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(10px);
-  }
-
-  /* ===== LEFT ===== */
-  .left {
-    background: linear-gradient(145deg, #214b3a 0%, #2e5e45 55%, #3f7a57 120%);
-    color: #ffffff;
-  }
-
-  .section-title {
-    font-size: 1.35rem;
-    font-weight: 650;
-    letter-spacing: 0.2px;
-    margin: 0;
-  }
-
-  .section-sub {
-    margin: 0;
-    opacity: 0.92;
-  }
-
-  /* ENTRAR: pill + tipografia mais “Material-ish” */
-  .btn-login {
-    background-color: rgba(0, 0, 0, 0.16);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.38);
-    letter-spacing: 0.35px;
-    font-weight: 650;
-    text-transform: none; /* evita UPPERCASE padrão em alguns temas */
-  }
-
-  /* Link ajuda como botão-texto (garante ícone e mantém visual clean) */
-  .help-btn {
-    display: inline-flex;
+  .login-content {
+    flex: 1;
+    width: 100%;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    color: rgba(207, 229, 255, 0.95);
-    font-weight: 400;
-    font-size: 0.92rem;
-    letter-spacing: 0.15px;
-    font-family: "Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Arial, sans-serif;
-    text-transform: none;
-    padding: 0;
-    min-height: auto;
+    padding-top: 40px;
+    padding-bottom: 48px;
   }
 
-    .help-btn:hover {
-      text-decoration: underline;
-      opaity: 1;
+  .login-row {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  /*
+    Área total do conteúdo.
+    Aumentei de 800px para 1040px para o texto respirar mais à esquerda,
+    sem deslocar demais o form.
+  */
+  .login-column {
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+  }
+
+  /*
+    Layout desktop:
+    - Texto/hero à esquerda
+    - Form à direita
+    - Conjunto centralizado na tela
+  */
+  .login-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(320px, 380px) minmax(420px, 520px);
+    gap: 64px;
+    align-items: center;
+  }
+
+
+  /* =========================================================
+     HERO / TEXTO DA ESQUERDA
+     YaeaY Account + slogan + chamada para criar conta
+  ========================================================= */
+
+  .hero-panel {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .hero-panel__content {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .hero-title {
+    color: #183729;
+    line-height: 0.95;
+    margin: 0;
+  }
+
+  .hero-title__strong {
+    display: block;
+    font-size: clamp(3.8rem, 8vw, 5.8rem);
+    font-weight: 800;
+    letter-spacing: -0.06em;
+  }
+
+  .hero-title__light {
+    display: block;
+    margin-top: 8px;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 300;
+    opacity: 0.82;
+  }
+
+  .hero-slogan {
+    margin-top: 32px;
+    padding-left: 20px;
+    border-left: 4px solid #8ea588;
+    color: #183729;
+    font-size: clamp(1.05rem, 1.8vw, 1.45rem);
+    line-height: 1.45;
+  }
+
+    .hero-slogan p {
+      margin: 0;
     }
 
-  /* ===== RIGHT ===== */
-  .right {
-    background: rgba(255, 255, 255, 0.92);
-    color: #1f1b16;
+  .hero-slogan__highlight {
+    font-weight: 600;
   }
 
-  .right-text {
-    color: rgba(31, 27, 22, 0.85);
+  .hero-cta {
+    margin-top: 56px;
+    max-width: 460px;
   }
 
-  /* CRIAR CONTA: quadrado, clean, borda fina */
-  .btn-register {
-    border-color: rgba(33, 75, 58, 0.55);
-    color: #214b3a;
-    font-weight: 550;
-    letter-spacing: 0.2px;
+  .hero-cta__text {
+    margin: 0 0 24px;
+    color: #3e564f;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    font-weight: 500;
+  }
+
+  .hero-cta__button {
+    background: #183729;
+    color: #ebebeb;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 800;
+    padding-inline: 28px;
+  }
+
+
+  /* =========================================================
+     FORM WRAPPER
+     Container do card de login + efeitos visuais
+  ========================================================= */
+
+  .form-panel-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .form-panel__blur {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(48px);
+    z-index: 0;
+  }
+
+  .form-panel__blur--top {
+    top: -36px;
+    right: -24px;
+    width: 220px;
+    height: 220px;
+    background: rgba(142, 165, 136, 0.24);
+  }
+
+  .form-panel__blur--bottom {
+    left: -16px;
+    bottom: -28px;
+    width: 160px;
+    height: 160px;
+    background: rgba(62, 86, 79, 0.12);
+  }
+
+
+  /* =========================================================
+     FORM CARD
+     Card principal de acesso
+  ========================================================= */
+
+  .form-panel {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.96);
+    padding: 36px;
+    box-shadow: 0 32px 80px rgba(24, 55, 41, 0.08);
+    border: 1px solid rgba(24, 55, 41, 0.06);
+  }
+
+  .form-panel__title {
+    margin: 0 0 28px;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #183729;
+    letter-spacing: -0.03em;
+  }
+
+  .form-panel__form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+
+  /* =========================================================
+     FORM FIELDS
+     Labels e inputs do formulário de login
+  ========================================================= */
+
+  .field-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-block__label {
+    padding-left: 4px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #183729;
+  }
+
+  :deep(.login-input .v-field) {
+    background: #f4f4f4;
+    border-radius: 6px;
+    box-shadow: none;
+    border: none;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  :deep(.login-input .v-field__input) {
+    min-height: 56px;
+    color: #183729;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  :deep(.login-input input::placeholder) {
+    color: rgba(24, 55, 41, 0.45);
+    opacity: 1;
+  }
+
+  :deep(.login-input .v-field__outline) {
+    display: none;
+  }
+
+
+  /* =========================================================
+     FORM OPTIONS
+     Lembrar-me + Esqueci minha senha
+  ========================================================= */
+
+  .form-panel__options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .remember-checkbox {
+    margin: 0;
+    color: #3e564f;
+  }
+
+  :deep(.remember-checkbox .v-label) {
+    opacity: 1;
+    color: #3e564f;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .forgot-link {
+    color: #183729;
     text-transform: none;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+
+  /* =========================================================
+     BUTTONS
+     Botão de login e botão de criar conta
+  ========================================================= */
+
+  .login-button {
+    margin-top: 4px;
+    background: #183729;
+    color: #ebebeb;
+    font-weight: 800;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    box-shadow: 0 14px 28px rgba(24, 55, 41, 0.18);
+  }
+
+  .login-button-disabled-dev {
+    margin-top: 4px;
+    background: #8f8f8f !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+
+  /* =========================================================
+     MOBILE CTA
+     Chamada para criar conta exibida em telas menores
+  ========================================================= */
+
+  .mobile-cta {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(24, 55, 41, 0.08);
+  }
+
+  .mobile-cta__text {
+    margin: 0 0 20px;
+    text-align: center;
+    color: #3e564f;
+    line-height: 1.6;
+  }
+
+  .mobile-cta__button {
+    background: #183729;
+    color: #ebebeb;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+    border-radius: 0;
+  }
+
+
+  /* =========================================================
+     TECH STRIPE
+     Barrinhas decorativas abaixo do card
+  ========================================================= */
+
+  .tech-stripe {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    padding-left: 6px;
+  }
+
+  .tech-stripe__item {
+    display: inline-block;
+    height: 4px;
+  }
+
+  .tech-stripe__item--primary {
+    width: 48px;
+    background: #183729;
+  }
+
+  .tech-stripe__item--secondary {
+    width: 18px;
+    background: #8ea588;
+  }
+
+  .tech-stripe__item--muted {
+    width: 10px;
+    background: #bfc8c4;
+  }
+
+
+  /* =========================================================
+     VISIBILITY HELPERS
+     Controle de elementos desktop/mobile
+  ========================================================= */
+
+  .mobile-only {
+    display: none;
+  }
+
+  .desktop-only {
+    display: block;
+  }
+
+
+  /* =========================================================
+     RESPONSIVE - NOTEBOOKS / TELAS MÉDIAS
+  ========================================================= */
+
+  @media (max-width: 1264px) {
+    .login-column {
+      max-width: 960px;
+    }
+
+    .login-grid {
+      grid-template-columns: minmax(300px, 360px) minmax(400px, 500px);
+      gap: 40px;
+    }
+
+    .hero-panel__content {
+      max-width: 100%;
+    }
+  }
+
+
+  /* =========================================================
+     RESPONSIVE - TABLET / PORTRAIT
+     Aqui vira coluna única igual ao UserCreatePage
+  ========================================================= */
+
+  @media (max-width: 960px), (orientation: portrait) {
+    .login-content {
+      padding-top: 24px;
+      padding-bottom: 32px;
+    }
+
+    .login-column {
+      max-width: 760px;
+    }
+
+    .login-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      justify-items: center;
+      gap: 32px;
+    }
+
+    .hero-panel {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      order: 1;
+    }
+
+    .hero-panel__content {
+      width: 100%;
+      max-width: 720px;
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .hero-title,
+    .hero-slogan,
+    .hero-cta,
+    .mobile-cta {
+      text-align: center;
+    }
+
+    .hero-slogan {
+      border-left: none;
+      padding-left: 0;
+    }
+
+    .form-panel-wrapper {
+      order: 2;
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .form-panel {
+      width: 100%;
+      max-width: 720px;
+      margin-inline: auto;
+    }
+
+    .tech-stripe {
+      justify-content: center;
+      padding-left: 0;
+    }
+
+    .desktop-only {
+      display: none;
+    }
+
+    .mobile-only {
+      display: block;
+    }
+
+    .footer-bar__content {
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-bar__links {
+      margin-left: 0;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+  }
+
+
+  /* =========================================================
+     RESPONSIVE - MOBILE
+  ========================================================= */
+
+  @media (max-width: 600px) {
+    .form-panel {
+      padding: 24px;
+    }
+
+    .form-panel__options {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hero-slogan {
+      margin-top: 24px;
+    }
   }
 </style>

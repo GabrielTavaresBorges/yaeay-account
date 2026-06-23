@@ -5,6 +5,8 @@ using UpdateUser = YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
 namespace YaeaY.Account.Presentation.Server.Controllers.Users;
 
+[ApiController]
+[Route("api/[controller]")]
 public class UserController : ControllerBase
 {
     private readonly IMediator _mediator;
