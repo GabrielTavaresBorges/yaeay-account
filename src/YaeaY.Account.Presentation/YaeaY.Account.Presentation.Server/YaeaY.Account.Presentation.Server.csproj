@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MediatR" Version="14.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy">
       <Version>10.*-*</Version>
     </PackageReference>
@@ -20,8 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\YaeaY.Account.Application\YaeaY.Account.Application.csproj" />
     <ProjectReference Include="..\..\YaeaY.Account.Infrastructure\YaeaY.Account.Infrastructure.csproj" />
-    <ProjectReference Include="..\yaeay.account.presentation.client\yaeay.account.presentation.client.esproj"
-                      Condition="'$(SkipClientProjectReference)' != 'true'">
+    <ProjectReference Include="..\yaeay.account.presentation.client\yaeay.account.presentation.client.esproj" Condition="'$(SkipClientProjectReference)' != 'true'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

@@ -4,6 +4,7 @@ using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
+using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Events.Users;
 using YaeaY.Account.Domain.ValueObjects.Accounts;
 using YaeaY.Account.Domain.ValueObjects.Dates;
@@ -99,34 +100,22 @@ public class User : Entity, IAggregateRoot
         UserPhone initialPhone)
     {
         if (emailAddress is null)
-            throw new DomainException(
-                identifier: "EMAIL_NULL",
-                message: "Email Address cannot be null.");
+            throw new DomainException(UserErrors.EmailRequired);
 
         if (passwordHash is null)
-            throw new DomainException(
-                identifier: "PASSWORD_HASH_NULL",
-                message: "Password cannot be null.");
+            throw new DomainException(UserErrors.PasswordRequired);
 
         if (userName is null)
-            throw new DomainException(
-                identifier: "USER_NAME_NULL",
-                message: "UserName cannot be null.");
+            throw new DomainException(UserErrors.NameRequired);
 
         if (birthDate is null)
-            throw new DomainException(
-                identifier: "BIRTH_DATE_NULL",
-                message: "Birth date cannot be null.");
+            throw new DomainException(UserErrors.BirthDateRequired);
 
         if (gender == Gender.Unknown)
-            throw new DomainException(
-                identifier: "GENDER_UNKNOWN",
-                message: "Gender cannot be unknown.");
+            throw new DomainException(UserErrors.GenderRequired);
 
-        if (initialPhone is null)
-            throw new DomainException(
-                identifier: "INITIAL_PHONE_NULL",
-                message: "Initial phone cannot be null.");
+        if (!Enum.IsDefined(typeof(Gender), gender))
+            throw new DomainException(UserErrors.GenderInvalid);
     }
 
     #region Phones (Aggregate rules)
@@ -134,15 +123,11 @@ public class User : Entity, IAggregateRoot
     public void AddPhone(UserPhone phone)
     {
         if (phone is null)
-            throw new DomainException(
-                identifier: "PHONE_NULL",
-                message: "Phone cannot be null.");
+            throw new DomainException(UserErrors.PhoneRequired);
 
         // Dedup pelo seu índice (E164)
         if (_phones.Any(p => p.E164 == phone.E164))
-            throw new DomainException(
-                identifier: "PHONE_ALREADY_EXISTS",
-                message: "Phone already exists.");
+            throw new DomainException(UserErrors.PhoneAlreadyExists);
 
         // Se já existe primário e o novo vem como primário, desmarca o atual
         if (phone.IsPrimary)
