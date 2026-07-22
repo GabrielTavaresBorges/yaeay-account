@@ -3,6 +3,8 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
+using YaeaY.Account.Domain.Errors.Users;
+using YaeaY.Account.Domain.Events.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
@@ -67,8 +69,8 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("EMAIL_NULL");
-        exception.Message.Should().Be("Email Address cannot be null.");
+        exception.Identifier.Should().Be(UserErrors.EmailRequired.Identifier);
+        exception.Message.Should().Be(UserErrors.EmailRequired.Message);
     }
 
     [Fact]
@@ -124,8 +126,8 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PASSWORD_HASH_NULL");
-        exception.Message.Should().Be("Password cannot be null.");
+        exception.Identifier.Should().Be(UserErrors.PasswordRequired.Identifier);
+        exception.Message.Should().Be(UserErrors.PasswordRequired.Message);
     }
 
     [Fact]
@@ -181,8 +183,8 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("USER_NAME_NULL");
-        exception.Message.Should().Be("UserName cannot be null.");
+        exception.Identifier.Should().Be(UserErrors.NameRequired.Identifier);
+        exception.Message.Should().Be(UserErrors.NameRequired.Message);
     }
 
     [Fact]
@@ -238,8 +240,8 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("BIRTH_DATE_NULL");
-        exception.Message.Should().Be("Birth date cannot be null.");
+        exception.Identifier.Should().Be(UserErrors.BirthDateRequired.Identifier);
+        exception.Message.Should().Be(UserErrors.BirthDateRequired.Message);
     }
 
     [Fact]
@@ -297,8 +299,67 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("GENDER_UNKNOWN");
-        exception.Message.Should().Be("Gender cannot be unknown.");
+        exception.Identifier.Should().Be(UserErrors.GenderRequired.Identifier);
+        exception.Message.Should().Be(UserErrors.GenderRequired.Message);
+    }
+
+    [Fact]
+    public void Create_WhenGenderIsNotDefined_ShouldThrowDomainException()
+    {
+        // Arrange
+
+        var emailAddressTest = "example@domain.com";
+        var emailResult = Email.Create(emailAddressTest);
+        var email = emailResult.Value;
+
+        var passwordHashTest = "hashed_password_test";
+        var passwordHashResult = PasswordHash.Create(passwordHashTest);
+        var passwordHash = passwordHashResult.Value;
+
+        var userNameTest = "User Name Test";
+        var userNameResult = UserName.Create(userNameTest);
+        var userName = userNameResult.Value;
+
+        var genderInvalid = (Gender)999;
+
+        var birthDateTest = new DateOnly(2026, 1, 1);
+        var birthDateResult = BirthDate.Create(birthDateTest);
+        var birthDate = birthDateResult.Value;
+
+        var callingCode = "+55";
+        var regionCode = "BR";
+        var areaCode = "48";
+        var phoneType = PhoneType.Mobile;
+        var phoneNumber = "12345678";
+        var e164 = "+554812345678";
+        var isPrimary = true;
+
+        var initialPhone = UserPhone.Create(
+            callingCode,
+            regionCode,
+            areaCode,
+            phoneType,
+            phoneNumber,
+            e164,
+            isPrimary);
+
+        var phone = initialPhone;
+
+        // Act
+
+        Action act = () => User.Create(
+            email,
+            passwordHash,
+            userName,
+            birthDate,
+            genderInvalid,
+            phone);
+
+        // Assert
+
+        var exception = act.Should().Throw<DomainException>().Which;
+        exception.Identifier.Should().Be(UserErrors.GenderInvalid.Identifier);
+        exception.Message.Should().Be(UserErrors.GenderInvalid.Message);
     }
 
     [Fact]
@@ -339,8 +400,8 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("INITIAL_PHONE_NULL");
-        exception.Message.Should().Be("Initial phone cannot be null.");
+        exception.Identifier.Should().Be(UserErrors.PhoneRequired.Identifier);
+        exception.Message.Should().Be(UserErrors.PhoneRequired.Message);
     }
 
     // IsSuccess
@@ -374,7 +435,7 @@ public class UserCreateTests
         var phoneType = PhoneType.Mobile;
         var phoneNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
+        var isPrimary = false;
 
         var initialPhone = UserPhone.Create(
             callingCode,
@@ -389,6 +450,8 @@ public class UserCreateTests
 
         // Act
 
+        var beforeCreation = DateTimeOffset.UtcNow;
+
         var resultUser = User.Create(
             email,
             passwordHash,
@@ -396,6 +459,8 @@ public class UserCreateTests
             birthDate,
             gender,
             phone);
+
+        var afterCreation = DateTimeOffset.UtcNow;
 
         // Assert
 
@@ -410,6 +475,20 @@ public class UserCreateTests
         resultUser.Phones.First().Should().Be(phone);
         resultUser.Phones.First().IsPrimary.Should().BeTrue();
 
-        resultUser.Status.Should().Be(AccountStatus.PendingEmailConfirmation); ;
+        resultUser.Status.Should().Be(AccountStatus.PendingEmailConfirmation);
+        resultUser.CreatedAt.Should().BeOnOrAfter(beforeCreation);
+        resultUser.CreatedAt.Should().BeOnOrBefore(afterCreation);
+        resultUser.EmailConfirmedAt.Should().BeNull();
+        resultUser.FirstLoginAt.Should().BeNull();
+        resultUser.LastLoginAt.Should().BeNull();
+        resultUser.SuspensionInfo.Should().BeNull();
+
+        var domainEvent = resultUser.DomainEvents.Should().ContainSingle().Which;
+        domainEvent.Should().BeOfType<UserRegisteredDomainEvent>();
+
+        var userRegisteredEvent = (UserRegisteredDomainEvent)domainEvent;
+        userRegisteredEvent.UserId.Should().Be(resultUser.Id);
+        userRegisteredEvent.Email.Should().Be(resultUser.Email.EmailAddress);
+        userRegisteredEvent.UserName.Should().Be(resultUser.UserName.Name);
     }
 }

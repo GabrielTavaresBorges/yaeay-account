@@ -17,16 +17,16 @@ namespace YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 public class User : Entity, IAggregateRoot
 {
     private Email _email = null!;
-    private UserName _userName = null!;
     private PasswordHash _passwordHash = null!;
+    private UserName _userName = null!;
     private BirthDate _birthDate = null!;
-    private readonly AccountStatus _status;
+    private AccountStatus _status;
     private Gender _gender;
-    private readonly SuspensionInfo? _suspension;
-    private readonly DateTimeOffset _createdAt;
-    private readonly DateTimeOffset? _emailConfirmedAt;
-    private readonly DateTimeOffset? _firstLoginAt;
-    private readonly DateTimeOffset? _lastLoginAt;
+    private DateTimeOffset _createdAt;
+    private SuspensionInfo? _suspension;
+    private DateTimeOffset? _emailConfirmedAt;
+    private DateTimeOffset? _firstLoginAt;
+    private DateTimeOffset? _lastLoginAt;
 
     private readonly List<UserDocument> _documents = new();
     private readonly List<UserPhone> _phones = new();
@@ -37,8 +37,8 @@ public class User : Entity, IAggregateRoot
     public BirthDate BirthDate => _birthDate;
     public AccountStatus Status => _status;
     public Gender Gender => _gender;
-    public SuspensionInfo? SuspensionInfo => _suspension;
     public DateTimeOffset CreatedAt => _createdAt;
+    public SuspensionInfo? SuspensionInfo => _suspension;
     public DateTimeOffset? EmailConfirmedAt => _emailConfirmedAt;
     public DateTimeOffset? FirstLoginAt => _firstLoginAt;
     public DateTimeOffset? LastLoginAt => _lastLoginAt;
@@ -53,13 +53,17 @@ public class User : Entity, IAggregateRoot
         PasswordHash passwordHash,
         UserName userName,
         BirthDate birthDate,
-        Gender gender)
+        Gender gender,
+        UserPhone initialPhone)
     {
         _email = email;
         _passwordHash = passwordHash;
         _userName = userName;
         _birthDate = birthDate;
         _gender = gender;
+
+        initialPhone.SetPrimary(true);
+        _phones.Add(initialPhone);
 
         _status = AccountStatus.PendingEmailConfirmation;
         _createdAt = DateTimeOffset.UtcNow;
@@ -75,10 +79,7 @@ public class User : Entity, IAggregateRoot
     {
         Validate(emailAddress, passwordHash, userName, birthDate, gender, initialPhone);
 
-        var user = new User(emailAddress, passwordHash, userName, birthDate, gender);
-
-        // Regra: no cadastro, esse telefone é obrigatório e deve ser primário
-        user.AddPhone(initialPhone);
+        var user = new User(emailAddress, passwordHash, userName, birthDate, gender, initialPhone);
 
         // Dispara evento de usuário registrado
         var userRegisteredEvent = new UserRegisteredDomainEvent(
@@ -116,34 +117,27 @@ public class User : Entity, IAggregateRoot
 
         if (!Enum.IsDefined(typeof(Gender), gender))
             throw new DomainException(UserErrors.GenderInvalid);
-    }
 
-    #region Phones (Aggregate rules)
+        if (initialPhone is null)
+            throw new DomainException(UserErrors.PhoneRequired);
+    }
 
     public void AddPhone(UserPhone phone)
     {
         if (phone is null)
             throw new DomainException(UserErrors.PhoneRequired);
 
-        // Dedup pelo seu índice (E164)
-        if (_phones.Any(p => p.E164 == phone.E164))
+        if (_phones.Any(existing => existing.E164 == phone.E164))
             throw new DomainException(UserErrors.PhoneAlreadyExists);
 
-        // Se já existe primário e o novo vem como primário, desmarca o atual
         if (phone.IsPrimary)
         {
-            foreach (var p in _phones.Where(p => p.IsPrimary))
-                p.SetPrimary(false);
+            foreach (var currentPrimary in _phones.Where(p => p.IsPrimary))
+                currentPrimary.SetPrimary(false);
         }
 
         _phones.Add(phone);
-
-        // Invariante: sempre precisa existir 1 primário
-        if (!_phones.Any(p => p.IsPrimary))
-            phone.SetPrimary(true);
     }
-
-    #endregion
 
     public void ChangeEmail(Email email)
     {
