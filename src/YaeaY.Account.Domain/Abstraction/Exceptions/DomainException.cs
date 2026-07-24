@@ -5,27 +5,20 @@ namespace YaeaY.Account.Domain.Abstraction.Exceptions;
 
 public class DomainException : Exception
 {
-    public string Code { get; }
-
-    public ErrorCategory Category { get; }
-    public ErrorRule Rule { get; }
+    public Error Error { get; }
+    public string Code => Error.Code;
+    public ErrorCategory Category => Error.Category;
+    public ErrorRule Rule => Error.Rule;
 
     public DomainException(
         string code,
         string message,
         ErrorCategory category = ErrorCategory.BusinessRule,
         ErrorRule rule = ErrorRule.InvariantViolation)
-        : base(message)
-    {
-        Code = code;
-        Category = category;
-        Rule = rule;
-    }
+        : this(new Error(code, message, category, rule)) { }
 
     public DomainException(Error error) : base(error.Message)
     {
-        Code = error.Code;
-        Category = error.Category;
-        Rule = error.Rule;
+        Error = error ?? throw new ArgumentNullException(nameof(error));
     }
 }

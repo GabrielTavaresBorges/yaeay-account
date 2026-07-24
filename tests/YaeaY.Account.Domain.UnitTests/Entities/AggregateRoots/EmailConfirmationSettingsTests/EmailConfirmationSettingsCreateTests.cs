@@ -1,6 +1,7 @@
 using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
+using YaeaY.Account.Domain.Errors.EmailConfirmationSettings;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 
 namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.EmailConfirmationSettingsTests;
@@ -16,7 +17,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        Email fromEmail = null!;
+        Email fromEmailInvalid = null!;
 
         var fromName = "Example Account";
         var subject = "Confirm your email address.";
@@ -24,13 +25,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmailInvalid, fromName, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("FROM_EMAIL_NULL");
-        exeption.Message.Should().Be("From email cannot be null.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromEmailRequired);
     }
 
     #endregion
@@ -42,7 +42,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        string fromName = null!;
+        string fromNameInvalid = null!;
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -53,13 +53,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("From name cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameRequired);
     }
 
     [Fact]
@@ -67,7 +66,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var fromName = string.Empty;
+        var fromNameInvalid = string.Empty;
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -78,13 +77,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("From name cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameRequired);
     }
 
     [Fact]
@@ -92,7 +90,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var fromName = " ";
+        var fromNameInvalid  = " ";
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -103,13 +101,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("From name cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameRequired);
     }
 
     [Fact]
@@ -117,7 +114,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var fromName = new string('A', 151);
+        var fromNameInvalid = new string('A', 151);
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -128,13 +125,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("FROM_NAME_TOO_LONG");
-        exeption.Message.Should().Be("From name cannot be longer than 150 characters.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameTooLong);
     }
 
     #endregion
@@ -146,7 +142,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        string subject = null!;
+        string subjectInvalid = null!;
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -157,13 +153,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("Subject cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectRequired);
     }
 
     [Fact]
@@ -171,7 +166,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var subject = string.Empty;
+        var subjectInvalid = string.Empty;
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -182,13 +177,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("Subject cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectRequired);
     }
 
     [Fact]
@@ -196,7 +190,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var subject = " ";
+        var subjectInvalid = " ";
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -207,13 +201,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("Subject cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectRequired);
     }
 
     [Fact]
@@ -221,7 +214,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var subject = new string('A', 201);
+        var subjectInvalid = new string('A', 201);
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -232,13 +225,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("SUBJECT_TOO_LONG");
-        exeption.Message.Should().Be("Subject cannot be longer than 200 characters.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectTooLong);
     }
 
     #endregion
@@ -250,7 +242,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        string body = null!;
+        string bodyInvalid = null!;
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -261,13 +253,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, bodyInvalid);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.BodyHtmlRequired);
     }
 
     [Fact]
@@ -275,7 +266,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var body = string.Empty;
+        var bodyInvalid = string.Empty;
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -286,13 +277,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, bodyInvalid);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.BodyHtmlRequired);
     }
 
     [Fact]
@@ -300,7 +290,7 @@ public class EmailConfirmationSettingsCreateTests
     {
         // Arrange
 
-        var body = " ";
+        var bodyInvalid = " ";
 
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
@@ -311,13 +301,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, body);
+        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, bodyInvalid);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Code.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
-        exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
+        exeption.Error.Should().Be(EmailConfirmationSettingErrors.BodyHtmlRequired);
     }
 
     #endregion
