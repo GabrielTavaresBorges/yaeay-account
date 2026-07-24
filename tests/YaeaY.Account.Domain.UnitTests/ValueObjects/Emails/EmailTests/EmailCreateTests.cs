@@ -77,24 +77,8 @@ public class EmailCreateTests
         result.Error.Should().Be(EmailErrors.TooLong(emailAddress.Length, 254));
     }
 
-    [Fact]
-    public void Create_WhenEmailFormatIsInvalid_ShouldFailure()
-    {
-        // Arrange
-
-        string emailAddress = "invalid-email";
-
-        // Act
-
-        var result = Email.Create(emailAddress);
-
-        // Assert
-
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(EmailErrors.InvalidFormat);
-    }
-
     [Theory]
+    [InlineData("invalid-email")]
     [InlineData(".example@domain.com")]
     [InlineData("example.@domain.com")]
     [InlineData("example..name@domain.com")]
@@ -104,9 +88,13 @@ public class EmailCreateTests
     [InlineData("example @domain.com")]
     public void Create_WhenEmailViolatesFormatRules_ShouldFailure(string emailAddress)
     {
+        // Arrange
+
+        string invalidFormat = emailAddress;
+
         // Act
 
-        var result = Email.Create(emailAddress);
+        var result = Email.Create(invalidFormat);
 
         // Assert
 
