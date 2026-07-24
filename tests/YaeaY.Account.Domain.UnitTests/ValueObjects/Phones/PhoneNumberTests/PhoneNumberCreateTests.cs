@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.ValueObjects.Phones;
 
@@ -24,7 +24,7 @@ public class PhoneNumberCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PHONE_TYPE_UNKNOWN");
+        result.Error.Code.Should().Be("PHONE_TYPE_UNKNOWN");
         result.Error.Message.Should().Be("Phone type cannot be unknown.");
     }
 
@@ -44,7 +44,7 @@ public class PhoneNumberCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PHONE_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PHONE_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Phone number cannot be null, empty or white space.");
     }
 
@@ -64,7 +64,7 @@ public class PhoneNumberCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PHONE_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PHONE_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Phone number cannot be null, empty or white space.");
     }
 
@@ -84,7 +84,7 @@ public class PhoneNumberCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PHONE_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PHONE_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Phone number cannot be null, empty or white space.");
     }
 
@@ -104,7 +104,7 @@ public class PhoneNumberCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PHONE_INVALID");
+        result.Error.Code.Should().Be("PHONE_INVALID");
         result.Error.Message.Should().Be("Phone number must contain digits.");
     }
 

@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+using FluentAssertions;
+using YaeaY.Account.Domain.Errors.Emails;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Emails.EmailTests;
@@ -21,9 +22,7 @@ public class EmailCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("EMAIL_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Email is required. " +
-                                         "Please provide an address in the format 'example@domain.com'.");
+        result.Error.Should().Be(EmailErrors.Required);
     }
 
     [Fact]
@@ -40,9 +39,7 @@ public class EmailCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("EMAIL_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Email is required. " +
-                                         "Please provide an address in the format 'example@domain.com'.");
+        result.Error.Should().Be(EmailErrors.Required);
     }
 
 
@@ -60,9 +57,7 @@ public class EmailCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("EMAIL_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Email is required. " +
-                                         "Please provide an address in the format 'example@domain.com'.");
+        result.Error.Should().Be(EmailErrors.Required);
     }
 
     [Fact]
@@ -79,32 +74,32 @@ public class EmailCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("EMAIL_TOO_LONG");
-        result.Error.Message.Should().Be(
-            $"Email is too long. " +
-            $"Current length: {emailAddress.Length} characters. " +
-            $"Maximum allowed length: 254 characters.");
+        result.Error.Should().Be(EmailErrors.TooLong(emailAddress.Length, 254));
     }
 
-    [Fact]
-    public void Create_WhenEmailFormatIsInvalid_ShouldFailure()
+    [Theory]
+    [InlineData("invalid-email")]
+    [InlineData(".example@domain.com")]
+    [InlineData("example.@domain.com")]
+    [InlineData("example..name@domain.com")]
+    [InlineData("example@-domain.com")]
+    [InlineData("example@domain-.com")]
+    [InlineData("example@domain..com")]
+    [InlineData("example @domain.com")]
+    public void Create_WhenEmailViolatesFormatRules_ShouldFailure(string emailAddress)
     {
         // Arrange
 
-        string emailAddress = "invalid-email";
+        string invalidFormat = emailAddress;
 
         // Act
 
-        var result = Email.Create(emailAddress);
+        var result = Email.Create(invalidFormat);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("EMAIL_INVALID_FORMAT");
-        result.Error.Message.Should().Be(
-            $"Email format is invalid. " +
-            $"Expected format: 'example@domain.com'. " +
-            $"Received value: '{emailAddress}'.");
+        result.Error.Should().Be(EmailErrors.InvalidFormat);
     }
 
     // IsSuccess
@@ -164,5 +159,22 @@ public class EmailCreateTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Create_WhenEmailHasUppercaseCharacters_ShouldReturnLowercaseEmail()
+    {
+        // Arrange
+
+        string emailAddress = "Example@Domain.COM";
+
+        // Act
+
+        var result = Email.Create(emailAddress);
+
+        // Assert
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.EmailAddress.Should().Be("example@domain.com");
     }
 }

@@ -1,4 +1,6 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 
 namespace YaeaY.Account.Domain.ValueObjects.Documents;
 
@@ -32,8 +34,10 @@ public sealed partial record Cpf
         if (string.IsNullOrWhiteSpace(number))
         {
             return Result<string>.Failure(new Error(
-             Identifier: "CPF_NUMBER_NULL_EMPTY_WHITE_SPACE",
-             Message: "CPF number cannot be null, empty or white space."));
+             Code: "CPF_NUMBER_NULL_EMPTY_WHITE_SPACE",
+             Message: "CPF number cannot be null, empty or white space.",
+             Category: ErrorCategory.Validation,
+             Rule: ErrorRule.Required));
         }
 
         var onlyNumbers = ExtractNumbers(number);
@@ -41,22 +45,28 @@ public sealed partial record Cpf
         if (!HasValidLength(onlyNumbers))
         {
             return Result<string>.Failure(new Error(
-               Identifier: "CPF_NUMBER_INVALID_LENGTH",
-               Message: "CPF number must be 11 digits long and contain only numbers."));
+               Code: "CPF_NUMBER_INVALID_LENGTH",
+               Message: "CPF number must be 11 digits long and contain only numbers.",
+               Category: ErrorCategory.Validation,
+               Rule: ErrorRule.InvalidFormat));
         }
 
         if (IsAllSameDigits(onlyNumbers))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "CPF_NUMBER_CHECKSUM_INVALID",
-                Message: "CPF failed validation."));
+                Code: "CPF_NUMBER_CHECKSUM_INVALID",
+                Message: "CPF failed validation.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidValue));
         }
 
         if (!IsValidCpf(onlyNumbers))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "CPF_NUMBER_CHECKSUM_INVALID",
-                Message: "CPF failed validation."));
+                Code: "CPF_NUMBER_CHECKSUM_INVALID",
+                Message: "CPF failed validation.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidValue));
         }
 
         return Result<string>.Success(onlyNumbers);

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTokens;
 using YaeaY.Account.Domain.ValueObjects.Securities;
@@ -29,7 +29,7 @@ public class EmailConfirmationTokenTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("USER_ID_INVALID");
+        exception.Code.Should().Be("USER_ID_INVALID");
         exception.Message.Should().Be("UserId cannot be empty.");
     }
 
@@ -50,7 +50,7 @@ public class EmailConfirmationTokenTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("TOKEN_HASH_NULL");
+        exception.Code.Should().Be("TOKEN_HASH_NULL");
         exception.Message.Should().Be("Token hash cannot be null.");
     }
 
@@ -74,7 +74,7 @@ public class EmailConfirmationTokenTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("TOKEN_EXPIRATION_INVALID");
+        exception.Code.Should().Be("TOKEN_EXPIRATION_INVALID");
         exception.Message.Should().Be("Expiration date must be in the future.");
     }
 
@@ -98,7 +98,7 @@ public class EmailConfirmationTokenTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("TOKEN_EXPIRATION_INVALID");
+        exception.Code.Should().Be("TOKEN_EXPIRATION_INVALID");
         exception.Message.Should().Be("Expiration date must be in the future.");
     }
 

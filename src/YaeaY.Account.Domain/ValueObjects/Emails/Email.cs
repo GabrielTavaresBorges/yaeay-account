@@ -1,10 +1,13 @@
 ﻿using System.Text.RegularExpressions;
-using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.Errors.Emails;
 
 namespace YaeaY.Account.Domain.ValueObjects.Emails;
 
 public sealed partial record Email
 {
+    private const int MaximumLength = 254;
+
     private readonly string _emailAddress = string.Empty;
 
     public string EmailAddress => _emailAddress;
@@ -29,40 +32,25 @@ public sealed partial record Email
     private static Result<string> ValidateEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
-        {
-            return Result<string>.Failure(new Error(
-                Identifier: "EMAIL_NULL_EMPTY_WHITE_SPACE",
-                Message: "Email is required. " +
-                         "Please provide an address in the format 'example@domain.com'."));
-        }
+            return Result<string>.Failure(EmailErrors.Required);
 
-        email = email.Trim();
+        email = email.Trim().ToLowerInvariant();
 
-        // limite comum (prático)
-        const int MaxLength = 254;
-        if (email.Length > MaxLength)
-        {
-            return Result<string>.Failure(new Error(
-                Identifier: "EMAIL_TOO_LONG",
-                Message: "Email is too long. " +
-                         $"Current length: {email.Length} characters. " +
-                         $"Maximum allowed length: {MaxLength} characters."));
-        }
+        if (email.Length > MaximumLength)
+            return Result<string>.Failure(EmailErrors.TooLong(email.Length, MaximumLength));
 
-        // Regex simples e eficiente (não tenta cobrir toda RFC)
         if (!EmailRegex().IsMatch(email))
-        {
-            return Result<string>.Failure(new Error(
-                Identifier: "EMAIL_INVALID_FORMAT",
-                Message: "Email format is invalid. " +
-                        $"Expected format: 'example@domain.com'. " +
-                        $"Received value: '{email}'."));
-        }
+            return Result<string>.Failure(EmailErrors.InvalidFormat);
 
         return Result<string>.Success(email);
     }
 
-    // Compilada e gerada em build (melhor performance e sem custo em runtime)
-    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    /// <summary>
+    /// Valida a estrutura sintática do endereço de email normalizado.
+    /// Exige conteúdo antes e depois de '@', não permite espaços
+    /// e exige pelo menos um ponto na parte do domínio.
+    /// Não representa uma implementação completa das RFCs de email.
+    /// </summary>
+    [GeneratedRegex(@"^(?!.*\.\.)[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$", RegexOptions.CultureInvariant)]
     private static partial Regex EmailRegex();
 }

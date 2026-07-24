@@ -1,4 +1,6 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 
 namespace YaeaY.Account.Domain.ValueObjects.Names;
 
@@ -30,8 +32,10 @@ public sealed record UserName
         if (string.IsNullOrWhiteSpace(name))
         {
             return Result<string>.Failure(new Error(
-             Identifier: "USER_NAME_NULL_EMPTY_WHITE_SPACE",
-             Message: "Name cannot be null, empty or white space."));
+             Code: "USER_NAME_NULL_EMPTY_WHITE_SPACE",
+             Message: "Name cannot be null, empty or white space.",
+             Category: ErrorCategory.Validation,
+             Rule: ErrorRule.Required));
         }
 
         name = name.Trim();
@@ -39,8 +43,10 @@ public sealed record UserName
         if (name.Length < 2 || name.Length > 100)
         {
             return Result<string>.Failure(new Error(
-               Identifier: "USER_NAME_INVALID_LENGTH",
-               Message: "Name must be between 2 and 100 characters."));
+               Code: "USER_NAME_INVALID_LENGTH",
+               Message: "Name must be between 2 and 100 characters.",
+               Category: ErrorCategory.Validation,
+               Rule: ErrorRule.InvalidValue));
         }
 
         return Result<string>.Success(name);

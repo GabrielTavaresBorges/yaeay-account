@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Names;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Names.UserNameTests;
@@ -21,7 +21,7 @@ public class UserNameCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("USER_NAME_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("USER_NAME_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Name cannot be null, empty or white space.");
     }
 
@@ -39,7 +39,7 @@ public class UserNameCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("USER_NAME_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("USER_NAME_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Name cannot be null, empty or white space.");
     }
 
@@ -57,7 +57,7 @@ public class UserNameCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("USER_NAME_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("USER_NAME_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Name cannot be null, empty or white space.");
     }
 
@@ -75,7 +75,7 @@ public class UserNameCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("USER_NAME_INVALID_LENGTH");
+        result.Error.Code.Should().Be("USER_NAME_INVALID_LENGTH");
         result.Error.Message.Should().Be("Name must be between 2 and 100 characters.");
     }
 
@@ -93,7 +93,7 @@ public class UserNameCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("USER_NAME_INVALID_LENGTH");
+        result.Error.Code.Should().Be("USER_NAME_INVALID_LENGTH");
         result.Error.Message.Should().Be("Name must be between 2 and 100 characters.");
     }
 

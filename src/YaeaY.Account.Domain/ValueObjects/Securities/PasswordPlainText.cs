@@ -1,5 +1,7 @@
-﻿using System.Text.RegularExpressions;
-using YaeaY.Account.Domain.Abstraction.Records;
+using System.Text.RegularExpressions;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 
 namespace YaeaY.Account.Domain.ValueObjects.Securities;
 
@@ -36,8 +38,10 @@ public sealed record PasswordPlainText
         if (string.IsNullOrWhiteSpace(password))
         {
             return Result<string>.Failure(new Error(
-               Identifier: "PASSWORD_NULL_EMPTY_WHITE_SPACE",
-               Message: "Password cannot be null, empty or white space."));
+               Code: "PASSWORD_NULL_EMPTY_WHITE_SPACE",
+               Message: "Password cannot be null, empty or white space.",
+               Category: ErrorCategory.Validation,
+               Rule: ErrorRule.Required));
         }
 
         password = password.Trim();
@@ -45,44 +49,56 @@ public sealed record PasswordPlainText
         if (password.Length < 8)
         {
             return Result<string>.Failure(new Error(
-             Identifier: "PASSWORD_TOO_SHORT",
-             Message: "Password must be at least 8 chars."));
+             Code: "PASSWORD_TOO_SHORT",
+             Message: "Password must be at least 8 chars.",
+             Category: ErrorCategory.Validation,
+             Rule: ErrorRule.MinimumLength));
         }
 
         if (!UppercaseRegex.IsMatch(password))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PASSWORD_MISSING_UPPERCASE",
-                Message: "Password must contain at least one uppercase letter."));
+                Code: "PASSWORD_MISSING_UPPERCASE",
+                Message: "Password must contain at least one uppercase letter.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidFormat));
         }
 
         if (!LowercaseRegex.IsMatch(password))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PASSWORD_MISSING_LOWERCASE",
-                Message: "Password must contain at least one lowercase letter."));
+                Code: "PASSWORD_MISSING_LOWERCASE",
+                Message: "Password must contain at least one lowercase letter.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidFormat));
         }
 
         if (!DigitRegex.IsMatch(password))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PASSWORD_MISSING_DIGIT",
-                Message: "Password must contain at least one number."));
+                Code: "PASSWORD_MISSING_DIGIT",
+                Message: "Password must contain at least one number.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidFormat));
         }
 
         if (!SpecialRegex.IsMatch(password))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PASSWORD_MISSING_SPECIAL",
-                Message: "Password must contain at least one special character."));
+                Code: "PASSWORD_MISSING_SPECIAL",
+                Message: "Password must contain at least one special character.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidFormat));
         }
 
         const int MaxLength = 256;
         if (password.Length > MaxLength)
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PASSWORD_TOO_LONG",
-                Message: $"Password is too long. Maximum allowed length is {MaxLength} characters."));
+                Code: "PASSWORD_TOO_LONG",
+                Message: $"Password is too long. Maximum allowed length is {MaxLength} characters.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.MaximumLength));
         }
 
         return Result<string>.Success(password);

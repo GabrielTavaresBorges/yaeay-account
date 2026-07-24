@@ -1,4 +1,6 @@
-﻿namespace YaeaY.Account.Domain.Abstraction.Records;
+﻿using YaeaY.Account.Domain.Abstraction.Errors;
+
+namespace YaeaY.Account.Domain.Abstraction.Result;
 
 public sealed record Result<T>
 {

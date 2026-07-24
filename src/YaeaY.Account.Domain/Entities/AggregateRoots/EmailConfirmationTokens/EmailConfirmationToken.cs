@@ -1,4 +1,4 @@
-﻿using YaeaY.Account.Domain.Abstraction.Entities;
+using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.ValueObjects.Securities;
@@ -42,17 +42,17 @@ public sealed class EmailConfirmationToken : Entity, IAggregateRoot
     {
         if (userId == Guid.Empty)
             throw new DomainException(
-                identifier: "USER_ID_INVALID",
+                code: "USER_ID_INVALID",
                 message: "UserId cannot be empty.");
 
         if (tokenHash is null)
             throw new DomainException(
-                identifier: "TOKEN_HASH_NULL",
+                code: "TOKEN_HASH_NULL",
                 message: "Token hash cannot be null.");
 
         if (expiresAt <= DateTimeOffset.UtcNow)
             throw new DomainException(
-                identifier: "TOKEN_EXPIRATION_INVALID",
+                code: "TOKEN_EXPIRATION_INVALID",
                 message: "Expiration date must be in the future.");
     }
 
@@ -66,12 +66,12 @@ public sealed class EmailConfirmationToken : Entity, IAggregateRoot
     {
         if (_usedAt.HasValue)
             throw new DomainException(
-                identifier: "TOKEN_ALREADY_USED",
+                code: "TOKEN_ALREADY_USED",
                 message: "Token has already been used.");
 
         if (IsExpired(usedAtUtc))
             throw new DomainException(
-                identifier: "TOKEN_EXPIRED",
+                code: "TOKEN_EXPIRED",
                 message: "Token has expired.");
 
         _usedAt = usedAtUtc;

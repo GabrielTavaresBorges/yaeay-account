@@ -1,4 +1,6 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 
 namespace YaeaY.Account.Domain.ValueObjects.Dates;
 
@@ -32,10 +34,12 @@ public sealed record BirthDate
         if (date > today)
         {
             return Result<DateOnly>.Failure(new Error(
-                Identifier: "BIRTH_DATE_IN_FUTURE",
+                Code: "BIRTH_DATE_IN_FUTURE",
                 Message: "Birth date cannot be in the future.\n" +
                          $"Received: {date:yyyy-MM-dd}.\n" +
-                         $"Today (UTC): {today:yyyy-MM-dd}."
+                         $"Today (UTC): {today:yyyy-MM-dd}.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidValue
             ));
         }
 
@@ -46,10 +50,12 @@ public sealed record BirthDate
         if (date < minAllowed)
         {
             return Result<DateOnly>.Failure(new Error(
-                Identifier: "BIRTH_DATE_TOO_OLD",
+                Code: "BIRTH_DATE_TOO_OLD",
                 Message: $"Birth date cannot be more than {MaxAgeYears} years ago.\n" +
                          $"Received: {date:yyyy-MM-dd}.\n" +
-                         $"Minimum allowed (UTC): {minAllowed:yyyy-MM-dd}."
+                         $"Minimum allowed (UTC): {minAllowed:yyyy-MM-dd}.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidValue
             ));
         }
 

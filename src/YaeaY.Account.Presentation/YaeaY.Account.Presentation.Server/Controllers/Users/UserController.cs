@@ -1,5 +1,7 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using CreateUser = YaeaY.Account.Application.UseCases.Users.Commands.Create;
 using UpdateUser = YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
@@ -19,18 +21,14 @@ public class UserController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUser.Command command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsFailure)
-        {
-            return UnprocessableEntity(new
-            {
-                identifier = result.Error.Identifier,
-                message = result.Error.Message
-            });
-        }
+            return ToErrorResponse(result.Error);
 
         return CreatedAtAction(
             actionName: nameof(GetById),
@@ -51,17 +49,7 @@ public class UserController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsFailure)
-        {
-            // se você tiver um erro específico "NOT_FOUND", trate como 404
-            if (result.Error.Identifier == "USER_NOT_FOUND")
-                return NotFound(new { identifier = result.Error.Identifier, message = result.Error.Message });
-
-            return UnprocessableEntity(new
-            {
-                identifier = result.Error.Identifier,
-                message = result.Error.Message
-            });
-        }
+            return ToErrorResponse(result.Error);
 
         // Pode ser Ok(result.Value) (200 com body) ou NoContent() (204 sem body).
         return Ok(result.Value);
@@ -71,4 +59,24 @@ public class UserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) => Ok();
+
+    private IActionResult ToErrorResponse(Error error)
+    {
+        var response = new
+        {
+            code = error.Code,
+            message = error.Message,
+            category = error.Category.ToString(),
+            rule = error.Rule.ToString()
+        };
+
+        return error.Category switch
+        {
+            ErrorCategory.Validation or ErrorCategory.BusinessRule => UnprocessableEntity(response),
+            ErrorCategory.Conflict => Conflict(response),
+            ErrorCategory.NotFound => NotFound(response),
+            ErrorCategory.Unexpected => StatusCode(StatusCodes.Status500InternalServerError, response),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, response)
+        };
+    }
 }
