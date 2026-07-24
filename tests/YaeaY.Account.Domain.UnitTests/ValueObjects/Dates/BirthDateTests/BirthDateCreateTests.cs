@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Dates.BirthDateTests;
@@ -22,7 +22,7 @@ public class BirthDateCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("BIRTH_DATE_IN_FUTURE");
+        result.Error.Code.Should().Be("BIRTH_DATE_IN_FUTURE");
         result.Error.Message.Should().Be(
             "Birth date cannot be in the future.\n" +
             $"Received: {birthDate:yyyy-MM-dd}.\n" +
@@ -45,7 +45,7 @@ public class BirthDateCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("BIRTH_DATE_TOO_OLD");
+        result.Error.Code.Should().Be("BIRTH_DATE_TOO_OLD");
         result.Error.Message.Should().Be(
             $"Birth date cannot be more than 150 years ago.\n" +
             $"Received: {birthDate:yyyy-MM-dd}.\n" +

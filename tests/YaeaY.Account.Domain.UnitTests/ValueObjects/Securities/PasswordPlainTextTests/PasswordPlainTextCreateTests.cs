@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordPlainTextTests;
@@ -21,7 +21,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Password cannot be null, empty or white space.");
     }
 
@@ -39,7 +39,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Password cannot be null, empty or white space.");
     }
 
@@ -57,7 +57,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Password cannot be null, empty or white space.");
     }
 
@@ -75,7 +75,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_TOO_SHORT");
+        result.Error.Code.Should().Be("PASSWORD_TOO_SHORT");
         result.Error.Message.Should().Be("Password must be at least 8 chars.");
     }
 
@@ -93,7 +93,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_MISSING_UPPERCASE");
+        result.Error.Code.Should().Be("PASSWORD_MISSING_UPPERCASE");
         result.Error.Message.Should().Be("Password must contain at least one uppercase letter.");
     }
 
@@ -111,7 +111,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_MISSING_LOWERCASE");
+        result.Error.Code.Should().Be("PASSWORD_MISSING_LOWERCASE");
         result.Error.Message.Should().Be("Password must contain at least one lowercase letter.");
     }
 
@@ -129,7 +129,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_MISSING_DIGIT");
+        result.Error.Code.Should().Be("PASSWORD_MISSING_DIGIT");
         result.Error.Message.Should().Be("Password must contain at least one number.");
     }
 
@@ -147,7 +147,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_MISSING_SPECIAL");
+        result.Error.Code.Should().Be("PASSWORD_MISSING_SPECIAL");
         result.Error.Message.Should().Be("Password must contain at least one special character.");
     }
 
@@ -165,7 +165,7 @@ public class PasswordPlainTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_TOO_LONG");
+        result.Error.Code.Should().Be("PASSWORD_TOO_LONG");
         result.Error.Message.Should().Be("Password is too long. Maximum allowed length is 256 characters.");
     }
 

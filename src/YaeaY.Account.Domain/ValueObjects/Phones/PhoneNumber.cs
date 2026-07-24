@@ -1,4 +1,6 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Enumerators;
 
 namespace YaeaY.Account.Domain.ValueObjects.Phones;
@@ -40,15 +42,19 @@ public sealed record PhoneNumber
         if (type == PhoneType.Unknown)
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PHONE_TYPE_UNKNOWN",
-                Message: "Phone type cannot be unknown."));
+                Code: "PHONE_TYPE_UNKNOWN",
+                Message: "Phone type cannot be unknown.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidValue));
         }
 
         if (string.IsNullOrWhiteSpace(inputNumber))
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PHONE_NULL_EMPTY_WHITE_SPACE",
-                Message: "Phone number cannot be null, empty or white space."));
+                Code: "PHONE_NULL_EMPTY_WHITE_SPACE",
+                Message: "Phone number cannot be null, empty or white space.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.Required));
         }
 
         // Normalização simples: manter apenas dígitos do número local (sem +, sem DDI)
@@ -56,8 +62,10 @@ public sealed record PhoneNumber
         if (digits.Length == 0)
         {
             return Result<string>.Failure(new Error(
-                Identifier: "PHONE_INVALID",
-                Message: "Phone number must contain digits."));
+                Code: "PHONE_INVALID",
+                Message: "Phone number must contain digits.",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidFormat));
         }
 
         // Validação mínima por país (bem simples; depois você troca por IPhoneRules)
@@ -78,13 +86,17 @@ public sealed record PhoneNumber
             // BR: DDD(2) + número(8/9). Mobile costuma ter 11, fixo 10.
             if (type == PhoneType.Mobile && digits.Length != 11)
                 return Result<bool>.Failure(new Error(
-                    Identifier: "BR_MOBILE_LEN",
-                    Message: "Brazil mobile must have 11 digits (DDD + 9-digit)."));
+                    Code: "BR_MOBILE_LEN",
+                    Message: "Brazil mobile must have 11 digits (DDD + 9-digit).",
+                    Category: ErrorCategory.Validation,
+                    Rule: ErrorRule.InvalidValue));
 
             if (type == PhoneType.Landline && digits.Length != 10)
                 return Result<bool>.Failure(new Error(
-                    Identifier: "BR_LANDLINE_LEN",
-                    Message: "Brazil landline must have 10 digits (DDD + 8-digit)."));
+                    Code: "BR_LANDLINE_LEN",
+                    Message: "Brazil landline must have 10 digits (DDD + 8-digit).",
+                    Category: ErrorCategory.Validation,
+                    Rule: ErrorRule.InvalidValue));
 
             return Result<bool>.Success(true);
         }
@@ -94,8 +106,10 @@ public sealed record PhoneNumber
             // EUA: 10 dígitos (regra inicial)
             if (digits.Length != 10)
                 return Result<bool>.Failure(new Error(
-                    Identifier: "US_PHONE_LEN",
-                    Message: "US phone must have 10 digits (initial rule)."));
+                    Code: "US_PHONE_LEN",
+                    Message: "US phone must have 10 digits (initial rule).",
+                    Category: ErrorCategory.Validation,
+                    Rule: ErrorRule.InvalidValue));
 
             return Result<bool>.Success(true);
         }
@@ -103,8 +117,10 @@ public sealed record PhoneNumber
         // fallback genérico: E.164 total é 15, mas aqui é national; vamos ser conservadores
         if (digits.Length < 6 || digits.Length > 15)
             return Result<bool>.Failure(new Error(
-                Identifier: "PHONE_LEN",
-                Message: "Phone number must have 6..15 digits (initial rule)."));
+                Code: "PHONE_LEN",
+                Message: "Phone number must have 6..15 digits (initial rule).",
+                Category: ErrorCategory.Validation,
+                Rule: ErrorRule.InvalidValue));
 
         return Result<bool>.Success(true);
     }

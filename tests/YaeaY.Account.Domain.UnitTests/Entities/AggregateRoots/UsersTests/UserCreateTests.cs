@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 using YaeaY.Account.Domain.Entities.UserPhones;
@@ -69,7 +69,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.EmailRequired.Identifier);
+        exception.Code.Should().Be(UserErrors.EmailRequired.Code);
         exception.Message.Should().Be(UserErrors.EmailRequired.Message);
     }
 
@@ -126,7 +126,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.PasswordRequired.Identifier);
+        exception.Code.Should().Be(UserErrors.PasswordRequired.Code);
         exception.Message.Should().Be(UserErrors.PasswordRequired.Message);
     }
 
@@ -183,7 +183,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.NameRequired.Identifier);
+        exception.Code.Should().Be(UserErrors.NameRequired.Code);
         exception.Message.Should().Be(UserErrors.NameRequired.Message);
     }
 
@@ -240,7 +240,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.BirthDateRequired.Identifier);
+        exception.Code.Should().Be(UserErrors.BirthDateRequired.Code);
         exception.Message.Should().Be(UserErrors.BirthDateRequired.Message);
     }
 
@@ -299,7 +299,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.GenderRequired.Identifier);
+        exception.Code.Should().Be(UserErrors.GenderRequired.Code);
         exception.Message.Should().Be(UserErrors.GenderRequired.Message);
     }
 
@@ -358,7 +358,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.GenderInvalid.Identifier);
+        exception.Code.Should().Be(UserErrors.GenderInvalid.Code);
         exception.Message.Should().Be(UserErrors.GenderInvalid.Message);
     }
 
@@ -400,7 +400,7 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be(UserErrors.PhoneRequired.Identifier);
+        exception.Code.Should().Be(UserErrors.PhoneRequired.Code);
         exception.Message.Should().Be(UserErrors.PhoneRequired.Message);
     }
 

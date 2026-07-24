@@ -1,4 +1,4 @@
-﻿using YaeaY.Account.Domain.Abstraction.Entities;
+using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Entities.UserDocuments;
@@ -144,7 +144,7 @@ public class User : Entity, IAggregateRoot
         if (email is null)
             throw new DomainException(
                 message: "Email cannot be null.",
-                identifier: "EMAIL_NULL");
+                code: "EMAIL_NULL");
 
         _email = email;
     }
@@ -154,7 +154,7 @@ public class User : Entity, IAggregateRoot
         if (passwordHash is null)
             throw new DomainException(
                 message: "Password hash cannot be null.",
-                identifier: "PASSWORD_HASH_NULL");
+                code: "PASSWORD_HASH_NULL");
 
         _passwordHash = passwordHash;
     }
@@ -164,7 +164,7 @@ public class User : Entity, IAggregateRoot
         if (userName is null)
             throw new DomainException(
                 message: "UserName cannot be null.",
-                identifier: "USER_NAME_NULL");
+                code: "USER_NAME_NULL");
 
         _userName = userName;
     }
@@ -174,7 +174,7 @@ public class User : Entity, IAggregateRoot
         if (birthDate is null)
             throw new DomainException(
                 message: "Birth date cannot be null.",
-                identifier: "BIRTH_DATE_NULL");
+                code: "BIRTH_DATE_NULL");
 
         _birthDate = birthDate;
     }
@@ -184,7 +184,7 @@ public class User : Entity, IAggregateRoot
         if (gender == Gender.Unknown)
             throw new DomainException(
                 message: "Gender cannot be unknown.",
-                identifier: "GENDER_UNKNOWN");
+                code: "GENDER_UNKNOWN");
 
         if (_gender == gender)
             return;

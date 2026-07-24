@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.TokenHashTests;
@@ -21,8 +21,8 @@ public class TokenHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("TOKEN_HASH_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Token hash cannot be nul, empty or white space.");
+        result.Error.Code.Should().Be("TOKEN_HASH_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Message.Should().Be("Token hash cannot be null, empty or white space.");
     }
 
     [Fact]
@@ -39,8 +39,8 @@ public class TokenHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("TOKEN_HASH_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Token hash cannot be nul, empty or white space.");
+        result.Error.Code.Should().Be("TOKEN_HASH_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Message.Should().Be("Token hash cannot be null, empty or white space.");
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public class TokenHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("TOKEN_HASH_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Token hash cannot be nul, empty or white space.");
+        result.Error.Code.Should().Be("TOKEN_HASH_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Message.Should().Be("Token hash cannot be null, empty or white space.");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class TokenHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("TOKEN_HASH_TOO_LONG");
+        result.Error.Code.Should().Be("TOKEN_HASH_TOO_LONG");
         result.Error.Message.Should().Be("Token hash is too long. Current length: 1025. Max: 1024.");
     }
 

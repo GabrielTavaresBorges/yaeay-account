@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordHashTests;
@@ -21,7 +21,7 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Password hash cannot be null, empty or white space.");
     }
 
@@ -39,7 +39,7 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Password hash cannot be null, empty or white space.");
     }
 
@@ -57,7 +57,7 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("Password hash cannot be null, empty or white space.");
     }
 
@@ -75,7 +75,7 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("PASSWORD_HASH_TOO_LONG");
+        result.Error.Code.Should().Be("PASSWORD_HASH_TOO_LONG");
         result.Error.Message.Should().Be("Password hash is too long. Current length: 1025. Max: 1024.");
     }
 

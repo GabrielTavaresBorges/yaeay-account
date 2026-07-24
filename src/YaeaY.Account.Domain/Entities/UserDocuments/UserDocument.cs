@@ -1,4 +1,4 @@
-﻿using YaeaY.Account.Domain.Abstraction.Entities;
+using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.ValueObjects.Documents;
@@ -30,7 +30,7 @@ public sealed class UserDocument : Entity
         if (cpf is null)
             throw new DomainException(
                 message: "Cpf cannot be null.",
-                identifier: "CPF_NULL");
+                code: "CPF_NULL");
 
         return new UserDocument(DocumentType.Cpf, cpf.Number);
     }

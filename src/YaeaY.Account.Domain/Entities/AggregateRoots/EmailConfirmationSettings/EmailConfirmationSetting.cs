@@ -1,4 +1,4 @@
-﻿using YaeaY.Account.Domain.Abstraction.Entities;
+using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.ValueObjects.Emails;
@@ -65,32 +65,32 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
     {
         if (fromEmail is null)
             throw new DomainException(
-                identifier: "FROM_EMAIL_NULL",
+                code: "FROM_EMAIL_NULL",
                 message: "From email cannot be null.");
 
         if (string.IsNullOrWhiteSpace(fromName))
             throw new DomainException(
-                identifier: "FROM_NAME_NULL_EMPTY_WHITE_SPACE",
+                code: "FROM_NAME_NULL_EMPTY_WHITE_SPACE",
                 message: "From name cannot be null, empty or white space.");
 
         if (fromName.Trim().Length > 150)
             throw new DomainException(
-                identifier: "FROM_NAME_TOO_LONG",
+                code: "FROM_NAME_TOO_LONG",
                 message: "From name cannot be longer than 150 characters.");
 
         if (string.IsNullOrWhiteSpace(subject))
             throw new DomainException(
-                identifier: "SUBJECT_NULL_EMPTY_WHITE_SPACE",
+                code: "SUBJECT_NULL_EMPTY_WHITE_SPACE",
                 message: "Subject cannot be null, empty or white space.");
 
         if (subject.Trim().Length > 200)
             throw new DomainException(
-                identifier: "SUBJECT_TOO_LONG",
+                code: "SUBJECT_TOO_LONG",
                 message: "Subject cannot be longer than 200 characters.");
 
         if (string.IsNullOrWhiteSpace(bodyHtml))
             throw new DomainException(
-                identifier: "BODY_NULL_EMPTY_WHITE_SPACE",
+                code: "BODY_NULL_EMPTY_WHITE_SPACE",
                 message: "Body HTML cannot be null, empty or white space.");
     }
 }

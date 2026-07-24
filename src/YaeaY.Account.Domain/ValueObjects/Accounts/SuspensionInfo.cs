@@ -1,4 +1,4 @@
-﻿using YaeaY.Account.Domain.Abstraction.Exceptions;
+using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Enumerators;
 
 namespace YaeaY.Account.Domain.ValueObjects.Accounts;
@@ -53,12 +53,12 @@ public sealed record SuspensionInfo
         if (reason == SuspensionReason.Unknown)
             throw new DomainException(
                 message: "Suspension reason cannot be Unknown.",
-                identifier: "SUSPENSION_REASON_INVALID");
+                code: "SUSPENSION_REASON_INVALID");
 
         if (by == SuspensionBy.Unknown)
             throw new DomainException(
                 message: "Suspension 'By' cannot be Unknown.",
-                identifier: "SUSPENSION_BY_INVALID");
+                code: "SUSPENSION_BY_INVALID");
 
         // normaliza note
         note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
@@ -66,12 +66,12 @@ public sealed record SuspensionInfo
         if (note is not null && note.Length > MaxNoteLength)
             throw new DomainException(
                 message: $"Suspension note is too long. Maximum length is {MaxNoteLength} characters.",
-                identifier: "SUSPENSION_NOTE_TOO_LONG");
+                code: "SUSPENSION_NOTE_TOO_LONG");
 
         if (suspendedUntil.HasValue && suspendedUntil.Value <= suspendedAt)
             throw new DomainException(
                 message: "SuspendedUntil must be greater than SuspendedAt.",
-                identifier: "SUSPENSION_UNTIL_INVALID");
+                code: "SUSPENSION_UNTIL_INVALID");
     }
 
     public bool IsExpired(DateTimeOffset nowUtc)

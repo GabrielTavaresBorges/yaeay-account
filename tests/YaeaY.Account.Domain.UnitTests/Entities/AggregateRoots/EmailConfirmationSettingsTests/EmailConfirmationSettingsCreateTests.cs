@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
 using YaeaY.Account.Domain.ValueObjects.Emails;
@@ -29,7 +29,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("FROM_EMAIL_NULL");
+        exeption.Code.Should().Be("FROM_EMAIL_NULL");
         exeption.Message.Should().Be("From email cannot be null.");
     }
 
@@ -58,7 +58,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("From name cannot be null, empty or white space.");
     }
 
@@ -83,7 +83,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("From name cannot be null, empty or white space.");
     }
 
@@ -108,7 +108,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("FROM_NAME_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("From name cannot be null, empty or white space.");
     }
 
@@ -133,7 +133,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("FROM_NAME_TOO_LONG");
+        exeption.Code.Should().Be("FROM_NAME_TOO_LONG");
         exeption.Message.Should().Be("From name cannot be longer than 150 characters.");
     }
 
@@ -162,7 +162,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("Subject cannot be null, empty or white space.");
     }
 
@@ -187,7 +187,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("Subject cannot be null, empty or white space.");
     }
 
@@ -212,7 +212,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("SUBJECT_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("Subject cannot be null, empty or white space.");
     }
 
@@ -237,7 +237,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("SUBJECT_TOO_LONG");
+        exeption.Code.Should().Be("SUBJECT_TOO_LONG");
         exeption.Message.Should().Be("Subject cannot be longer than 200 characters.");
     }
 
@@ -266,7 +266,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
     }
 
@@ -291,7 +291,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
     }
 
@@ -316,7 +316,7 @@ public class EmailConfirmationSettingsCreateTests
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Identifier.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
+        exeption.Code.Should().Be("BODY_NULL_EMPTY_WHITE_SPACE");
         exeption.Message.Should().Be("Body HTML cannot be null, empty or white space.");
     }
 

@@ -1,4 +1,6 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 
 namespace YaeaY.Account.Domain.ValueObjects.Securities;
 
@@ -30,8 +32,10 @@ public sealed record PasswordHash
         if (string.IsNullOrWhiteSpace(passwordHash))
         {
             return Result<string>.Failure(new Error(
-                 Identifier: "PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE",
-                 Message: "Password hash cannot be null, empty or white space."));
+                 Code: "PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE",
+                 Message: "Password hash cannot be null, empty or white space.",
+                 Category: ErrorCategory.Validation,
+                 Rule: ErrorRule.Required));
         }
 
         passwordHash = passwordHash.Trim();
@@ -40,8 +44,10 @@ public sealed record PasswordHash
         if (passwordHash.Length > MaxLength)
         {
             return Result<string>.Failure(new Error(
-               Identifier: "PASSWORD_HASH_TOO_LONG",
-               Message: $"Password hash is too long. Current length: {passwordHash.Length}. Max: {MaxLength}."));
+               Code: "PASSWORD_HASH_TOO_LONG",
+               Message: $"Password hash is too long. Current length: {passwordHash.Length}. Max: {MaxLength}.",
+               Category: ErrorCategory.Validation,
+               Rule: ErrorRule.MaximumLength));
         }
             
         return Result<string>.Success(passwordHash);

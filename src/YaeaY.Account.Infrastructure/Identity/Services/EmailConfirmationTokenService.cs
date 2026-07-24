@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.ValueObjects.Securities;
@@ -18,7 +18,7 @@ public sealed class EmailConfirmationTokenService : IEmailConfirmationTokenServi
         if (tokenHashResult.IsFailure)
             throw new DomainException(
                 message: tokenHashResult.Error.Message,
-                identifier: tokenHashResult.Error.Identifier);
+                code: tokenHashResult.Error.Code);
 
         var result = new GeneratedEmailConfirmationToken(
             rawToken: rawToken,

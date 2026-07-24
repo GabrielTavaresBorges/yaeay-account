@@ -1,9 +1,11 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using YaeaY.Account.Application.Services.Security.Interfaces;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Repositories.Users;
@@ -96,13 +98,21 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         {
             _logger.LogError(ex, "Domain Error creating user.");
             return Result<Response>.Failure(
-                new Error(ex.Identifier ?? "DOMAIN_ERROR", ex.Message));
+                new Error(
+                    Code: ex.Code,
+                    Message: ex.Message,
+                    Category: ex.Category,
+                    Rule: ex.Rule));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error creating user.");
             return Result<Response>.Failure(
-                new Error("UNEXPECTED_ERROR", "An unexpected error occurred."));
+                new Error(
+                    Code: "unexpected.error",
+                    Message: "An unexpected error occurred.",
+                    Category: ErrorCategory.Unexpected,
+                    Rule: ErrorRule.Unexpected));
         }
     }
 }

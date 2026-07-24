@@ -1,11 +1,13 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
@@ -35,7 +37,11 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (user is null)
             {
                 return Result<Response>.Failure(
-                    new Error("USER_NOT_FOUND", "User not found."));
+                    new Error(
+                        Code: "user.not-found",
+                        Message: "User not found.",
+                        Category: ErrorCategory.NotFound,
+                        Rule: ErrorRule.NotFound));
             }
 
             var updatedFields = new List<string>();
@@ -108,13 +114,21 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         {
             _logger.LogError(ex, "Domain error updating user.");
             return Result<Response>.Failure(
-                new Error(ex.Identifier ?? "DOMAIN_ERROR", ex.Message));
+                new Error(
+                    Code: ex.Code,
+                    Message: ex.Message,
+                    Category: ex.Category,
+                    Rule: ex.Rule));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error updating user.");
             return Result<Response>.Failure(
-                new Error("UNEXPECTED_ERROR", "An unexpected error occurred."));
+                new Error(
+                    Code: "unexpected.error",
+                    Message: "An unexpected error occurred.",
+                    Category: ErrorCategory.Unexpected,
+                    Rule: ErrorRule.Unexpected));
         }
     }
 }

@@ -1,54 +1,81 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+﻿
+
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 
 namespace YaeaY.Account.Domain.Errors.Users;
 
 public static class UserErrors
 {
     public static readonly Error EmailRequired = new(
-        Identifier: "user.email.required",
-        Message: "A user must have an email address.");   
+        Code: "user.email.required",
+        Message: "A user must have an email address.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
 
     public static readonly Error PasswordRequired = new(
-        Identifier: "user.password.required",
-        Message: "A user must have a password.");
+        Code: "user.password.required",
+        Message: "A user must have a password.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
 
     public static readonly Error NameRequired = new(
-        Identifier: "user.name.required",
-        Message: "A user must have an name.");
+        Code: "user.name.required",
+        Message: "A user must have a name.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
 
     public static readonly Error BirthDateRequired = new(
-        Identifier: "user.birth-date.required",
-        Message: "A user must have a birth date.");
+        Code: "user.birth-date.required",
+        Message: "A user must have a birth date.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
 
     public static readonly Error GenderRequired = new(
-        Identifier: "user.gender.required",
-        Message: "A user must have a defined gender.");
+        Code: "user.gender.required",
+        Message: "A user must have a defined gender.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
 
     public static readonly Error GenderInvalid = new(
-        Identifier: "user.gender.invalid",
-        Message: "The informed gender is invalid.");
+        Code: "user.gender.invalid",
+        Message: "The informed gender is invalid.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.InvalidValue);
 
     public static readonly Error PhoneRequired = new(
-        Identifier: "user.phone.required",
-        Message: "A phone must be informed.");
+        Code: "user.phone.required",
+        Message: "A phone must be informed.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
 
     public static readonly Error PhoneAlreadyExists = new(
-        Identifier: "user.phone.already-exists",
-        Message: "The phone is already associated with this user.");
+        Code: "user.phone.already-exists",
+        Message: "The phone is already associated with this user.",
+        Category: ErrorCategory.Conflict,
+        Rule: ErrorRule.AlreadyExists);
 
     public static readonly Error AtLeastOnePhoneRequired = new(
-        Identifier: "user.phone.at-least-one-required",
-        Message: "A user must have at least one phone.");
+        Code: "user.phone.at-least-one-required",
+        Message: "A user must have at least one phone.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
 
     public static readonly Error PrimaryPhoneRequired = new(
-        Identifier: "user.phone.primary-required",
-        Message: "A user must have exactly one primary phone.");
+        Code: "user.phone.primary-required",
+        Message: "A user must have exactly one primary phone.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
 
     public static readonly Error PrimaryPhoneCannotBeRemoved = new(
-        Identifier: "user.phone.primary-cannot-be-removed",
-        Message: "The primary phone cannot be removed before another phone is set as primary.");
+        Code: "user.phone.primary-cannot-be-removed",
+        Message: "The primary phone cannot be removed before another phone is set as primary.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
 
     public static readonly Error PhoneNotFound = new(
-        Identifier: "user.phone.not-found",
-        Message: "The phone is not associated with this user.");
+        Code: "user.phone.not-found",
+        Message: "The phone is not associated with this user.",
+        Category: ErrorCategory.NotFound,
+        Rule: ErrorRule.NotFound);
 }

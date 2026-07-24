@@ -1,19 +1,31 @@
-﻿using YaeaY.Account.Domain.Abstraction.Records;
+using YaeaY.Account.Domain.Abstraction.Errors;
+using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 
 namespace YaeaY.Account.Domain.Abstraction.Exceptions;
 
 public class DomainException : Exception
 {
-    public string Identifier { get; }
+    public string Code { get; }
 
-    public DomainException(string identifier, string message) 
-         : base(message)
+    public ErrorCategory Category { get; }
+    public ErrorRule Rule { get; }
+
+    public DomainException(
+        string code,
+        string message,
+        ErrorCategory category = ErrorCategory.BusinessRule,
+        ErrorRule rule = ErrorRule.InvariantViolation)
+        : base(message)
     {
-        Identifier = identifier;
+        Code = code;
+        Category = category;
+        Rule = rule;
     }
 
     public DomainException(Error error) : base(error.Message)
     {
-        Identifier = error.Identifier;
+        Code = error.Code;
+        Category = error.Category;
+        Rule = error.Rule;
     }
 }

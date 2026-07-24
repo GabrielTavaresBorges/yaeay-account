@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
@@ -38,7 +38,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_CALLING_CODE_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_CALLING_CODE_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("CallingCode cannot be null, empty or white space.");
     }
 
@@ -69,7 +69,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_CALLING_CODE_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_CALLING_CODE_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("CallingCode cannot be null, empty or white space.");
     }
 
@@ -100,7 +100,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_CALLING_CODE_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_CALLING_CODE_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("CallingCode cannot be null, empty or white space.");
     }
 
@@ -131,7 +131,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_CALLING_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_CALLING_CODE_INVALID");
         exception.Message.Should().Be("CallingCode must be in format +<digits> (e.g., +55, +1).");
     }
 
@@ -162,7 +162,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_CALLING_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_CALLING_CODE_INVALID");
         exception.Message.Should().Be("CallingCode must be in format +<digits> (e.g., +55, +1).");
     }
 
@@ -197,7 +197,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("RegionCode cannot be null, empty or white space.");
     }
 
@@ -228,7 +228,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("RegionCode cannot be null, empty or white space.");
     }
 
@@ -259,7 +259,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_REGION_CODE_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("RegionCode cannot be null, empty or white space.");
     }
 
@@ -291,7 +291,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_REGION_CODE_INVALID");
         exception.Message.Should().Be("RegionCode must be a valid ISO2 code (e.g., BR, US, CA).");
     }
 
@@ -323,7 +323,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_REGION_CODE_INVALID");
         exception.Message.Should().Be("RegionCode must be a valid ISO2 code (e.g., BR, US, CA).");
     }
 
@@ -355,7 +355,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_REGION_CODE_INVALID");
         exception.Message.Should().Be("RegionCode must be a valid ISO2 code (e.g., BR, US, CA).");
     }
 
@@ -387,7 +387,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_REGION_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_REGION_CODE_INVALID");
         exception.Message.Should().Be("RegionCode must be a valid ISO2 code (e.g., BR, US, CA).");
     }
 
@@ -423,7 +423,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_AREA_CODE_INVALID");
+        exception.Code.Should().Be("PHONE_AREA_CODE_INVALID");
         exception.Message.Should().Be("AreaCode must contain digits only.");
     }
 
@@ -459,7 +459,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_TYPE_UNKNOWN");
+        exception.Code.Should().Be("PHONE_TYPE_UNKNOWN");
         exception.Message.Should().Be("Phone type cannot be unknown.");
     }
 
@@ -491,7 +491,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_TYPE_INVALID");
+        exception.Code.Should().Be("PHONE_TYPE_INVALID");
         exception.Message.Should().Be("Phone type is invalid.");
     }
 
@@ -527,7 +527,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_NUMBER_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_NUMBER_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("Phone number cannot be null, empty or white space.");
     }
 
@@ -559,7 +559,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_NUMBER_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_NUMBER_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("Phone number cannot be null, empty or white space.");
     }
 
@@ -591,7 +591,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_NUMBER_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_NUMBER_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("Phone number cannot be null, empty or white space.");
     }
 
@@ -623,7 +623,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_NUMBER_INVALID");
+        exception.Code.Should().Be("PHONE_NUMBER_INVALID");
         exception.Message.Should().Be("Phone number must contain digits only.");
     }
 
@@ -655,7 +655,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_NUMBER_INVALID");
+        exception.Code.Should().Be("PHONE_NUMBER_INVALID");
         exception.Message.Should().Be("Phone number must contain digits only.");
     }
 
@@ -687,7 +687,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_NUMBER_INVALID");
+        exception.Code.Should().Be("PHONE_NUMBER_INVALID");
         exception.Message.Should().Be("Phone number must contain digits only.");
     }
 
@@ -723,7 +723,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_E164_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("E164 cannot be null, empty or white space.");
     }
 
@@ -755,7 +755,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_E164_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("E164 cannot be null, empty or white space.");
     }
 
@@ -787,7 +787,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_NULL_EMPTY_WHITE_SPACE");
+        exception.Code.Should().Be("PHONE_E164_NULL_EMPTY_WHITE_SPACE");
         exception.Message.Should().Be("E164 cannot be null, empty or white space.");
     }
 
@@ -819,7 +819,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_INVALID");
+        exception.Code.Should().Be("PHONE_E164_INVALID");
         exception.Message.Should().Be("E164 must be in format +<digits>.");
     }
 
@@ -851,7 +851,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_INVALID");
+        exception.Code.Should().Be("PHONE_E164_INVALID");
         exception.Message.Should().Be("E164 must be in format +<digits>.");
     }
 
@@ -883,7 +883,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_INVALID");
+        exception.Code.Should().Be("PHONE_E164_INVALID");
         exception.Message.Should().Be("E164 must be in format +<digits>.");
     }
 
@@ -915,7 +915,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_INVALID");
+        exception.Code.Should().Be("PHONE_E164_INVALID");
         exception.Message.Should().Be("E164 must be in format +<digits>.");
     }
 
@@ -947,7 +947,7 @@ public class UserPhonesCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Identifier.Should().Be("PHONE_E164_INVALID");
+        exception.Code.Should().Be("PHONE_E164_INVALID");
         exception.Message.Should().Be("E164 must be in format +<digits>.");
     }
 

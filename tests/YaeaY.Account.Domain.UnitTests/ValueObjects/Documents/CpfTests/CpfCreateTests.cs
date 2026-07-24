@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Documents;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Documents.CpfTests;
@@ -21,7 +21,7 @@ public class CpfCreateTests
         // Assert              
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("CPF_NUMBER_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("CPF_NUMBER_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("CPF number cannot be null, empty or white space.");
     }
 
@@ -39,7 +39,7 @@ public class CpfCreateTests
         // Assert              
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("CPF_NUMBER_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("CPF_NUMBER_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("CPF number cannot be null, empty or white space.");
     }
 
@@ -57,7 +57,7 @@ public class CpfCreateTests
         // Assert              
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("CPF_NUMBER_NULL_EMPTY_WHITE_SPACE");
+        result.Error.Code.Should().Be("CPF_NUMBER_NULL_EMPTY_WHITE_SPACE");
         result.Error.Message.Should().Be("CPF number cannot be null, empty or white space.");
     }
 
@@ -75,7 +75,7 @@ public class CpfCreateTests
         // Assert              
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("CPF_NUMBER_INVALID_LENGTH");
+        result.Error.Code.Should().Be("CPF_NUMBER_INVALID_LENGTH");
         result.Error.Message.Should().Be("CPF number must be 11 digits long and contain only numbers.");
     }
 
@@ -93,7 +93,7 @@ public class CpfCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("CPF_NUMBER_CHECKSUM_INVALID");
+        result.Error.Code.Should().Be("CPF_NUMBER_CHECKSUM_INVALID");
         result.Error.Message.Should().Be("CPF failed validation.");
     }
 
@@ -111,7 +111,7 @@ public class CpfCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Identifier.Should().Be("CPF_NUMBER_CHECKSUM_INVALID");
+        result.Error.Code.Should().Be("CPF_NUMBER_CHECKSUM_INVALID");
         result.Error.Message.Should().Be("CPF failed validation.");
     }
 
