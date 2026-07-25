@@ -1,15 +1,24 @@
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Enumerators;
+using YaeaY.Account.Domain.Errors.SuspensionInfo;
 
 namespace YaeaY.Account.Domain.ValueObjects.Accounts;
 
 public sealed record SuspensionInfo
 {
-    public SuspensionReason? Reason { get; private init; }
-    public SuspensionBy? By { get; private init; }
-    public DateTimeOffset? SuspendedAt { get; private init; }
-    public DateTimeOffset? SuspendedUntil { get; private init; }
-    public string? Note { get; private init; }    
+    private const int MaximumNoteLength = 500;
+
+    private readonly SuspensionReason _reason;
+    private readonly SuspensionBy _by;
+    private readonly DateTimeOffset _suspendedAt;
+    private readonly DateTimeOffset? _suspendedUntil;
+    private readonly string? _note;
+
+    public SuspensionReason Reason => _reason;
+    public SuspensionBy By => _by;
+    public DateTimeOffset SuspendedAt => _suspendedAt;
+    public DateTimeOffset? SuspendedUntil => _suspendedUntil;
+    public string? Note => _note;
 
     private SuspensionInfo(
         SuspensionReason reason,
@@ -18,11 +27,11 @@ public sealed record SuspensionInfo
         DateTimeOffset? suspendedUntil,
         string? note)
     {
-        Reason = reason;
-        By = by;
-        SuspendedAt = suspendedAt;
-        SuspendedUntil = suspendedUntil;
-        Note = note;
+        _reason = reason;
+        _by = by;
+        _suspendedAt = suspendedAt;
+        _suspendedUntil = suspendedUntil;
+        _note = note;
     }
 
     public static SuspensionInfo Create(
@@ -32,14 +41,16 @@ public sealed record SuspensionInfo
         DateTimeOffset? suspendedUntil = null,
         string? note = null)
     {
-        Validate(reason, by, suspendedAt, suspendedUntil, note);
+        var normalizedNote = NormalizeNote(note);
+
+        Validate(reason, by, suspendedAt, suspendedUntil, normalizedNote);
 
         return new SuspensionInfo(
             reason: reason,
             by: by,
             suspendedAt: suspendedAt,
             suspendedUntil: suspendedUntil,
-            note: note
+            note: normalizedNote
         );
     }
 
@@ -51,28 +62,35 @@ public sealed record SuspensionInfo
         string? note)
     {
         if (reason == SuspensionReason.Unknown)
-            throw new DomainException(
-                message: "Suspension reason cannot be Unknown.",
-                code: "SUSPENSION_REASON_INVALID");
+            throw new DomainException(SuspensionInfoErrors.ReasonRequired);
+
+        if (!Enum.IsDefined(typeof(SuspensionReason), reason))
+            throw new DomainException(SuspensionInfoErrors.ReasonInvalid(reason));
 
         if (by == SuspensionBy.Unknown)
-            throw new DomainException(
-                message: "Suspension 'By' cannot be Unknown.",
-                code: "SUSPENSION_BY_INVALID");
+            throw new DomainException(SuspensionInfoErrors.ByRequired);
 
-        // normaliza note
-        note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
-        const int MaxNoteLength = 500;
-        if (note is not null && note.Length > MaxNoteLength)
+        if (!Enum.IsDefined(typeof(SuspensionBy), by))
+            throw new DomainException(SuspensionInfoErrors.ByInvalid(by));
+
+        if (suspendedAt == default)
+            throw new DomainException(SuspensionInfoErrors.SuspendedAtRequired);
+
+        if (note is not null && note.Length > MaximumNoteLength)
             throw new DomainException(
-                message: $"Suspension note is too long. Maximum length is {MaxNoteLength} characters.",
-                code: "SUSPENSION_NOTE_TOO_LONG");
+                SuspensionInfoErrors.NoteTooLong(
+                    note.Length,
+                    MaximumNoteLength));
 
         if (suspendedUntil.HasValue && suspendedUntil.Value <= suspendedAt)
             throw new DomainException(
-                message: "SuspendedUntil must be greater than SuspendedAt.",
-                code: "SUSPENSION_UNTIL_INVALID");
+                SuspensionInfoErrors.SuspendedUntilNotAfterSuspendedAt(
+                    suspendedAt,
+                    suspendedUntil.Value));
     }
+
+    private static string? NormalizeNote(string? note)
+        => string.IsNullOrWhiteSpace(note) ? null : note.Trim();
 
     public bool IsExpired(DateTimeOffset nowUtc)
         => SuspendedUntil.HasValue && nowUtc >= SuspendedUntil.Value;
