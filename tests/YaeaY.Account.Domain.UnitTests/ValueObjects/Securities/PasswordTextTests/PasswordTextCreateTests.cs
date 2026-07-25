@@ -1,4 +1,5 @@
 using FluentAssertions;
+using YaeaY.Account.Domain.Errors.PasswordText;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordTextTests;
@@ -8,7 +9,7 @@ public class PasswordTextCreateTests
     // IsFailure
 
     [Fact]
-    public void Create_WhenPasswordTextIsNull_ShouldFailure()
+    public void Create_WhenPasswordTextIsNull_ShouldFail_WithPasswordTextErrorsRequired()
     {
         // Arrange
 
@@ -21,12 +22,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Password cannot be null, empty or white space.");
+        result.Error.Should().Be(PasswordTextErrors.Required);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextIsEmpty_ShouldFailure()
+    public void Create_WhenPasswordTextIsEmpty_ShouldFail_WithPasswordTextErrorsRequired()
     {
         // Arrange
 
@@ -39,12 +39,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Password cannot be null, empty or white space.");
+        result.Error.Should().Be(PasswordTextErrors.Required);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextContainsWhiteSpaceOnly_ShouldFailure()
+    public void Create_WhenPasswordTextContainsWhiteSpaceOnly_ShouldFail_WithPasswordTextErrorsRequired()
     {
         // Arrange
 
@@ -57,12 +56,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Password cannot be null, empty or white space.");
+        result.Error.Should().Be(PasswordTextErrors.Required);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextIsTooShort_ShouldFailure()
+    public void Create_WhenPasswordTextIsTooShort_ShouldFail_WithPasswordTextErrorsTooShort()
     {
         // Arrange
 
@@ -75,12 +73,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_TOO_SHORT");
-        result.Error.Message.Should().Be("Password must be at least 8 chars.");
+        result.Error.Should().Be(PasswordTextErrors.TooShort(password.Length, 8));
     }
 
     [Fact]
-    public void Create_WhenPasswordTextDoesNotContainUppercase_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainUppercase_ShouldFail_WithPasswordTextErrorsMissingUppercase()
     {
         // Arrange
 
@@ -93,12 +90,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_MISSING_UPPERCASE");
-        result.Error.Message.Should().Be("Password must contain at least one uppercase letter.");
+        result.Error.Should().Be(PasswordTextErrors.MissingUppercase);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextDoesNotContainLowercase_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainLowercase_ShouldFail_WithPasswordTextErrorsMissingLowercase()
     {
         // Arrange
 
@@ -111,12 +107,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_MISSING_LOWERCASE");
-        result.Error.Message.Should().Be("Password must contain at least one lowercase letter.");
+        result.Error.Should().Be(PasswordTextErrors.MissingLowercase);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextDoesNotContainDigit_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainDigit_ShouldFail_WithPasswordTextErrorsMissingDigit()
     {
         // Arrange
 
@@ -129,12 +124,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_MISSING_DIGIT");
-        result.Error.Message.Should().Be("Password must contain at least one number.");
+        result.Error.Should().Be(PasswordTextErrors.MissingDigit);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextDoesNotContainSpecialCharacter_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainSpecialCharacter_ShouldFail_WithPasswordTextErrorsMissingSpecialCharacter()
     {
         // Arrange
 
@@ -147,12 +141,11 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_MISSING_SPECIAL");
-        result.Error.Message.Should().Be("Password must contain at least one special character.");
+        result.Error.Should().Be(PasswordTextErrors.MissingSpecialCharacter);
     }
 
     [Fact]
-    public void Create_WhenPasswordTextIsTooLong_ShouldFailure()
+    public void Create_WhenPasswordTextIsTooLong_ShouldFail_WithPasswordTextErrorsTooLong()
     {
         // Arrange
 
@@ -165,14 +158,13 @@ public class PasswordTextCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_TOO_LONG");
-        result.Error.Message.Should().Be("Password is too long. Maximum allowed length is 256 characters.");
+        result.Error.Should().Be(PasswordTextErrors.TooLong(password.Length, 256));
     }
 
     // IsSuccess
 
     [Fact]
-    public void Create_WhenPasswordTextIsValid_ShouldSuccess()
+    public void Create_WhenPasswordTextIsValid_ShouldSucceed()
     {
         // Arrange
 
@@ -190,7 +182,7 @@ public class PasswordTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordTextHasLeadingOrTrailingSpaces_ShouldSuccess()
+    public void Create_WhenPasswordTextHasLeadingOrTrailingSpaces_ShouldSucceed_WithTrimmedPasswordText()
     {
         // Arrange
 
@@ -208,7 +200,7 @@ public class PasswordTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordTextHasExactlyMaxLength_ShouldSuccess()
+    public void Create_WhenPasswordTextHasExactlyMaximumLength_ShouldSucceed()
     {
         // Arrange
 

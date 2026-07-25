@@ -1,12 +1,14 @@
 using System.Text.RegularExpressions;
-using YaeaY.Account.Domain.Abstraction.Errors;
-using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.Errors.PasswordText;
 
 namespace YaeaY.Account.Domain.ValueObjects.Securities;
 
 public sealed record PasswordText
 {
+    private const int MinimumLength = 8;
+    private const int MaximumLength = 256;
+
     private readonly string _password = string.Empty;
 
     public string Password => _password;
@@ -36,70 +38,29 @@ public sealed record PasswordText
     private static Result<string> ValidatePasswordText(string password)
     {
         if (string.IsNullOrWhiteSpace(password))
-        {
-            return Result<string>.Failure(new Error(
-               Code: "PASSWORD_NULL_EMPTY_WHITE_SPACE",
-               Message: "Password cannot be null, empty or white space.",
-               Category: ErrorCategory.Validation,
-               Rule: ErrorRule.Required));
-        }
+            return Result<string>.Failure(PasswordTextErrors.Required);
 
         password = password.Trim();
 
-        if (password.Length < 8)
-        {
-            return Result<string>.Failure(new Error(
-             Code: "PASSWORD_TOO_SHORT",
-             Message: "Password must be at least 8 chars.",
-             Category: ErrorCategory.Validation,
-             Rule: ErrorRule.MinimumLength));
-        }
+        if (password.Length < MinimumLength)
+            return Result<string>.Failure(
+                PasswordTextErrors.TooShort(password.Length, MinimumLength));
 
         if (!UppercaseRegex.IsMatch(password))
-        {
-            return Result<string>.Failure(new Error(
-                Code: "PASSWORD_MISSING_UPPERCASE",
-                Message: "Password must contain at least one uppercase letter.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidFormat));
-        }
+            return Result<string>.Failure(PasswordTextErrors.MissingUppercase);
 
         if (!LowercaseRegex.IsMatch(password))
-        {
-            return Result<string>.Failure(new Error(
-                Code: "PASSWORD_MISSING_LOWERCASE",
-                Message: "Password must contain at least one lowercase letter.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidFormat));
-        }
+            return Result<string>.Failure(PasswordTextErrors.MissingLowercase);
 
         if (!DigitRegex.IsMatch(password))
-        {
-            return Result<string>.Failure(new Error(
-                Code: "PASSWORD_MISSING_DIGIT",
-                Message: "Password must contain at least one number.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidFormat));
-        }
+            return Result<string>.Failure(PasswordTextErrors.MissingDigit);
 
         if (!SpecialRegex.IsMatch(password))
-        {
-            return Result<string>.Failure(new Error(
-                Code: "PASSWORD_MISSING_SPECIAL",
-                Message: "Password must contain at least one special character.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidFormat));
-        }
+            return Result<string>.Failure(PasswordTextErrors.MissingSpecialCharacter);
 
-        const int MaxLength = 256;
-        if (password.Length > MaxLength)
-        {
-            return Result<string>.Failure(new Error(
-                Code: "PASSWORD_TOO_LONG",
-                Message: $"Password is too long. Maximum allowed length is {MaxLength} characters.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.MaximumLength));
-        }
+        if (password.Length > MaximumLength)
+            return Result<string>.Failure(
+                PasswordTextErrors.TooLong(password.Length, MaximumLength));
 
         return Result<string>.Success(password);
     }
