@@ -51,9 +51,9 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (passwordHashResult.IsFailure)
                 return Result<Response>.Failure(passwordHashResult.Error);
 
-            var userNameResult = UserName.Create(command.UserName);
-            if (userNameResult.IsFailure)
-                return Result<Response>.Failure(userNameResult.Error);
+            var fullNameResult = FullName.Create(command.FullName);
+            if (fullNameResult.IsFailure)
+                return Result<Response>.Failure(fullNameResult.Error);
 
             var birhDateResult = BirthDate.Create(command.BirthDate);
             if (birhDateResult.IsFailure)
@@ -71,7 +71,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             var user = User.Create(
                 emailAddress: emailResult.Value,
                 passwordHash: passwordHashResult.Value,
-                userName: userNameResult.Value,
+                fullName: fullNameResult.Value,
                 birthDate: birhDateResult.Value,
                 gender: command.Gender,
                 initialPhone: initialPhone);
@@ -82,7 +82,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             return Result<Response>.Success(
                 new Response(
                     id: user.Id,
-                    userName: user.UserName.Name,
+                    fullName: user.FullName.Name,
                     message: "User created successfully!")
                 );
         }

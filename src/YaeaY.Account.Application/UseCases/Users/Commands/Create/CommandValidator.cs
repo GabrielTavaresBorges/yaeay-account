@@ -17,7 +17,7 @@ public sealed class CommandValidator : AbstractValidator<Command>
             .MinimumLength(8)
             .MaximumLength(256);
 
-        RuleFor(x => x.UserName)
+        RuleFor(x => x.FullName)
             .NotEmpty()
             .MinimumLength(2)
             .MaximumLength(100);

@@ -37,16 +37,16 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         builder.Navigation(n => n.PasswordHash).IsRequired();
 
 
-        // ===== UserName (VO) =====
-        builder.OwnsOne(o => o.UserName, name =>
+        // ===== FullName (VO) =====
+        builder.OwnsOne(o => o.FullName, name =>
         {
             name.Property(p => p.Name)
-                .HasColumnName("UserName")
+                .HasColumnName("FullName")
                 .HasMaxLength(100)
                 .IsRequired();
         });
 
-        builder.Navigation(n => n.UserName)
+        builder.Navigation(n => n.FullName)
             .IsRequired();
 
         // ===== BirthDate (VO) =====

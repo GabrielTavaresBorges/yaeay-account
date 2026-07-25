@@ -8,7 +8,7 @@ namespace YaeaY.Account.Application.UseCases.Users.Commands.Create;
 public sealed record Command(
     string EmailAddress,
     string Password,
-    string UserName,
+    string FullName,
     DateOnly BirthDate,
     Gender Gender,
     string CallingCode,

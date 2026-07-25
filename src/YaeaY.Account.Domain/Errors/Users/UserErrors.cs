@@ -19,9 +19,9 @@ public static class UserErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.Required);
 
-    public static readonly Error NameRequired = new(
-        Code: "user.name.required",
-        Message: "A user must have a name.",
+    public static readonly Error FullNameRequired = new(
+        Code: "user.full-name.required",
+        Message: "A user must have a full name.",
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.Required);
 
