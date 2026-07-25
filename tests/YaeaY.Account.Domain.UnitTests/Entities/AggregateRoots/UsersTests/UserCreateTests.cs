@@ -17,7 +17,7 @@ public class UserCreateTests
     // IsFailure
 
     [Fact]
-    public void Create_WhenEmailIsNull_ShouldThrowDomainException()
+    public void Create_WhenEmailIsNull_ShouldThrowDomainException_WithUserErrorsEmailRequired()
     {
         // Arrange
 
@@ -69,12 +69,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.EmailRequired.Code);
-        exception.Message.Should().Be(UserErrors.EmailRequired.Message);
+        exception.Error.Should().Be(UserErrors.EmailRequired);
     }
 
     [Fact]
-    public void Create_WhenPasswordHashIsNull_ShouldThrowDomainException()
+    public void Create_WhenPasswordHashIsNull_ShouldThrowDomainException_WithUserErrorsPasswordRequired()
     {
         // Arrange
 
@@ -126,12 +125,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.PasswordRequired.Code);
-        exception.Message.Should().Be(UserErrors.PasswordRequired.Message);
+        exception.Error.Should().Be(UserErrors.PasswordRequired);
     }
 
     [Fact]
-    public void Create_WhenUserNameIsNull_ShouldThrowDomainException()
+    public void Create_WhenUserNameIsNull_ShouldThrowDomainException_WithUserErrorsNameRequired()
     {
         // Arrange
 
@@ -183,12 +181,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.NameRequired.Code);
-        exception.Message.Should().Be(UserErrors.NameRequired.Message);
+        exception.Error.Should().Be(UserErrors.NameRequired);
     }
 
     [Fact]
-    public void Create_WhenBirthDateIsNull_ShouldThrowDomainException()
+    public void Create_WhenBirthDateIsNull_ShouldThrowDomainException_WithUserErrorsBirthDateRequired()
     {
         // Arrange
 
@@ -240,12 +237,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.BirthDateRequired.Code);
-        exception.Message.Should().Be(UserErrors.BirthDateRequired.Message);
+        exception.Error.Should().Be(UserErrors.BirthDateRequired);
     }
 
     [Fact]
-    public void Create_WhenGenderIsInvalid_ShouldThrowDomainException()
+    public void Create_WhenGenderIsUnknown_ShouldThrowDomainException_WithUserErrorsGenderRequired()
     {
         // Arrange
 
@@ -299,12 +295,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.GenderRequired.Code);
-        exception.Message.Should().Be(UserErrors.GenderRequired.Message);
+        exception.Error.Should().Be(UserErrors.GenderRequired);
     }
 
     [Fact]
-    public void Create_WhenGenderIsNotDefined_ShouldThrowDomainException()
+    public void Create_WhenGenderIsNotDefined_ShouldThrowDomainException_WithUserErrorsGenderInvalid()
     {
         // Arrange
 
@@ -358,12 +353,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.GenderInvalid.Code);
-        exception.Message.Should().Be(UserErrors.GenderInvalid.Message);
+        exception.Error.Should().Be(UserErrors.GenderInvalid);
     }
 
     [Fact]
-    public void Create_WhenInitialPhoneIsNull_ShouldThrowDomainException()
+    public void Create_WhenInitialPhoneIsNull_ShouldThrowDomainException_WithUserErrorsPhoneRequired()
     {
         // Arrange
 
@@ -400,14 +394,13 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.PhoneRequired.Code);
-        exception.Message.Should().Be(UserErrors.PhoneRequired.Message);
+        exception.Error.Should().Be(UserErrors.PhoneRequired);
     }
 
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllUserDataIsValid_ShouldSuccess()
+    public void Create_WhenAllUserDataIsValid_ShouldSucceed()
     {
         // Arrange
 

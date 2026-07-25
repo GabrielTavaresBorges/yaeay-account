@@ -13,7 +13,7 @@ public class EmailConfirmationSettingsCreateTests
     #region FromEmail
 
     [Fact]
-    public void Create_WhenFromEmailIsNull_ShouldThrowDomainException()
+    public void Create_WhenFromEmailIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromEmailRequired()
     {
         // Arrange
 
@@ -38,7 +38,7 @@ public class EmailConfirmationSettingsCreateTests
     #region FromName
 
     [Fact]
-    public void Create_WhenFromNameIsNull_ShouldThrowDomainException()
+    public void Create_WhenFromNameIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameRequired()
     {
         // Arrange
 
@@ -62,7 +62,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenFromNameIsEmpty_ShouldThrowDomainException()
+    public void Create_WhenFromNameIsEmpty_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameRequired()
     {
         // Arrange
 
@@ -86,7 +86,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenFromNameContainsWhiteSpaceOnly_ShouldThrowDomainException()
+    public void Create_WhenFromNameContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameRequired()
     {
         // Arrange
 
@@ -110,7 +110,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenFromNameIsTooLong_ShouldThrowDomainException()
+    public void Create_WhenFromNameIsTooLong_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameTooLong()
     {
         // Arrange
 
@@ -138,7 +138,7 @@ public class EmailConfirmationSettingsCreateTests
     #region Subject
 
     [Fact]
-    public void Create_WhenSubjectIsNull_ShouldThrowDomainException()
+    public void Create_WhenSubjectIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectRequired()
     {
         // Arrange
 
@@ -162,7 +162,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenSubjectIsEmpty_ShouldThrowDomainException()
+    public void Create_WhenSubjectIsEmpty_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectRequired()
     {
         // Arrange
 
@@ -186,7 +186,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenSubjectContainsWhiteSpaceOnly_ShouldThrowDomainException()
+    public void Create_WhenSubjectContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectRequired()
     {
         // Arrange
 
@@ -210,7 +210,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenSubjectIsTooLong_ShouldThrowDomainException()
+    public void Create_WhenSubjectIsTooLong_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectTooLong()
     {
         // Arrange
 
@@ -238,7 +238,7 @@ public class EmailConfirmationSettingsCreateTests
     #region Body
 
     [Fact]
-    public void Create_WhenBodyIsNull_ShouldThrowDomainException()
+    public void Create_WhenBodyIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsBodyHtmlRequired()
     {
         // Arrange
 
@@ -262,7 +262,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenBodyIsEmpty_ShouldThrowDomainException()
+    public void Create_WhenBodyIsEmpty_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsBodyHtmlRequired()
     {
         // Arrange
 
@@ -286,7 +286,7 @@ public class EmailConfirmationSettingsCreateTests
     }
 
     [Fact]
-    public void Create_WhenBodyContainsWhiteSpaceOnly_ShouldThrowDomainException()
+    public void Create_WhenBodyContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsBodyHtmlRequired()
     {
         // Arrange
 
@@ -314,7 +314,7 @@ public class EmailConfirmationSettingsCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllDataIsValid_ShouldSuccess()
+    public void Create_WhenAllDataIsValid_ShouldSucceed()
     {
         // Arrange
 
