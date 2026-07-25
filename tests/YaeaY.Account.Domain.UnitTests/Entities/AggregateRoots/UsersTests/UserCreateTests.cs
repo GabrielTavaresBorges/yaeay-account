@@ -17,7 +17,7 @@ public class UserCreateTests
     // IsFailure
 
     [Fact]
-    public void Create_WhenEmailIsNull_ShouldThrowDomainException()
+    public void Create_WhenEmailIsNull_ShouldThrowDomainException_WithUserErrorsEmailRequired()
     {
         // Arrange
 
@@ -27,9 +27,9 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var gender = Gender.Male;
 
@@ -61,7 +61,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             emailInvalid,
             passwordHash,
-            userName,
+            fullName,
             birthDate,
             gender,
             phone);
@@ -69,12 +69,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.EmailRequired.Code);
-        exception.Message.Should().Be(UserErrors.EmailRequired.Message);
+        exception.Error.Should().Be(UserErrors.EmailRequired);
     }
 
     [Fact]
-    public void Create_WhenPasswordHashIsNull_ShouldThrowDomainException()
+    public void Create_WhenPasswordHashIsNull_ShouldThrowDomainException_WithUserErrorsPasswordRequired()
     {
         // Arrange
 
@@ -84,9 +83,9 @@ public class UserCreateTests
 
         PasswordHash passwordHashInvalid = null!;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var gender = Gender.Male;
 
@@ -118,7 +117,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             email,
             passwordHashInvalid,
-            userName,
+            fullName,
             birthDate,
             gender,
             phone);
@@ -126,12 +125,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.PasswordRequired.Code);
-        exception.Message.Should().Be(UserErrors.PasswordRequired.Message);
+        exception.Error.Should().Be(UserErrors.PasswordRequired);
     }
 
     [Fact]
-    public void Create_WhenUserNameIsNull_ShouldThrowDomainException()
+    public void Create_WhenFullNameIsNull_ShouldThrowDomainException_WithUserErrorsFullNameRequired()
     {
         // Arrange
 
@@ -143,7 +141,7 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        UserName userNameInvalid = null!;
+        FullName fullNameInvalid = null!;
 
         var gender = Gender.Male;
 
@@ -175,7 +173,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             email,
             passwordHash,
-            userNameInvalid,
+            fullNameInvalid,
             birthDate,
             gender,
             phone);
@@ -183,12 +181,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.NameRequired.Code);
-        exception.Message.Should().Be(UserErrors.NameRequired.Message);
+        exception.Error.Should().Be(UserErrors.FullNameRequired);
     }
 
     [Fact]
-    public void Create_WhenBirthDateIsNull_ShouldThrowDomainException()
+    public void Create_WhenBirthDateIsNull_ShouldThrowDomainException_WithUserErrorsBirthDateRequired()
     {
         // Arrange
 
@@ -200,9 +197,9 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var gender = Gender.Male;
 
@@ -232,7 +229,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             email,
             passwordHash,
-            userName,
+            fullName,
             birthDateInvalid,
             gender,
             phone);
@@ -240,12 +237,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.BirthDateRequired.Code);
-        exception.Message.Should().Be(UserErrors.BirthDateRequired.Message);
+        exception.Error.Should().Be(UserErrors.BirthDateRequired);
     }
 
     [Fact]
-    public void Create_WhenGenderIsInvalid_ShouldThrowDomainException()
+    public void Create_WhenGenderIsUnknown_ShouldThrowDomainException_WithUserErrorsGenderRequired()
     {
         // Arrange
 
@@ -257,9 +253,9 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var genderInvalid = Gender.Unknown;
 
@@ -291,7 +287,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             email,
             passwordHash,
-            userName,
+            fullName,
             birthDate,
             genderInvalid,
             phone);
@@ -299,12 +295,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.GenderRequired.Code);
-        exception.Message.Should().Be(UserErrors.GenderRequired.Message);
+        exception.Error.Should().Be(UserErrors.GenderRequired);
     }
 
     [Fact]
-    public void Create_WhenGenderIsNotDefined_ShouldThrowDomainException()
+    public void Create_WhenGenderIsNotDefined_ShouldThrowDomainException_WithUserErrorsGenderInvalid()
     {
         // Arrange
 
@@ -316,9 +311,9 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var genderInvalid = (Gender)999;
 
@@ -350,7 +345,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             email,
             passwordHash,
-            userName,
+            fullName,
             birthDate,
             genderInvalid,
             phone);
@@ -358,12 +353,11 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.GenderInvalid.Code);
-        exception.Message.Should().Be(UserErrors.GenderInvalid.Message);
+        exception.Error.Should().Be(UserErrors.GenderInvalid);
     }
 
     [Fact]
-    public void Create_WhenInitialPhoneIsNull_ShouldThrowDomainException()
+    public void Create_WhenInitialPhoneIsNull_ShouldThrowDomainException_WithUserErrorsPhoneRequired()
     {
         // Arrange
 
@@ -375,9 +369,9 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var gender= Gender.Male;
 
@@ -392,7 +386,7 @@ public class UserCreateTests
         Action act = () => User.Create(
             email,
             passwordHash,
-            userName,
+            fullName,
             birthDate,
             gender,
             userPhoneInvalid);
@@ -400,14 +394,13 @@ public class UserCreateTests
         // Assert
 
         var exception = act.Should().Throw<DomainException>().Which;
-        exception.Code.Should().Be(UserErrors.PhoneRequired.Code);
-        exception.Message.Should().Be(UserErrors.PhoneRequired.Message);
+        exception.Error.Should().Be(UserErrors.PhoneRequired);
     }
 
     // IsSuccess
 
     [Fact]
-    public void Create_WhenAllUserDataIsValid_ShouldSuccess()
+    public void Create_WhenAllUserDataIsValid_ShouldSucceed()
     {
         // Arrange
 
@@ -419,9 +412,9 @@ public class UserCreateTests
         var passwordHashResult = PasswordHash.Create(passwordHashTest);
         var passwordHash = passwordHashResult.Value;
 
-        var userNameTest = "User Name Test";
-        var userNameResult = UserName.Create(userNameTest);
-        var userName = userNameResult.Value;
+        var fullNameTest = "Full Name Test";
+        var fullNameResult = FullName.Create(fullNameTest);
+        var fullName = fullNameResult.Value;
 
         var gender = Gender.Male;
 
@@ -455,7 +448,7 @@ public class UserCreateTests
         var resultUser = User.Create(
             email,
             passwordHash,
-            userName,
+            fullName,
             birthDate,
             gender,
             phone);
@@ -467,7 +460,7 @@ public class UserCreateTests
         resultUser.Should().NotBeNull();
         resultUser.Email.Should().Be(email);
         resultUser.PasswordHash.Should().Be(passwordHash);
-        resultUser.UserName.Should().Be(userName);
+        resultUser.FullName.Should().Be(fullName);
         resultUser.BirthDate.Should().Be(birthDate);
         resultUser.Gender.Should().Be(gender);
 
@@ -489,6 +482,6 @@ public class UserCreateTests
         var userRegisteredEvent = (UserRegisteredDomainEvent)domainEvent;
         userRegisteredEvent.UserId.Should().Be(resultUser.Id);
         userRegisteredEvent.Email.Should().Be(resultUser.Email.EmailAddress);
-        userRegisteredEvent.UserName.Should().Be(resultUser.UserName.Name);
+        userRegisteredEvent.FullName.Should().Be(resultUser.FullName.Name);
     }
 }

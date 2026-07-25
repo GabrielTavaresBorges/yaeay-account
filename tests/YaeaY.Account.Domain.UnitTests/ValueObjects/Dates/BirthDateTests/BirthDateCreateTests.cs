@@ -1,4 +1,5 @@
 using FluentAssertions;
+using YaeaY.Account.Domain.Errors.BirthDate;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Dates.BirthDateTests;
@@ -8,7 +9,7 @@ public class BirthDateCreateTests
     // IsFailure
 
     [Fact]
-    public void Create_WhenBirthDateIsInFuture_ShouldFailure()
+    public void Create_WhenBirthDateIsInFuture_ShouldFail_WithBirthDateErrorsInFuture()
     {
         // Arrange
 
@@ -22,15 +23,11 @@ public class BirthDateCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("BIRTH_DATE_IN_FUTURE");
-        result.Error.Message.Should().Be(
-            "Birth date cannot be in the future.\n" +
-            $"Received: {birthDate:yyyy-MM-dd}.\n" +
-            $"Today (UTC): {today:yyyy-MM-dd}.");
+        result.Error.Should().Be(BirthDateErrors.InFuture(birthDate, today));
     }
 
     [Fact]
-    public void Create_WhenBirthDateIsMoreThan150YearsAgo_ShouldFailure()
+    public void Create_WhenBirthDateExceedsMaximumAge_ShouldFail_WithBirthDateErrorsTooOld()
     {
         // Arrange
 
@@ -45,17 +42,14 @@ public class BirthDateCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("BIRTH_DATE_TOO_OLD");
-        result.Error.Message.Should().Be(
-            $"Birth date cannot be more than 150 years ago.\n" +
-            $"Received: {birthDate:yyyy-MM-dd}.\n" +
-            $"Minimum allowed (UTC): {minAllowed:yyyy-MM-dd}.");
+        result.Error.Should().Be(
+            BirthDateErrors.TooOld(birthDate, minAllowed, 150));
     }
 
     // IsSuccess
 
     [Fact]
-    public void Create_WhenBirthDateIsValid_ShouldSuccess()
+    public void Create_WhenBirthDateIsValid_ShouldSucceed()
     {
         // Arrange
 
@@ -72,7 +66,7 @@ public class BirthDateCreateTests
     }
 
     [Fact]
-    public void Create_WhenBirthDateIsExactly150YearsAgo_ShouldSuccess()
+    public void Create_WhenBirthDateRepresentsExactlyMaximumAge_ShouldSucceed()
     {
         // Arrange
 

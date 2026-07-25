@@ -3,13 +3,13 @@
 public sealed record Response
 {
     public Guid Id { get; init; }
-    public string UserName { get; init; }
+    public string FullName { get; init; }
     public string Message { get; init; }
 
-    public Response(Guid id, string userName, string message)
+    public Response(Guid id, string fullName, string message)
     {
         Id = id;
-        UserName = userName;
+        FullName = fullName;
         Message = message;
     }
 }

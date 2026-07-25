@@ -1,7 +1,10 @@
-﻿namespace YaeaY.Account.Application.Services.Security.Interfaces;
+﻿using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.ValueObjects.Securities;
+
+namespace YaeaY.Account.Application.Services.Security.Interfaces;
 
 public interface IPasswordHasher
 {
-    string Hash(string password);
-    bool Verify(string hashedPassword, string providedPassword);
+    Result<PasswordHash> Hash(PasswordText password);
+    bool Verify(PasswordHash passwordHash, string providedPassword);
 }

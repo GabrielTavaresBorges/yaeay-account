@@ -1,4 +1,5 @@
 using FluentAssertions;
+using YaeaY.Account.Domain.Errors.PasswordHash;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordHashTests;
@@ -8,7 +9,7 @@ public class PasswordHashCreateTests
     // IsFailure
 
     [Fact]
-    public void Create_WhenPasswordHashIsNull_ShouldFailure()
+    public void Create_WhenPasswordHashIsNull_ShouldFail_WithPasswordHashErrorsRequired()
     {
         // Arrange
 
@@ -21,12 +22,11 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Password hash cannot be null, empty or white space.");
+        result.Error.Should().Be(PasswordHashErrors.Required);
     }
 
     [Fact]
-    public void Create_WhenTokenHashIsEmpty_ShouldFailure()
+    public void Create_WhenPasswordHashIsEmpty_ShouldFail_WithPasswordHashErrorsRequired()
     {
         // Arrange
 
@@ -39,12 +39,11 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Password hash cannot be null, empty or white space.");
+        result.Error.Should().Be(PasswordHashErrors.Required);
     }
 
     [Fact]
-    public void Create_WhenTokenHashContainsWhiteSpaceOnly_ShouldFailure()
+    public void Create_WhenPasswordHashContainsWhiteSpaceOnly_ShouldFail_WithPasswordHashErrorsRequired()
     {
         // Arrange
 
@@ -57,12 +56,11 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_HASH_NULL_EMPTY_WHITE_SPACE");
-        result.Error.Message.Should().Be("Password hash cannot be null, empty or white space.");
+        result.Error.Should().Be(PasswordHashErrors.Required);
     }
 
     [Fact]
-    public void Create_WhenPasswordHashIsTooLong_ShouldFailure()
+    public void Create_WhenPasswordHashIsTooLong_ShouldFail_WithPasswordHashErrorsTooLong()
     {
         // Arrange
 
@@ -75,14 +73,13 @@ public class PasswordHashCreateTests
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("PASSWORD_HASH_TOO_LONG");
-        result.Error.Message.Should().Be("Password hash is too long. Current length: 1025. Max: 1024.");
+        result.Error.Should().Be(PasswordHashErrors.TooLong(hashed.Length, 1024));
     }
 
     // IsSuccess
 
     [Fact]
-    public void Create_WhenPasswordHashIsValid_ShouldSuccess()
+    public void Create_WhenPasswordHashIsValid_ShouldSucceed()
     {
         // Arrange
 
@@ -100,7 +97,7 @@ public class PasswordHashCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordHashContainsLeadingAndTrailingSpaces_ShouldTrimAndSuccess()
+    public void Create_WhenPasswordHashContainsLeadingAndTrailingSpaces_ShouldSucceed_WithTrimmedPasswordHash()
     {
         // Arrange
 
@@ -118,7 +115,7 @@ public class PasswordHashCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordHashHasExactlyMaxLength_ShouldSuccess()
+    public void Create_WhenPasswordHashHasExactlyMaximumLength_ShouldSucceed()
     {
         // Arrange
 

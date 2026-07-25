@@ -10,7 +10,7 @@ export type UserId = string
 export type UserCreateCore = {
   email: string
   password: string
-  userName: string
+  fullName: string
   birthDate: string
   gender: Gender
   callingCode: string
@@ -26,7 +26,7 @@ export type CreateUserRequest = UserCreateCore
 
 export type CreateUserResponse = {
   id: UserId
-  userName: string
+  fullName: string
   message: string
 }
 
@@ -37,7 +37,7 @@ export type CreateUserResponse = {
  * - Id vai na URL: PUT /api/users/{id}
  */
 export type UpdateUserRequest = {
-  userName?: string
+  fullName?: string
   email?: string
 }
 

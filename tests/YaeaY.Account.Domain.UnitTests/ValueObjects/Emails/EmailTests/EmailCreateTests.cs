@@ -9,7 +9,7 @@ public class EmailCreateTests
     // IsFailure
 
     [Fact]
-    public void Create_WhenEmailIsNull_ShouldFailure()
+    public void Create_WhenEmailIsNull_ShouldFail_WithEmailErrorsRequired()
     {
         // Arrange
 
@@ -26,7 +26,7 @@ public class EmailCreateTests
     }
 
     [Fact]
-    public void Create_WhenEmailIsEmpty_ShouldFailure()
+    public void Create_WhenEmailIsEmpty_ShouldFail_WithEmailErrorsRequired()
     {
         // Arrange
 
@@ -44,7 +44,7 @@ public class EmailCreateTests
 
 
     [Fact]
-    public void Create_WhenEmailContainsWhiteSpaceOnly_ShouldFailure()
+    public void Create_WhenEmailContainsWhiteSpaceOnly_ShouldFail_WithEmailErrorsRequired()
     {
         // Arrange
 
@@ -61,7 +61,7 @@ public class EmailCreateTests
     }
 
     [Fact]
-    public void Create_WhenEmailIsTooLong_ShouldFailure()
+    public void Create_WhenEmailIsTooLong_ShouldFail_WithEmailErrorsTooLong()
     {
         // Arrange
 
@@ -86,7 +86,7 @@ public class EmailCreateTests
     [InlineData("example@domain-.com")]
     [InlineData("example@domain..com")]
     [InlineData("example @domain.com")]
-    public void Create_WhenEmailViolatesFormatRules_ShouldFailure(string emailAddress)
+    public void Create_WhenEmailViolatesFormatRules_ShouldFail_WithEmailErrorsInvalidFormat(string emailAddress)
     {
         // Arrange
 
@@ -105,7 +105,7 @@ public class EmailCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenEmailIsValid_ShouldSuccess()
+    public void Create_WhenEmailIsValid_ShouldSucceed()
     {
         // Arrange
 
@@ -124,7 +124,7 @@ public class EmailCreateTests
     }
 
     [Fact]
-    public void Create_WhenEmailHasLeadingOrTrailingSpaces_ShouldSuccess()
+    public void Create_WhenEmailHasLeadingOrTrailingSpaces_ShouldSucceed_WithTrimmedEmail()
     {
         // Arrange
 
@@ -141,7 +141,7 @@ public class EmailCreateTests
     }
 
     [Fact]
-    public void Create_WhenEmailHasExactlyMaxLength_ShouldSuccess()
+    public void Create_WhenEmailHasExactlyMaximumLength_ShouldSucceed()
     {
         // Arrange
 
@@ -162,7 +162,7 @@ public class EmailCreateTests
     }
 
     [Fact]
-    public void Create_WhenEmailHasUppercaseCharacters_ShouldReturnLowercaseEmail()
+    public void Create_WhenEmailHasUppercaseCharacters_ShouldSucceed_WithLowercaseEmail()
     {
         // Arrange
 

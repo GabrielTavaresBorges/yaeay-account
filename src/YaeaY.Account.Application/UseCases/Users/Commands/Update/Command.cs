@@ -9,7 +9,7 @@ public sealed record Command(
     Guid Id,
     string? Email,
     string? Password,
-    string? UserName,
+    string? FullName,
     BirthDate? BirthDate
     ) : IRequest<Result<Response>>
 {

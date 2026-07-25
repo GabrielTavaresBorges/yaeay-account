@@ -47,17 +47,17 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             var updatedFields = new List<string>();
 
             // 2) Atualiza somente o que veio no comando (update parcial)
-            if (command.UserName is not null)
+            if (command.FullName is not null)
             {
                 // Se quiser evitar marcar como atualizado quando for igual ao atual:
-                if (!string.Equals(user.UserName.Name, command.UserName, StringComparison.Ordinal))
+                if (!string.Equals(user.FullName.Name, command.FullName, StringComparison.Ordinal))
                 {
-                    var userNameResult = UserName.Create(command.UserName);
-                    if (userNameResult.IsFailure)
-                        return Result<Response>.Failure(userNameResult.Error);
+                    var fullNameResult = FullName.Create(command.FullName);
+                    if (fullNameResult.IsFailure)
+                        return Result<Response>.Failure(fullNameResult.Error);
 
-                    user.ChangeUserName(userNameResult.Value);
-                    updatedFields.Add("UserName");
+                    user.ChangeFullName(fullNameResult.Value);
+                    updatedFields.Add("FullName");
                 }
             }
 
@@ -97,9 +97,9 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             // 5) Mensagem amigável
             var message = updatedFields.Count switch
             {
-                1 when updatedFields[0] == "UserName" => "User name updated successfully!",
+                1 when updatedFields[0] == "FullName" => "Full name updated successfully!",
                 1 when updatedFields[0] == "EmailAddress" => "Email updated successfully!",
-                _ => "User name and email updated successfully!"
+                _ => "Full name and email updated successfully!"
             };
 
             return Result<Response>.Success(

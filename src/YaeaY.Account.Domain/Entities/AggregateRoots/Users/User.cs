@@ -18,7 +18,7 @@ public class User : Entity, IAggregateRoot
 {
     private Email _email = null!;
     private PasswordHash _passwordHash = null!;
-    private UserName _userName = null!;
+    private FullName _fullName = null!;
     private BirthDate _birthDate = null!;
     private AccountStatus _status;
     private Gender _gender;
@@ -33,7 +33,7 @@ public class User : Entity, IAggregateRoot
 
     public Email Email => _email;
     public PasswordHash PasswordHash => _passwordHash;
-    public UserName UserName => _userName;
+    public FullName FullName => _fullName;
     public BirthDate BirthDate => _birthDate;
     public AccountStatus Status => _status;
     public Gender Gender => _gender;
@@ -51,14 +51,14 @@ public class User : Entity, IAggregateRoot
     private User(
         Email email,
         PasswordHash passwordHash,
-        UserName userName,
+        FullName fullName,
         BirthDate birthDate,
         Gender gender,
         UserPhone initialPhone)
     {
         _email = email;
         _passwordHash = passwordHash;
-        _userName = userName;
+        _fullName = fullName;
         _birthDate = birthDate;
         _gender = gender;
 
@@ -72,20 +72,20 @@ public class User : Entity, IAggregateRoot
     public static User Create(
         Email emailAddress,
         PasswordHash passwordHash,
-        UserName userName,
+        FullName fullName,
         BirthDate birthDate,
         Gender gender,
         UserPhone initialPhone)
     {
-        Validate(emailAddress, passwordHash, userName, birthDate, gender, initialPhone);
+        Validate(emailAddress, passwordHash, fullName, birthDate, gender, initialPhone);
 
-        var user = new User(emailAddress, passwordHash, userName, birthDate, gender, initialPhone);
+        var user = new User(emailAddress, passwordHash, fullName, birthDate, gender, initialPhone);
 
         // Dispara evento de usuário registrado
         var userRegisteredEvent = new UserRegisteredDomainEvent(
             UserId: user.Id,
             Email: user.Email.EmailAddress,
-            UserName: user.UserName.Name);
+            FullName: user.FullName.Name);
 
         user.AddDomainEvent(userRegisteredEvent);
 
@@ -95,7 +95,7 @@ public class User : Entity, IAggregateRoot
     private static void Validate(
         Email emailAddress,
         PasswordHash passwordHash,
-        UserName userName,
+        FullName fullName,
         BirthDate birthDate,
         Gender gender,
         UserPhone initialPhone)
@@ -106,8 +106,8 @@ public class User : Entity, IAggregateRoot
         if (passwordHash is null)
             throw new DomainException(UserErrors.PasswordRequired);
 
-        if (userName is null)
-            throw new DomainException(UserErrors.NameRequired);
+        if (fullName is null)
+            throw new DomainException(UserErrors.FullNameRequired);
 
         if (birthDate is null)
             throw new DomainException(UserErrors.BirthDateRequired);
@@ -159,14 +159,14 @@ public class User : Entity, IAggregateRoot
         _passwordHash = passwordHash;
     }
 
-    public void ChangeUserName(UserName userName)
+    public void ChangeFullName(FullName fullName)
     {
-        if (userName is null)
+        if (fullName is null)
             throw new DomainException(
-                message: "UserName cannot be null.",
-                code: "USER_NAME_NULL");
+                message: "Full name cannot be null.",
+                code: "FULL_NAME_NULL");
 
-        _userName = userName;
+        _fullName = fullName;
     }
 
     public void ChangeBirthDate(BirthDate birthDate)

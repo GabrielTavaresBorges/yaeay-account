@@ -1,11 +1,12 @@
-using YaeaY.Account.Domain.Abstraction.Errors;
-using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.Errors.BirthDate;
 
 namespace YaeaY.Account.Domain.ValueObjects.Dates;
 
 public sealed record BirthDate
 {
+    private const int MaximumAgeYears = 150;
+
     private readonly DateOnly _date;
 
     public DateOnly Date => _date;
@@ -19,7 +20,7 @@ public sealed record BirthDate
     {
         var validatedBirthDate = ValidateBirthDate(date);
 
-        if (validatedBirthDate.IsFailure)        
+        if (validatedBirthDate.IsFailure)
             return Result<BirthDate>.Failure(validatedBirthDate.Error);
           
         var birthDate = new BirthDate(validatedBirthDate.Value);
@@ -32,32 +33,16 @@ public sealed record BirthDate
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         if (date > today)
-        {
-            return Result<DateOnly>.Failure(new Error(
-                Code: "BIRTH_DATE_IN_FUTURE",
-                Message: "Birth date cannot be in the future.\n" +
-                         $"Received: {date:yyyy-MM-dd}.\n" +
-                         $"Today (UTC): {today:yyyy-MM-dd}.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidValue
-            ));
-        }
+            return Result<DateOnly>.Failure(BirthDateErrors.InFuture(date, today));
 
-        const int MaxAgeYears = 150;
-
-        var minAllowed = today.AddYears(-MaxAgeYears);
+        var minAllowed = today.AddYears(-MaximumAgeYears);
 
         if (date < minAllowed)
-        {
-            return Result<DateOnly>.Failure(new Error(
-                Code: "BIRTH_DATE_TOO_OLD",
-                Message: $"Birth date cannot be more than {MaxAgeYears} years ago.\n" +
-                         $"Received: {date:yyyy-MM-dd}.\n" +
-                         $"Minimum allowed (UTC): {minAllowed:yyyy-MM-dd}.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidValue
-            ));
-        }
+            return Result<DateOnly>.Failure(
+                BirthDateErrors.TooOld(
+                    date,
+                    minAllowed,
+                    MaximumAgeYears));
 
         return Result<DateOnly>.Success(date);
     }

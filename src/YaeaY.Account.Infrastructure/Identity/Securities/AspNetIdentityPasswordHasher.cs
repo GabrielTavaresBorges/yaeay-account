@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 
+using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.ValueObjects.Securities;
+
 namespace YaeaY.Account.Infrastructure.Identity.Securities;
 
 public sealed class AspNetIdentityPasswordHasher : IPasswordHasher
@@ -11,24 +14,28 @@ public sealed class AspNetIdentityPasswordHasher : IPasswordHasher
     // - comparação segura
     private readonly PasswordHasher<object> _hasher = new();
 
-    public string Hash(string password)
+    public Result<PasswordHash> Hash(PasswordText password)
     {
-        if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("Password cannot be null or empty.", nameof(password));
+        ArgumentNullException.ThrowIfNull(password);
 
         // O parâmetro "user" aqui não é necessário no nosso caso
-        return _hasher.HashPassword(null!, password);
+        var hashedPassword = _hasher.HashPassword(null!, password.Password);
+
+        return PasswordHash.Create(hashedPassword);
     }
 
-    public bool Verify(string hashedPassword, string providedPassword)
+    public bool Verify(PasswordHash passwordHash, string providedPassword)
     {
-        if (string.IsNullOrWhiteSpace(hashedPassword))
+        if (passwordHash is null)
             return false;
 
         if (string.IsNullOrWhiteSpace(providedPassword))
             return false;
 
-        var result = _hasher.VerifyHashedPassword(null!, hashedPassword, providedPassword);
+        var result = _hasher.VerifyHashedPassword(
+            null!,
+            passwordHash.Password,
+            providedPassword);
 
         // SuccessRehashNeeded = senha correta, mas o hash deveria ser atualizado
         // (por exemplo, após upgrade de parâmetros/versão). Você pode tratar isso
