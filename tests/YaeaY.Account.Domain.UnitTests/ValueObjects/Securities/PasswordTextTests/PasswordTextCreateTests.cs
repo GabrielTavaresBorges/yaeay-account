@@ -1,14 +1,14 @@
 using FluentAssertions;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
-namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordPlainTextTests;
+namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Securities.PasswordTextTests;
 
-public class PasswordPlainTextCreateTests
+public class PasswordTextCreateTests
 {
     // IsFailure
 
     [Fact]
-    public void Create_WhenPasswordPlainTextIsNull_ShouldFailure()
+    public void Create_WhenPasswordTextIsNull_ShouldFailure()
     {
         // Arrange
 
@@ -16,7 +16,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -26,7 +26,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextIsEmpty_ShouldFailure()
+    public void Create_WhenPasswordTextIsEmpty_ShouldFailure()
     {
         // Arrange
 
@@ -34,7 +34,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -44,7 +44,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextContainsWhiteSpaceOnly_ShouldFailure()
+    public void Create_WhenPasswordTextContainsWhiteSpaceOnly_ShouldFailure()
     {
         // Arrange
 
@@ -52,7 +52,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -62,7 +62,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextIsTooShort_ShouldFailure()
+    public void Create_WhenPasswordTextIsTooShort_ShouldFailure()
     {
         // Arrange
 
@@ -70,7 +70,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -80,7 +80,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextDoesNotContainUppercase_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainUppercase_ShouldFailure()
     {
         // Arrange
 
@@ -88,7 +88,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -98,7 +98,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextDoesNotContainLowercase_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainLowercase_ShouldFailure()
     {
         // Arrange
 
@@ -106,7 +106,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -116,7 +116,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextDoesNotContainDigit_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainDigit_ShouldFailure()
     {
         // Arrange
 
@@ -124,7 +124,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -134,7 +134,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextDoesNotContainSpecialCharacter_ShouldFailure()
+    public void Create_WhenPasswordTextDoesNotContainSpecialCharacter_ShouldFailure()
     {
         // Arrange
 
@@ -142,7 +142,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -152,7 +152,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextIsTooLong_ShouldFailure()
+    public void Create_WhenPasswordTextIsTooLong_ShouldFailure()
     {
         // Arrange
 
@@ -160,7 +160,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -172,7 +172,7 @@ public class PasswordPlainTextCreateTests
     // IsSuccess
 
     [Fact]
-    public void Create_WhenPasswordPlainTextIsValid_ShouldSuccess()
+    public void Create_WhenPasswordTextIsValid_ShouldSuccess()
     {
         // Arrange
 
@@ -180,7 +180,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -190,7 +190,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextHasLeadingOrTrailingSpaces_ShouldSuccess()
+    public void Create_WhenPasswordTextHasLeadingOrTrailingSpaces_ShouldSuccess()
     {
         // Arrange
 
@@ -198,7 +198,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 
@@ -208,7 +208,7 @@ public class PasswordPlainTextCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordPlainTextHasExactlyMaxLength_ShouldSuccess()
+    public void Create_WhenPasswordTextHasExactlyMaxLength_ShouldSuccess()
     {
         // Arrange
 
@@ -216,7 +216,7 @@ public class PasswordPlainTextCreateTests
 
         // Act
 
-        var result = PasswordPlainText.Create(password);
+        var result = PasswordText.Create(password);
 
         // Assert
 

@@ -41,31 +41,23 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         {
             var emailResult = Email.Create(command.EmailAddress);
             if (emailResult.IsFailure)
-            {
-                return Result<Response>.Failure(emailResult.Error);
-            }
+                return Result<Response>.Failure(emailResult.Error);            
 
-            var passwordPlainTextResult = PasswordPlainText.Create(command.Password);
-            if (passwordPlainTextResult.IsFailure)
-                return Result<Response>.Failure(passwordPlainTextResult.Error);
+            var passwordTextResult = PasswordText.Create(command.Password);
+            if (passwordTextResult.IsFailure)
+                return Result<Response>.Failure(passwordTextResult.Error);
 
-            var hashed = _passwordHasher.Hash(passwordPlainTextResult.Value.Password);
-
-            var passwordHashResult = PasswordHash.Create(hashed);
+            var passwordHashResult = _passwordHasher.Hash(passwordTextResult.Value);
             if (passwordHashResult.IsFailure)
                 return Result<Response>.Failure(passwordHashResult.Error);
 
             var userNameResult = UserName.Create(command.UserName);
             if (userNameResult.IsFailure)
-            {
                 return Result<Response>.Failure(userNameResult.Error);
-            }
 
             var birhDateResult = BirthDate.Create(command.BirthDate);
             if (birhDateResult.IsFailure)
-            {
                 return Result<Response>.Failure(birhDateResult.Error);
-            }
 
             var initialPhone = UserPhone.Create(
                callingCode: command.CallingCode,

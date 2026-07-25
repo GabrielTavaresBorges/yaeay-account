@@ -5,13 +5,13 @@ using YaeaY.Account.Domain.Abstraction.Result;
 
 namespace YaeaY.Account.Domain.ValueObjects.Securities;
 
-public sealed record PasswordPlainText
+public sealed record PasswordText
 {
     private readonly string _password = string.Empty;
 
     public string Password => _password;
 
-    private PasswordPlainText(string password)
+    private PasswordText(string password)
     {
         _password = password;
     }
@@ -21,19 +21,19 @@ public sealed record PasswordPlainText
     private static readonly Regex DigitRegex = new(@"\d", RegexOptions.Compiled);
     private static readonly Regex SpecialRegex = new("[^A-Za-z0-9]", RegexOptions.Compiled);
 
-    public static Result<PasswordPlainText> Create(string password)
+    public static Result<PasswordText> Create(string password)
     {
-        var validatedPasswordPlainText = ValidatePasswordPlainText(password);
+        var validatedPasswordText = ValidatePasswordText(password);
 
-        if (validatedPasswordPlainText.IsFailure)
-            return Result<PasswordPlainText>.Failure(validatedPasswordPlainText.Error);
+        if (validatedPasswordText.IsFailure)
+            return Result<PasswordText>.Failure(validatedPasswordText.Error);
 
-        var passwordPlainText = new PasswordPlainText(validatedPasswordPlainText.Value);
+        var passwordText = new PasswordText(validatedPasswordText.Value);
 
-        return Result<PasswordPlainText>.Success(passwordPlainText);
+        return Result<PasswordText>.Success(passwordText);
     }
 
-    private static Result<string> ValidatePasswordPlainText(string password)
+    private static Result<string> ValidatePasswordText(string password)
     {
         if (string.IsNullOrWhiteSpace(password))
         {
