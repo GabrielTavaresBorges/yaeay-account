@@ -11,11 +11,9 @@ public sealed record Command(
     string FullName,
     DateOnly BirthDate,
     Gender Gender,
-    string CallingCode,
     string RegionCode,
     string? AreaCode,
-    PhoneType PhoneType,
-    string PhoneNumber,
-    string E164) : IRequest<Result<Response>>
+    TelephoneType PhoneType,
+    string PhoneNumber) : IRequest<Result<Response>>
 {
 }

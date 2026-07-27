@@ -1,18 +1,19 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using YaeaY.Account.Application.Services.Security.Interfaces;
+using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Errors;
 using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
-using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
 using YaeaY.Account.Domain.ValueObjects.Securities;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Application.UseCases.Users.Commands.Create;
 
@@ -22,17 +23,20 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
     private readonly IUnityOfWork _unitOfWork;
     private readonly ILogger<Handler> _logger;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITelephoneNumberService _telephoneNumberService;
 
     public Handler(
         IUserRepository usersRepository,
         IUnityOfWork unitOfWork,
         ILogger<Handler> logger,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ITelephoneNumberService telephoneNumberService)
     {
         _userRepository = usersRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
         _passwordHasher = passwordHasher;
+        _telephoneNumberService = telephoneNumberService;
     }
 
     public async Task<Result<Response>> Handle(Command command, CancellationToken cancellationToken)
@@ -41,7 +45,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         {
             var emailResult = Email.Create(command.EmailAddress);
             if (emailResult.IsFailure)
-                return Result<Response>.Failure(emailResult.Error);            
+                return Result<Response>.Failure(emailResult.Error);
 
             var passwordTextResult = PasswordText.Create(command.Password);
             if (passwordTextResult.IsFailure)
@@ -55,26 +59,24 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (fullNameResult.IsFailure)
                 return Result<Response>.Failure(fullNameResult.Error);
 
-            var birhDateResult = BirthDate.Create(command.BirthDate);
-            if (birhDateResult.IsFailure)
-                return Result<Response>.Failure(birhDateResult.Error);
+            var birthDateResult = BirthDate.Create(command.BirthDate);
+            if (birthDateResult.IsFailure)
+                return Result<Response>.Failure(birthDateResult.Error);
 
-            var initialPhone = UserPhone.Create(
-               callingCode: command.CallingCode,
-               regionCode: command.RegionCode,
-               areaCode: command.AreaCode,
-               phoneType: command.PhoneType,
-               phoneNumber: command.PhoneNumber,
-               e164: command.E164,
-               isPrimary: true);
+            var initialTelephoneNumberResult =
+                CreateInitialTelephoneNumber(command);
+
+            if (initialTelephoneNumberResult.IsFailure)
+                return Result<Response>.Failure(
+                    initialTelephoneNumberResult.Error);
 
             var user = User.Create(
                 emailAddress: emailResult.Value,
                 passwordHash: passwordHashResult.Value,
                 fullName: fullNameResult.Value,
-                birthDate: birhDateResult.Value,
+                birthDate: birthDateResult.Value,
                 gender: command.Gender,
-                initialPhone: initialPhone);
+                initialPhoneNumber: initialTelephoneNumberResult.Value);
 
             await _userRepository.CreateUserAsync(user, cancellationToken);
             await _unitOfWork.CommitAsync();
@@ -106,5 +108,32 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                     Category: ErrorCategory.Unexpected,
                     Rule: ErrorRule.Unexpected));
         }
+    }
+
+    private Result<TelephoneNumber> CreateInitialTelephoneNumber(
+        Command command)
+    {
+        var identificationResult =
+            _telephoneNumberService.ValidateAndIdentify(
+            regionCode: command.RegionCode,
+            areaCode: command.AreaCode,
+            number: command.PhoneNumber,
+            expectedPhoneType: command.PhoneType);
+
+        if (identificationResult.IsFailure)
+        {
+            return Result<TelephoneNumber>.Failure(
+                identificationResult.Error);
+        }
+
+        var identification = identificationResult.Value;
+
+        return TelephoneNumber.Create(
+            callingCode: $"+{identification.CountryCallingCode}",
+            regionCode: identification.RegionCode,
+            areaCode: identification.AreaCode,
+            phoneType: identification.TelephoneType,
+            nationalNumber: identification.NationalNumber,
+            e164: identification.InternationalNumber);
     }
 }

@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\YaeaY.Account.Domain\YaeaY.Account.Domain.csproj" />
+    <ProjectReference Include="..\..\src\YaeaY.Account.Infrastructure\YaeaY.Account.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

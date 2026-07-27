@@ -61,15 +61,11 @@
   })
 
   const areaCode = computed<PhoneModel['areaCode']>({
-    get: () => {
-      if (model.value.country !== 'BR') return ''
-
-      return model.value.areaCode
-    },
+    get: () => model.value.areaCode,
     set: (value) => {
       model.value = {
         ...model.value,
-        areaCode: model.value.country === 'BR' ? value : '',
+        areaCode: value,
       }
     },
   })
@@ -125,7 +121,7 @@
       model.value = {
         ...model.value,
         callingCode: getCallingCodeByCountry(value),
-        areaCode: value === 'BR' ? model.value.areaCode : '',
+        areaCode: '',
       }
 
       syncing = false
@@ -145,7 +141,7 @@
         model.value = {
           ...model.value,
           country: resolvedCountry,
-          areaCode: resolvedCountry === 'BR' ? model.value.areaCode : '',
+          areaCode: '',
         }
       }
 

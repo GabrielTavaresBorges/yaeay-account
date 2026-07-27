@@ -27,16 +27,14 @@ function formatBrazilMobile(digits: string): string {
   const d = digits.slice(0, 9)
 
   if (d.length <= 5) return d
-  if (d.length <= 7) return `${d.slice(0, 5)}-${d.slice(5)}`
-  return `${d.slice(0, 5)}-${d.slice(5, 7)}-${d.slice(7)}`
+  return `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
 function formatBrazilLandline(digits: string): string {
   const d = digits.slice(0, 8)
 
   if (d.length <= 4) return d
-  if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`
-  return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`
+  return `${d.slice(0, 4)}-${d.slice(4)}`
 }
 
 function formatDefaultPhone(digits: string, maxDigits = 15): string {

@@ -1,7 +1,6 @@
 using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
-using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Events.Users;
@@ -9,6 +8,7 @@ using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
 using YaeaY.Account.Domain.ValueObjects.Securities;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.UsersTests;
 
@@ -40,21 +40,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -64,7 +61,7 @@ public class UserCreateTests
             fullName,
             birthDate,
             gender,
-            phone);
+            telephoneNumber);
 
         // Assert
 
@@ -96,21 +93,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -120,7 +114,7 @@ public class UserCreateTests
             fullName,
             birthDate,
             gender,
-            phone);
+            telephoneNumber);
 
         // Assert
 
@@ -152,21 +146,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -176,7 +167,7 @@ public class UserCreateTests
             fullNameInvalid,
             birthDate,
             gender,
-            phone);
+            telephoneNumber);
 
         // Assert
 
@@ -208,21 +199,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -232,7 +220,7 @@ public class UserCreateTests
             fullName,
             birthDateInvalid,
             gender,
-            phone);
+            telephoneNumber);
 
         // Assert
 
@@ -266,21 +254,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -290,7 +275,7 @@ public class UserCreateTests
             fullName,
             birthDate,
             genderInvalid,
-            phone);
+            telephoneNumber);
 
         // Assert
 
@@ -324,21 +309,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = true;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -348,7 +330,7 @@ public class UserCreateTests
             fullName,
             birthDate,
             genderInvalid,
-            phone);
+            telephoneNumber);
 
         // Assert
 
@@ -379,7 +361,7 @@ public class UserCreateTests
         var birthDateResult = BirthDate.Create(birthDateTest);
         var birthDate = birthDateResult.Value;
 
-        UserPhone userPhoneInvalid = null!;
+        TelephoneNumber telephoneNumberInvalid = null!;
 
         // Act
 
@@ -389,7 +371,7 @@ public class UserCreateTests
             fullName,
             birthDate,
             gender,
-            userPhoneInvalid);
+            telephoneNumberInvalid);
 
         // Assert
 
@@ -425,21 +407,18 @@ public class UserCreateTests
         var callingCode = "+55";
         var regionCode = "BR";
         var areaCode = "48";
-        var phoneType = PhoneType.Mobile;
-        var phoneNumber = "12345678";
+        var phoneType = TelephoneType.Mobile;
+        var nationalNumber = "12345678";
         var e164 = "+554812345678";
-        var isPrimary = false;
-
-        var initialPhone = UserPhone.Create(
+        var telephoneNumberResult = TelephoneNumber.Create(
             callingCode,
             regionCode,
             areaCode,
             phoneType,
-            phoneNumber,
-            e164,
-            isPrimary);
+            nationalNumber,
+            e164);
 
-        var phone = initialPhone;
+        var telephoneNumber = telephoneNumberResult.Value;
 
         // Act
 
@@ -451,7 +430,7 @@ public class UserCreateTests
             fullName,
             birthDate,
             gender,
-            phone);
+            telephoneNumber);
 
         var afterCreation = DateTimeOffset.UtcNow;
 
@@ -464,9 +443,13 @@ public class UserCreateTests
         resultUser.BirthDate.Should().Be(birthDate);
         resultUser.Gender.Should().Be(gender);
 
-        resultUser.Phones.Should().HaveCount(1);
-        resultUser.Phones.First().Should().Be(phone);
-        resultUser.Phones.First().IsPrimary.Should().BeTrue();
+        var userPhone = resultUser.Phones
+            .Should()
+            .ContainSingle()
+            .Which;
+
+        userPhone.Number.Should().Be(telephoneNumber);
+        userPhone.IsPrimary.Should().BeTrue();
 
         resultUser.Status.Should().Be(AccountStatus.PendingEmailConfirmation);
         resultUser.CreatedAt.Should().BeOnOrAfter(beforeCreation);

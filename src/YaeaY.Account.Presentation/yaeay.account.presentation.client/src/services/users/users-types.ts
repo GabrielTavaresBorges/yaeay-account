@@ -8,17 +8,15 @@ export type UserId = string
 
 /** Campos base usados no CREATE */
 export type UserCreateCore = {
-  email: string
+  emailAddress: string
   password: string
   fullName: string
   birthDate: string
   gender: Gender
-  callingCode: string
   regionCode: string
   areaCode: string
   phoneType: PhoneType
   phoneNumber: string
-  e164: string,
 }
 
 /** ===== CREATE ===== */

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using YaeaY.Account.Application.Services.Security.Interfaces;
+using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationSettings;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTokens;
@@ -15,6 +16,7 @@ using YaeaY.Account.Infrastructure.Events.Dispatchers;
 using YaeaY.Account.Infrastructure.Events.Publishers;
 using YaeaY.Account.Infrastructure.Identity.Securities;
 using YaeaY.Account.Infrastructure.Identity.Services;
+using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 
 namespace YaeaY.Account.Infrastructure;
 
@@ -41,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, AspNetIdentityPasswordHasher>();
 
         // Services
+        services.AddSingleton<ITelephoneNumberService, LibPhoneNumberService>();
         services.AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
         //services.AddScoped<IEmailSender, EmailSender>();
         services.AddScoped<DomainEventDispatcher>();
