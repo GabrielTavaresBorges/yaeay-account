@@ -17,6 +17,8 @@ public sealed class UserPhonesMap : IEntityTypeConfiguration<UserPhone>
             .IsRequired();
         builder.HasIndex("UserId");
 
+        builder.Ignore(p => p.Number);
+
         // ===== CallingCode =====
         builder.Property(p => p.CallingCode)
             .HasColumnName("CallingCode")

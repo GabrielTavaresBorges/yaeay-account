@@ -11,6 +11,7 @@ using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
 using YaeaY.Account.Domain.ValueObjects.Securities;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 
@@ -54,7 +55,7 @@ public class User : Entity, IAggregateRoot
         FullName fullName,
         BirthDate birthDate,
         Gender gender,
-        UserPhone initialPhone)
+        TelephoneNumber initialPhoneNumber)
     {
         _email = email;
         _passwordHash = passwordHash;
@@ -62,8 +63,7 @@ public class User : Entity, IAggregateRoot
         _birthDate = birthDate;
         _gender = gender;
 
-        initialPhone.SetPrimary(true);
-        _phones.Add(initialPhone);
+        _phones.Add(UserPhone.Create(initialPhoneNumber, isPrimary: true));
 
         _status = AccountStatus.PendingEmailConfirmation;
         _createdAt = DateTimeOffset.UtcNow;
@@ -75,11 +75,17 @@ public class User : Entity, IAggregateRoot
         FullName fullName,
         BirthDate birthDate,
         Gender gender,
-        UserPhone initialPhone)
+        TelephoneNumber initialPhoneNumber)
     {
-        Validate(emailAddress, passwordHash, fullName, birthDate, gender, initialPhone);
+        Validate(emailAddress, passwordHash, fullName, birthDate, gender, initialPhoneNumber);
 
-        var user = new User(emailAddress, passwordHash, fullName, birthDate, gender, initialPhone);
+        var user = new User(
+            emailAddress,
+            passwordHash,
+            fullName,
+            birthDate,
+            gender,
+            initialPhoneNumber);
 
         // Dispara evento de usuário registrado
         var userRegisteredEvent = new UserRegisteredDomainEvent(
@@ -98,7 +104,7 @@ public class User : Entity, IAggregateRoot
         FullName fullName,
         BirthDate birthDate,
         Gender gender,
-        UserPhone initialPhone)
+        TelephoneNumber initialPhoneNumber)
     {
         if (emailAddress is null)
             throw new DomainException(UserErrors.EmailRequired);
@@ -118,25 +124,25 @@ public class User : Entity, IAggregateRoot
         if (!Enum.IsDefined(typeof(Gender), gender))
             throw new DomainException(UserErrors.GenderInvalid);
 
-        if (initialPhone is null)
+        if (initialPhoneNumber is null)
             throw new DomainException(UserErrors.PhoneRequired);
     }
 
-    public void AddPhone(UserPhone phone)
+    public void AddPhone(TelephoneNumber phoneNumber, bool isPrimary = false)
     {
-        if (phone is null)
+        if (phoneNumber is null)
             throw new DomainException(UserErrors.PhoneRequired);
 
-        if (_phones.Any(existing => existing.E164 == phone.E164))
+        if (_phones.Any(existing => existing.E164 == phoneNumber.E164))
             throw new DomainException(UserErrors.PhoneAlreadyExists);
 
-        if (phone.IsPrimary)
+        if (isPrimary)
         {
             foreach (var currentPrimary in _phones.Where(p => p.IsPrimary))
                 currentPrimary.SetPrimary(false);
         }
 
-        _phones.Add(phone);
+        _phones.Add(UserPhone.Create(phoneNumber, isPrimary));
     }
 
     public void ChangeEmail(Email email)

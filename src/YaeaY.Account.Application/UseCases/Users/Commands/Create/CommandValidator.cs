@@ -33,12 +33,7 @@ public sealed class CommandValidator : AbstractValidator<Command>
 
         RuleFor(x => x.PhoneType)
             .IsInEnum()
-            .NotEqual(PhoneType.Unknown);
-
-        RuleFor(x => x.CallingCode)
-            .NotEmpty()
-            .Matches(@"^\+\d{1,3}$")
-            .WithMessage("CallingCode must be in format +<digits> (e.g., +55, +1).");
+            .NotEqual(TelephoneType.Unknown);
 
         RuleFor(x => x.RegionCode)
             .NotEmpty()
@@ -53,33 +48,6 @@ public sealed class CommandValidator : AbstractValidator<Command>
 
         RuleFor(x => x.PhoneNumber)
             .NotEmpty()
-            .Matches(@"^\d+$")
-            .WithMessage("PhoneNumber must contain digits only.");
-
-        RuleFor(x => x.E164)
-            .NotEmpty()
-            .Matches(@"^\+\d+$")
-            .WithMessage("E164 must be in format +<digits>.");
-
-        RuleFor(x => x)
-            .Must(HasConsistentE164)
-            .WithMessage("E164 is inconsistent with CallingCode/AreaCode/PhoneNumber.");
-
-    }
-
-    private static bool HasConsistentE164(Command cmd)
-    {
-        var calling = (cmd.CallingCode ?? "").Trim();
-        var area = (cmd.AreaCode ?? "").Trim();
-        var number = (cmd.PhoneNumber ?? "").Trim();
-        var e164 = (cmd.E164 ?? "").Trim();
-
-        if (string.IsNullOrWhiteSpace(calling) ||
-            string.IsNullOrWhiteSpace(number) ||
-            string.IsNullOrWhiteSpace(e164))
-            return true;
-
-        var expected = $"{calling}{area}{number}".Replace(" ", "");
-        return string.Equals(e164, expected, StringComparison.Ordinal);
+            .MaximumLength(30);
     }
 }

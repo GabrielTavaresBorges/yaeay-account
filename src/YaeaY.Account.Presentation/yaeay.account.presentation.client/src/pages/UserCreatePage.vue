@@ -133,11 +133,10 @@
     const rawNumber = (p.number ?? '').replace(/\D/g, '')
     const callingOk = /^\+\d{1,3}$/.test((p.callingCode ?? '').trim())
     const countryOk = /^[A-Z]{2}$/.test((p.country ?? '').trim().toUpperCase())
-    const areaOk = (p.areaCode ?? '').trim().length > 0
     const typeOk = p.phoneType === 'Mobile' || p.phoneType === 'Landline'
     const numberOk = rawNumber.length > 0
 
-    return callingOk && countryOk && areaOk && typeOk && numberOk
+    return callingOk && countryOk && typeOk && numberOk
   }
 
   function getPanelsWithErrors(): string[] {
@@ -183,21 +182,18 @@
 
 
     const rawPhoneNumber = form.phones.number.replace(/\D/g, '')
-    const e164 = `${form.phones.callingCode}${form.phones.areaCode}${rawPhoneNumber}`
 
     // 3) segue fluxo normal
     const payload = {
-      email: form.email.trim(),
+      emailAddress: form.email.trim(),
       password: form.password.trim(),
-      userName: form.fullName.trim(),
+      fullName: form.fullName.trim(),
       birthDate: birthDateIso.value,
       gender: form.gender as Gender,
-      callingCode: form.phones.callingCode,
       regionCode: form.phones.country,
       areaCode: form.phones.areaCode,
       phoneType: form.phones.phoneType,
       phoneNumber: rawPhoneNumber,
-      e164,
     }
 
     try {
