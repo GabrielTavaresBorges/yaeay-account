@@ -13,11 +13,11 @@ public class PasswordHashCreateTests
     {
         // Arrange
 
-        string hashed = null!;
+        string hashedInvalid = null!;
 
         // Act
 
-        var result = PasswordHash.Create(hashed);
+        var result = PasswordHash.Create(hashedInvalid);
 
         // Assert
 
@@ -30,11 +30,11 @@ public class PasswordHashCreateTests
     {
         // Arrange
 
-        string hashed = string.Empty;
+        string hashedInvalid = string.Empty;
 
         // Act
 
-        var result = PasswordHash.Create(hashed);
+        var result = PasswordHash.Create(hashedInvalid);
 
         // Assert
 
@@ -47,11 +47,11 @@ public class PasswordHashCreateTests
     {
         // Arrange
 
-        string hashed = " ";
+        string hashedInvalid = " ";
 
         // Act
 
-        var result = PasswordHash.Create(hashed);
+        var result = PasswordHash.Create(hashedInvalid);
 
         // Assert
 
@@ -64,16 +64,16 @@ public class PasswordHashCreateTests
     {
         // Arrange
 
-        string hashed = new string('a', 1025);
+        string hashedInvalid = new string('a', 1025);
 
         // Act
 
-        var result = PasswordHash.Create(hashed);
+        var result = PasswordHash.Create(hashedInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PasswordHashErrors.TooLong(hashed.Length, 1024));
+        result.Error.Should().Be(PasswordHashErrors.TooLong(hashedInvalid.Length, 1024));
     }
 
     // IsSuccess

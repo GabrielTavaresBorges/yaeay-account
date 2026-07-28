@@ -12,11 +12,11 @@ public class CpfCreateTests
     {
         // Arrange
 
-        string cfpNumber = null!;
+        string cfpNumberInvalid = null!;
 
         // Act
 
-        var result = Cpf.Create(cfpNumber);
+        var result = Cpf.Create(cfpNumberInvalid);
 
         // Assert              
 
@@ -30,11 +30,11 @@ public class CpfCreateTests
     {
         // Arrange
 
-        string cfpNumber = string.Empty;
+        string cfpNumberInvalid = string.Empty;
 
         // Act
 
-        var result = Cpf.Create(cfpNumber);
+        var result = Cpf.Create(cfpNumberInvalid);
 
         // Assert              
 
@@ -48,11 +48,11 @@ public class CpfCreateTests
     {
         // Arrange
 
-        string cfpNumber = " ";
+        string cfpNumberInvalid = " ";
 
         // Act
 
-        var result = Cpf.Create(cfpNumber);
+        var result = Cpf.Create(cfpNumberInvalid);
 
         // Assert              
 
@@ -66,11 +66,11 @@ public class CpfCreateTests
     {
         // Arrange
 
-        string cfpNumber = "560.350.200-200";
+        string cfpNumberInvalid = "560.350.200-200";
 
         // Act
 
-        var result = Cpf.Create(cfpNumber);
+        var result = Cpf.Create(cfpNumberInvalid);
 
         // Assert              
 
@@ -84,11 +84,11 @@ public class CpfCreateTests
     {
         // Arrange
 
-        string cfpNumber = "111.111.111-11";
+        string cfpNumberInvalid = "111.111.111-11";
 
         // Act
 
-        var result = Cpf.Create(cfpNumber);
+        var result = Cpf.Create(cfpNumberInvalid);
 
         // Assert
 
@@ -102,11 +102,11 @@ public class CpfCreateTests
     {
         // Arrange
 
-        string cpfNumber = "123.456.789-00";
+        string cpfNumberInvalid = "123.456.789-00";
 
         // Act
 
-        var result = Cpf.Create(cpfNumber);
+        var result = Cpf.Create(cpfNumberInvalid);
 
         // Assert
 

@@ -13,11 +13,11 @@ public class FullNameCreateTests
     {
         // Arrange
 
-        string fullName = null!;
+        string fullNameInvalid = null!;
 
         // Act
 
-        var result = FullName.Create(fullName);
+        var result = FullName.Create(fullNameInvalid);
 
         // Assert
 
@@ -30,11 +30,11 @@ public class FullNameCreateTests
     {
         // Arrange
 
-        string fullName = string.Empty;
+        string fullNameInvalid = string.Empty;
 
         // Act
 
-        var result = FullName.Create(fullName);
+        var result = FullName.Create(fullNameInvalid);
 
         // Assert
 
@@ -47,11 +47,11 @@ public class FullNameCreateTests
     {
         // Arrange
 
-        string fullName = " ";
+        string fullNameInvalid = " ";
 
         // Act
 
-        var result = FullName.Create(fullName);
+        var result = FullName.Create(fullNameInvalid);
 
         // Assert
 
@@ -64,16 +64,16 @@ public class FullNameCreateTests
     {
         // Arrange
 
-        string fullName = "A";
+        string fullNameInvalid = "A";
 
         // Act
 
-        var result = FullName.Create(fullName);
+        var result = FullName.Create(fullNameInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(FullNameErrors.TooShort(fullName.Length, 2));
+        result.Error.Should().Be(FullNameErrors.TooShort(fullNameInvalid.Length, 2));
     }
 
     [Fact]
@@ -81,16 +81,16 @@ public class FullNameCreateTests
     {
         // Arrange
 
-        string fullName = new string('A', 101);
+        string fullNameInvalid = new string('A', 101);
 
         // Act
 
-        var result = FullName.Create(fullName);
+        var result = FullName.Create(fullNameInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(FullNameErrors.TooLong(fullName.Length, 100));
+        result.Error.Should().Be(FullNameErrors.TooLong(fullNameInvalid.Length, 100));
     }
 
     // IsSuccess
@@ -134,7 +134,7 @@ public class FullNameCreateTests
     {
         // Arrange
 
-        string fullName = "Gabriel    Tavares";
+        string fullName = "Example    Name";
 
         // Act
 
@@ -143,7 +143,7 @@ public class FullNameCreateTests
         // Assert
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be("Gabriel Tavares");
+        result.Value.Name.Should().Be("Example Name");
     }
 
     [Fact]

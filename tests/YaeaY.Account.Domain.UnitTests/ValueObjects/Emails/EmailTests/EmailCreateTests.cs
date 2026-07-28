@@ -13,11 +13,11 @@ public class EmailCreateTests
     {
         // Arrange
 
-        string emailAddress = null!;
+        string emailAddressInvalid = null!;
 
         // Act
 
-        var result = Email.Create(emailAddress);
+        var result = Email.Create(emailAddressInvalid);
 
         // Assert
 
@@ -30,11 +30,11 @@ public class EmailCreateTests
     {
         // Arrange
 
-        string emailAddress = string.Empty;
+        string emailAddressInvalid = string.Empty;
 
         // Act
 
-        var result = Email.Create(emailAddress);
+        var result = Email.Create(emailAddressInvalid);
 
         // Assert
 
@@ -42,17 +42,16 @@ public class EmailCreateTests
         result.Error.Should().Be(EmailErrors.Required);
     }
 
-
     [Fact]
     public void Create_WhenEmailContainsWhiteSpaceOnly_ShouldFail_WithEmailErrorsRequired()
     {
         // Arrange
 
-        string emailAddress = " ";
+        string emailAddressInvalid = " ";
 
         // Act
 
-        var result = Email.Create(emailAddress);
+        var result = Email.Create(emailAddressInvalid);
 
         // Assert
 
@@ -65,16 +64,16 @@ public class EmailCreateTests
     {
         // Arrange
 
-        string emailAddress = new string('a', 255) + "@example.com";
+        string emailAddressInvalid = new string('a', 255) + "@example.com";
 
         // Act
 
-        var result = Email.Create(emailAddress);
+        var result = Email.Create(emailAddressInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(EmailErrors.TooLong(emailAddress.Length, 254));
+        result.Error.Should().Be(EmailErrors.TooLong(emailAddressInvalid.Length, 254));
     }
 
     [Theory]

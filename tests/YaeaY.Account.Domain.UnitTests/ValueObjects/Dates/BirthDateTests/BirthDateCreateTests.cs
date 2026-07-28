@@ -14,16 +14,16 @@ public class BirthDateCreateTests
         // Arrange
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var birthDate = today.AddDays(1);
+        var birthDateInvalid = today.AddDays(1);
 
         // Act
 
-        var result = BirthDate.Create(birthDate);
+        var result = BirthDate.Create(birthDateInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(BirthDateErrors.InFuture(birthDate, today));
+        result.Error.Should().Be(BirthDateErrors.InFuture(birthDateInvalid, today));
     }
 
     [Fact]
@@ -33,17 +33,17 @@ public class BirthDateCreateTests
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var minAllowed = today.AddYears(-150);
-        var birthDate = minAllowed.AddDays(-1);
+        var birthDateInvalid = minAllowed.AddDays(-1);
 
         // Act
 
-        var result = BirthDate.Create(birthDate);
+        var result = BirthDate.Create(birthDateInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(
-            BirthDateErrors.TooOld(birthDate, minAllowed, 150));
+            BirthDateErrors.TooOld(birthDateInvalid, minAllowed, 150));
     }
 
     // IsSuccess

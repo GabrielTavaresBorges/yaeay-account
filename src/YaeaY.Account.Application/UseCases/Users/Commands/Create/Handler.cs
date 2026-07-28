@@ -63,8 +63,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (birthDateResult.IsFailure)
                 return Result<Response>.Failure(birthDateResult.Error);
 
-            var initialTelephoneNumberResult =
-                CreateInitialTelephoneNumber(command);
+            var initialTelephoneNumberResult =  CreateInitialTelephoneNumber(command);
 
             if (initialTelephoneNumberResult.IsFailure)
                 return Result<Response>.Failure(
@@ -121,10 +120,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             expectedPhoneType: command.PhoneType);
 
         if (identificationResult.IsFailure)
-        {
-            return Result<TelephoneNumber>.Failure(
-                identificationResult.Error);
-        }
+            return Result<TelephoneNumber>.Failure(identificationResult.Error);
 
         var identification = identificationResult.Value;
 

@@ -13,11 +13,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = null!;
+        string passwordInvalid = null!;
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -30,11 +30,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = string.Empty;
+        string passwordInvalid = string.Empty;
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -47,11 +47,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = " ";
+        string passwordInvalid = " ";
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -64,16 +64,16 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = "Ab1@abc";
+        string passwordInvalid = "Ab1@abc";
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PasswordTextErrors.TooShort(password.Length, 8));
+        result.Error.Should().Be(PasswordTextErrors.TooShort(passwordInvalid.Length, 8));
     }
 
     [Fact]
@@ -81,11 +81,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = "abc123@x";
+        string passwordInvalid = "abc123@x";
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -98,11 +98,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = "ABC123@X";
+        string passwordInvalid = "ABC123@X";
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -115,11 +115,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = "Abcdef@X";
+        string passwordInvalid = "Abcdef@X";
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -132,11 +132,11 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = "Abcdef12";
+        string passwordInvalid = "Abcdef12";
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
@@ -149,16 +149,16 @@ public class PasswordTextCreateTests
     {
         // Arrange
 
-        string password = "Aa1@" + new string('b', 253);
+        string passwordInvalid = "Aa1@" + new string('b', 253);
 
         // Act
 
-        var result = PasswordText.Create(password);
+        var result = PasswordText.Create(passwordInvalid);
 
         // Assert
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(PasswordTextErrors.TooLong(password.Length, 256));
+        result.Error.Should().Be(PasswordTextErrors.TooLong(passwordInvalid.Length, 256));
     }
 
     // IsSuccess
