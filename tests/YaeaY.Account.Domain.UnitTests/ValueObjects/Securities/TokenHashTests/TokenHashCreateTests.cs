@@ -12,11 +12,11 @@ public class TokenHashCreateTests
     {
         // Arrange
 
-        string tokenHash = null!;
+        string tokenHashInvalid = null!;
 
         // Act
 
-        var result = TokenHash.Create(tokenHash);
+        var result = TokenHash.Create(tokenHashInvalid);
 
         // Assert
 
@@ -30,11 +30,11 @@ public class TokenHashCreateTests
     {
         // Arrange
 
-        string tokenHash = string.Empty;
+        string tokenHashInvalid = string.Empty;
 
         // Act
 
-        var result = TokenHash.Create(tokenHash);
+        var result = TokenHash.Create(tokenHashInvalid);
 
         // Assert
 
@@ -48,11 +48,11 @@ public class TokenHashCreateTests
     {
         // Arrange
 
-        string tokenHash = " ";
+        string tokenHashInvalid = " ";
 
         // Act
 
-        var result = TokenHash.Create(tokenHash);
+        var result = TokenHash.Create(tokenHashInvalid);
 
         // Assert
 
@@ -66,11 +66,11 @@ public class TokenHashCreateTests
     {
         // Arrange
 
-        string tokenHash = new string('a', 1025);
+        string tokenHashInvalid = new string('a', 1025);
 
         // Act
 
-        var result = TokenHash.Create(tokenHash);
+        var result = TokenHash.Create(tokenHashInvalid);
 
         // Assert
 

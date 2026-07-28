@@ -121,10 +121,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             expectedPhoneType: command.PhoneType);
 
         if (identificationResult.IsFailure)
-        {
-            return Result<TelephoneNumber>.Failure(
-                identificationResult.Error);
-        }
+            return Result<TelephoneNumber>.Failure(identificationResult.Error);
 
         var identification = identificationResult.Value;
 

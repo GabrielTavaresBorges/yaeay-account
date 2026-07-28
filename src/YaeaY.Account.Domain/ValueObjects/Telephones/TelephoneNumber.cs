@@ -1,6 +1,6 @@
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Enumerators;
-using YaeaY.Account.Domain.Errors.PhoneNumbers;
+using YaeaY.Account.Domain.Errors.Telephones;
 
 namespace YaeaY.Account.Domain.ValueObjects.Telephones;
 
@@ -52,7 +52,7 @@ public sealed record TelephoneNumber
         var normalizedNationalNumber = (nationalNumber ?? string.Empty).Trim();
         var normalizedE164 = (e164 ?? string.Empty).Trim();
 
-        var validation = ValidateComponents(
+        var validateTelephoneNumber = ValidateTelephoneNumber(
             normalizedCallingCode,
             normalizedRegionCode,
             normalizedAreaCode,
@@ -60,20 +60,21 @@ public sealed record TelephoneNumber
             normalizedNationalNumber,
             normalizedE164);
 
-        if (validation.IsFailure)
-            return Result<TelephoneNumber>.Failure(validation.Error);
+        if (validateTelephoneNumber.IsFailure)
+            return Result<TelephoneNumber>.Failure(validateTelephoneNumber.Error);
 
-        return Result<TelephoneNumber>.Success(
-            new TelephoneNumber(
-                normalizedCallingCode,
-                normalizedRegionCode,
-                normalizedAreaCode,
-                phoneType,
-                normalizedNationalNumber,
-                normalizedE164));
+        var telephoneNumber = new TelephoneNumber(
+            normalizedCallingCode,
+            normalizedRegionCode,
+            normalizedAreaCode,
+            phoneType,
+            normalizedNationalNumber,
+            normalizedE164);
+
+        return Result<TelephoneNumber>.Success(telephoneNumber);
     }
 
-    private static Result<bool> ValidateComponents(
+    private static Result<bool> ValidateTelephoneNumber(
         string callingCode,
         string regionCode,
         string? areaCode,
@@ -82,44 +83,35 @@ public sealed record TelephoneNumber
         string e164)
     {
         if (string.IsNullOrWhiteSpace(callingCode))
-            return Result<bool>.Failure(PhoneNumberErrors.CallingCodeRequired);
+            return Result<bool>.Failure(TelephoneNumberErrors.CallingCodeRequired);
 
-        if (!callingCode.StartsWith('+') ||
-            callingCode.Length < 2 ||
-            callingCode[1..].Any(character => !char.IsDigit(character)))
-            return Result<bool>.Failure(PhoneNumberErrors.CallingCodeInvalid);
+        if (!callingCode.StartsWith('+') || callingCode.Length < 2 || callingCode[1..].Any(character => !char.IsDigit(character)))
+            return Result<bool>.Failure(TelephoneNumberErrors.CallingCodeInvalid);
 
-        if (regionCode.Length != 2 ||
-            regionCode.Any(character => character is < 'A' or > 'Z'))
-        {
-            return Result<bool>.Failure(PhoneNumberErrors.RegionCodeInvalid);
-        }
+        if (regionCode.Length != 2 || regionCode.Any(character => character is < 'A' or > 'Z'))
+            return Result<bool>.Failure(TelephoneNumberErrors.RegionCodeInvalid);
 
         if (areaCode is not null && areaCode.Any(character => !char.IsDigit(character)))
-            return Result<bool>.Failure(PhoneNumberErrors.AreaCodeInvalid);
+            return Result<bool>.Failure(TelephoneNumberErrors.AreaCodeInvalid);
 
         if (phoneType == TelephoneType.Unknown)
-            return Result<bool>.Failure(PhoneNumberErrors.PhoneTypeRequired);
+            return Result<bool>.Failure(TelephoneNumberErrors.PhoneTypeRequired);
 
         if (!Enum.IsDefined(phoneType))
-            return Result<bool>.Failure(PhoneNumberErrors.PhoneTypeInvalid);
+            return Result<bool>.Failure(TelephoneNumberErrors.PhoneTypeInvalid);
 
         if (string.IsNullOrWhiteSpace(nationalNumber))
-            return Result<bool>.Failure(PhoneNumberErrors.NationalNumberRequired);
+            return Result<bool>.Failure(TelephoneNumberErrors.NationalNumberRequired);
 
         if (nationalNumber.Any(character => !char.IsDigit(character)))
-            return Result<bool>.Failure(PhoneNumberErrors.NationalNumberInvalid);
+            return Result<bool>.Failure(TelephoneNumberErrors.NationalNumberInvalid);
 
-        if (!e164.StartsWith('+') ||
-            e164.Length < 2 ||
-            e164[1..].Any(character => !char.IsDigit(character)))
-        {
-            return Result<bool>.Failure(PhoneNumberErrors.E164Invalid);
-        }
+        if (!e164.StartsWith('+') || e164.Length < 2 || e164[1..].Any(character => !char.IsDigit(character)))
+            return Result<bool>.Failure(TelephoneNumberErrors.E164Invalid);
 
         var expectedE164 = $"{callingCode}{areaCode}{nationalNumber}";
         if (!string.Equals(e164, expectedE164, StringComparison.Ordinal))
-            return Result<bool>.Failure(PhoneNumberErrors.CanonicalDataInconsistent);
+            return Result<bool>.Failure(TelephoneNumberErrors.CanonicalDataInconsistent);
 
         return Result<bool>.Success(true);
     }
