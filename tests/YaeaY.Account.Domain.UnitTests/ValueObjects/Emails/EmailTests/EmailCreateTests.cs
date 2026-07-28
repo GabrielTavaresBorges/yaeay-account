@@ -42,7 +42,6 @@ public class EmailCreateTests
         result.Error.Should().Be(EmailErrors.Required);
     }
 
-
     [Fact]
     public void Create_WhenEmailContainsWhiteSpaceOnly_ShouldFail_WithEmailErrorsRequired()
     {

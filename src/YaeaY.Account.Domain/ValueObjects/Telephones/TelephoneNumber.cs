@@ -88,6 +88,9 @@ public sealed record TelephoneNumber
         if (!callingCode.StartsWith('+') || callingCode.Length < 2 || callingCode[1..].Any(character => !char.IsDigit(character)))
             return Result<bool>.Failure(TelephoneNumberErrors.CallingCodeInvalid);
 
+        if (string.IsNullOrWhiteSpace(regionCode))
+            return Result<bool>.Failure(TelephoneNumberErrors.RegionCodeRequired);
+
         if (regionCode.Length != 2 || regionCode.Any(character => character is < 'A' or > 'Z'))
             return Result<bool>.Failure(TelephoneNumberErrors.RegionCodeInvalid);
 
@@ -106,12 +109,15 @@ public sealed record TelephoneNumber
         if (nationalNumber.Any(character => !char.IsDigit(character)))
             return Result<bool>.Failure(TelephoneNumberErrors.NationalNumberInvalid);
 
+        if (string.IsNullOrWhiteSpace(e164))
+            return Result<bool>.Failure(TelephoneNumberErrors.E164Required);
+
         if (!e164.StartsWith('+') || e164.Length < 2 || e164[1..].Any(character => !char.IsDigit(character)))
             return Result<bool>.Failure(TelephoneNumberErrors.E164Invalid);
 
         var expectedE164 = $"{callingCode}{areaCode}{nationalNumber}";
         if (!string.Equals(e164, expectedE164, StringComparison.Ordinal))
-            return Result<bool>.Failure(TelephoneNumberErrors.CanonicalDataInconsistent);
+            return Result<bool>.Failure(TelephoneNumberErrors.DataInconsistent);
 
         return Result<bool>.Success(true);
     }

@@ -17,6 +17,12 @@ public static class TelephoneNumberErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidFormat);
 
+    public static readonly Error RegionCodeRequired = new(
+        Code: "phone-number.region-code.required",
+        Message: "The phone region code is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
     public static readonly Error RegionCodeInvalid = new(
         Code: "phone-number.region-code.invalid",
         Message: "The phone region code must be a two-letter ISO code.",
@@ -77,15 +83,21 @@ public static class TelephoneNumberErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidFormat);
 
+    public static readonly Error E164Required = new(
+        Code: "phone-number.e164.required",
+        Message: "The E.164 phone number is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
     public static readonly Error E164Invalid = new(
         Code: "phone-number.e164.invalid",
         Message: "The E.164 phone number is invalid.",
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidFormat);
 
-    public static readonly Error CanonicalDataInconsistent = new(
-        Code: "phone-number.canonical-data.inconsistent",
-        Message: "The canonical phone number data is inconsistent.",
+    public static readonly Error DataInconsistent = new(
+        Code: "phone-number.data.inconsistent",
+        Message: "The phone number data is inconsistent.",
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvariantViolation);
 }
