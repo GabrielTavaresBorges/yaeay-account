@@ -448,7 +448,7 @@ public class UserCreateTests
             .ContainSingle()
             .Which;
 
-        userPhone.Number.Should().Be(telephoneNumber);
+        userPhone.TelephoneNumber.Should().Be(telephoneNumber);
         userPhone.IsPrimary.Should().BeTrue();
 
         resultUser.Status.Should().Be(AccountStatus.PendingEmailConfirmation);

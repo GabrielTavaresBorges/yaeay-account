@@ -9,9 +9,7 @@ public sealed record FullName
     private const int MinimumLength = 2;
     private const int MaximumLength = 100;
 
-    private static readonly Regex WhiteSpaceSequenceRegex = new(
-        @"\s+",
-        RegexOptions.Compiled);
+    private static readonly Regex WhiteSpaceSequenceRegex = new(@"\s+", RegexOptions.Compiled);
 
     private readonly string _name = string.Empty;
 
@@ -42,16 +40,10 @@ public sealed record FullName
         name = WhiteSpaceSequenceRegex.Replace(name.Trim(), " ");
 
         if (name.Length < MinimumLength)
-            return Result<string>.Failure(
-                FullNameErrors.TooShort(
-                    name.Length,
-                    MinimumLength));
+            return Result<string>.Failure(FullNameErrors.TooShort(name.Length, MinimumLength));
 
         if (name.Length > MaximumLength)
-            return Result<string>.Failure(
-                FullNameErrors.TooLong(
-                    name.Length,
-                    MaximumLength));
+            return Result<string>.Failure(FullNameErrors.TooLong(name.Length, MaximumLength));
 
         return Result<string>.Success(name);
     }
