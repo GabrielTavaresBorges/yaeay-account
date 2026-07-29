@@ -38,11 +38,7 @@ public sealed record BirthDate
         var minAllowed = today.AddYears(-MaximumAgeYears);
 
         if (date < minAllowed)
-            return Result<DateOnly>.Failure(
-                BirthDateErrors.TooOld(
-                    date,
-                    minAllowed,
-                    MaximumAgeYears));
+            return Result<DateOnly>.Failure(BirthDateErrors.TooOld(date, minAllowed, MaximumAgeYears));
 
         return Result<DateOnly>.Success(date);
     }

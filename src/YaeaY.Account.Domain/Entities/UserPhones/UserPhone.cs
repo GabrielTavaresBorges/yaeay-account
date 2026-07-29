@@ -1,103 +1,83 @@
 using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Enumerators;
-using PhoneNumberValue = YaeaY.Account.Domain.ValueObjects.Telephones.TelephoneNumber;
+using YaeaY.Account.Domain.Errors.UserPhones;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Domain.Entities.UserPhones;
 
 public sealed class UserPhone : Entity
 {
-    private PhoneNumberValue? _number;
+    private TelephoneNumber? _telephoneNumber = null!;
     private string _callingCode = string.Empty;
     private string _regionCode = string.Empty;
     private string? _areaCode;
     private TelephoneType _phoneType;
     private string _phoneNumber = string.Empty;
     private string _e164 = string.Empty;
-    private bool _isVerified;
-    private DateTimeOffset? _verifiedAt;
+    private DateTimeOffset _createdAt;
     private bool _isPrimary;
+    private bool _isVerified;
+    private DateTimeOffset? _verifiedAt;    
 
-    public PhoneNumberValue Number => _number ??= RestorePhoneNumber();
+    public TelephoneNumber TelephoneNumber => _telephoneNumber!;
     public string CallingCode => _callingCode;
     public string RegionCode => _regionCode;
     public string? AreaCode => _areaCode;
     public TelephoneType PhoneType => _phoneType;
     public string PhoneNumber => _phoneNumber;
     public string E164 => _e164;
+    public DateTimeOffset CreatedAt => _createdAt;
+    public bool IsPrimary => _isPrimary;
     public DateTimeOffset? VerifiedAt => _verifiedAt;
     public bool IsVerified => _isVerified;
-    public bool IsPrimary => _isPrimary;
-    public DateTimeOffset CreatedAt { get; private set; }
 
     private UserPhone() { }
 
-    private UserPhone(PhoneNumberValue number, bool isPrimary)
+    private UserPhone(TelephoneNumber telephoneNumber, bool isPrimary)
     {
-        SetNumber(number);
+        _telephoneNumber = telephoneNumber;
+        _callingCode = telephoneNumber.CallingCode;
+        _regionCode = telephoneNumber.RegionCode;
+        _areaCode = telephoneNumber.AreaCode;
+        _phoneType = telephoneNumber.PhoneType;
+        _phoneNumber = telephoneNumber.NationalNumber;
+        _e164 = telephoneNumber.E164;
         _isPrimary = isPrimary;
-
-        CreatedAt = DateTimeOffset.UtcNow;
+        _createdAt = DateTimeOffset.UtcNow;
     }
 
-    public static UserPhone Create(PhoneNumberValue number, bool isPrimary)
+    public static UserPhone Create(TelephoneNumber telephoneNumber, bool isPrimary)
     {
-        if (number is null)
-            throw new DomainException(
-                code: "user-phone.number.required",
-                message: "A phone number is required.");
+        Validate(telephoneNumber);
 
-        return new UserPhone(number, isPrimary);
+        var userPhone = new UserPhone(telephoneNumber, isPrimary);
+
+        return userPhone;
     }
 
-    internal void Update(PhoneNumberValue number)
+    internal void Update(TelephoneNumber number)
     {
-        if (number is null)
-            throw new DomainException(
-                code: "user-phone.number.required",
-                message: "A phone number is required.");
+        Validate(number);
 
-        if (Number == number)
+        if (TelephoneNumber == number)
             return;
 
-        SetNumber(number);
-
-        _isVerified = false;
-        _verifiedAt = null;
-    }
-
-    private void SetNumber(PhoneNumberValue number)
-    {
-        _number = number;
+        _telephoneNumber = number;
         _callingCode = number.CallingCode;
         _regionCode = number.RegionCode;
         _areaCode = number.AreaCode;
         _phoneType = number.PhoneType;
         _phoneNumber = number.NationalNumber;
         _e164 = number.E164;
+        _isVerified = false;
+        _verifiedAt = null;
     }
 
-    private PhoneNumberValue RestorePhoneNumber() =>
-        PhoneNumberValue.Create(
-            _callingCode,
-            _regionCode,
-            _areaCode,
-            _phoneType,
-            _phoneNumber,
-            _e164).Value;
-
-    internal void MarkVerified(DateTimeOffset verifiedAtUtc)
+    private static void Validate(TelephoneNumber telehpneNumber)
     {
-        if (_isVerified)
-            return;
-
-        if (verifiedAtUtc == default)
-            throw new DomainException(
-                code: "PHONE_VERIFIED_AT_INVALID",
-                message: "VerifiedAt cannot be default.");
-
-        _isVerified = true;
-        _verifiedAt = verifiedAtUtc;
+        if (telehpneNumber is null)
+            throw new DomainException(UserPhoneErrors.NumberRequired);
     }
 
     internal void SetPrimary(bool isPrimary)
