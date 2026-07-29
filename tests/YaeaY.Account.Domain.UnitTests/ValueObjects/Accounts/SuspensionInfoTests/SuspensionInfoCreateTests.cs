@@ -1,5 +1,4 @@
 using FluentAssertions;
-using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.Errors.SuspensionInfo;
 using YaeaY.Account.Domain.ValueObjects.Accounts;
@@ -8,176 +7,225 @@ namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Accounts.SuspensionInfoTes
 
 public class SuspensionInfoCreateTests
 {
+    // IsFailure
+
     [Fact]
-    public void Create_WhenReasonIsUnknown_ShouldThrowDomainException_WithSuspensionInfoErrorsReasonRequired()
+    public void Create_WhenReasonIsUnknown_ShouldFail_WithSuspensionInfoErrorsReasonRequired()
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
+        var reasonInvalid = SuspensionReason.Unknown;
+
+        var suspensionBy = SuspensionBy.Admin;
+        var suspendedAt = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        string? note = null;
 
         // Act
 
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.Unknown,
-            SuspensionBy.Admin,
-            suspendedAt);
-
-        // Assert
-
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(SuspensionInfoErrors.ReasonRequired);
-    }
-
-    [Fact]
-    public void Create_WhenReasonIsNotDefined_ShouldThrowDomainException_WithSuspensionInfoErrorsReasonInvalid()
-    {
-        // Arrange
-
-        var invalidReason = (SuspensionReason)999;
-        var suspendedAt = CreateSuspendedAt();
-
-        // Act
-
-        Action act = () => SuspensionInfo.Create(
-            invalidReason,
-            SuspensionBy.Admin,
-            suspendedAt);
-
-        // Assert
-
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(SuspensionInfoErrors.ReasonInvalid(invalidReason));
-    }
-
-    [Fact]
-    public void Create_WhenByIsUnknown_ShouldThrowDomainException_WithSuspensionInfoErrorsByRequired()
-    {
-        // Arrange
-
-        var suspendedAt = CreateSuspendedAt();
-
-        // Act
-
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.PolicyViolation,
-            SuspensionBy.Unknown,
-            suspendedAt);
-
-        // Assert
-
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(SuspensionInfoErrors.ByRequired);
-    }
-
-    [Fact]
-    public void Create_WhenByIsNotDefined_ShouldThrowDomainException_WithSuspensionInfoErrorsByInvalid()
-    {
-        // Arrange
-
-        var invalidBy = (SuspensionBy)999;
-        var suspendedAt = CreateSuspendedAt();
-
-        // Act
-
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.PolicyViolation,
-            invalidBy,
-            suspendedAt);
-
-        // Assert
-
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(SuspensionInfoErrors.ByInvalid(invalidBy));
-    }
-
-    [Fact]
-    public void Create_WhenSuspendedAtIsDefault_ShouldThrowDomainException_WithSuspensionInfoErrorsSuspendedAtRequired()
-    {
-        // Act
-
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.PolicyViolation,
-            SuspensionBy.Admin,
-            default);
-
-        // Assert
-
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(SuspensionInfoErrors.SuspendedAtRequired);
-    }
-
-    [Fact]
-    public void Create_WhenNoteIsLongerThanMaximumLength_ShouldThrowDomainException_WithSuspensionInfoErrorsNoteTooLong()
-    {
-        // Arrange
-
-        var suspendedAt = CreateSuspendedAt();
-        var note = new string('a', 501);
-
-        // Act
-
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.PolicyViolation,
-            SuspensionBy.Admin,
+        var result = SuspensionInfo.Create(
+            reasonInvalid,
+            suspensionBy,
             suspendedAt,
-            note: note);
+            suspendedUntil,
+            note);
 
         // Assert
 
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(
-            SuspensionInfoErrors.NoteTooLong(note.Length, 500));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.ReasonRequired);
     }
 
     [Fact]
-    public void Create_WhenSuspendedUntilEqualsSuspendedAt_ShouldThrowDomainException_WithSuspensionInfoErrorsSuspendedUntilNotAfterSuspendedAt()
+    public void Create_WhenReasonIsNotDefined_ShouldFail_WithSuspensionInfoErrorsReasonInvalid()
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
-        var suspendedUntil = suspendedAt;
+        var reasonInvalid = (SuspensionReason)999;
+
+        var suspensionBy = SuspensionBy.Admin;
+        var suspendedAt = new DateTimeOffset(2026, 1, 2, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        string? note = null;
 
         // Act
 
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.PolicyViolation,
-            SuspensionBy.Admin,
+        var result = SuspensionInfo.Create(
+            reasonInvalid,
+            suspensionBy,
             suspendedAt,
-            suspendedUntil);
+            suspendedUntil,
+            note);
 
         // Assert
 
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(
-            SuspensionInfoErrors.SuspendedUntilNotAfterSuspendedAt(
-                suspendedAt,
-                suspendedUntil));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.ReasonInvalid(reasonInvalid));
     }
 
     [Fact]
-    public void Create_WhenSuspendedUntilIsBeforeSuspendedAt_ShouldThrowDomainException_WithSuspensionInfoErrorsSuspendedUntilNotAfterSuspendedAt()
+    public void Create_WhenSuspensionByIsUnknown_ShouldFail_WithSuspensionInfoErrorsByRequired()
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
-        var suspendedUntil = suspendedAt.AddTicks(-1);
+        var suspensionByInvalid = SuspensionBy.Unknown;
+
+        var reason = SuspensionReason.PolicyViolation;
+        var suspendedAt = new DateTimeOffset(2026, 1, 3, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        string? note = null;
 
         // Act
 
-        Action act = () => SuspensionInfo.Create(
-            SuspensionReason.PolicyViolation,
-            SuspensionBy.Admin,
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionByInvalid,
             suspendedAt,
-            suspendedUntil);
+            suspendedUntil,
+            note);
 
         // Assert
 
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(
-            SuspensionInfoErrors.SuspendedUntilNotAfterSuspendedAt(
-                suspendedAt,
-                suspendedUntil));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.ByRequired);
     }
+
+    [Fact]
+    public void Create_WhenSuspensionByIsNotDefined_ShouldFail_WithSuspensionInfoErrorsByInvalid()
+    {
+        // Arrange
+
+        var suspensionByInvalid = (SuspensionBy)999;
+
+        var reason = SuspensionReason.PolicyViolation;
+        var suspendedAt = new DateTimeOffset(2026, 1, 4, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        string? note = null;
+
+        // Act
+
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionByInvalid,
+            suspendedAt,
+            suspendedUntil,
+            note);
+
+        // Assert
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.ByInvalid(suspensionByInvalid));
+    }
+
+    [Fact]
+    public void Create_WhenSuspendedAtIsDefault_ShouldFail_WithSuspensionInfoErrorsSuspendedAtRequired()
+    {
+        // Arrange
+
+        var suspendedAtInvalid = default(DateTimeOffset);
+
+        var reason = SuspensionReason.PolicyViolation;
+        var suspensionBy = SuspensionBy.Admin;
+        DateTimeOffset? suspendedUntil = null;
+        string? note = null;
+
+        // Act
+
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
+            suspendedAtInvalid,
+            suspendedUntil,
+            note);
+
+        // Assert
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.SuspendedAtRequired);
+    }
+
+    [Fact]
+    public void Create_WhenNoteIsLongerThanMaximumLength_ShouldFail_WithSuspensionInfoErrorsNoteTooLong()
+    {
+        // Arrange
+
+        var noteInvalid = new string('a', 501);
+
+        var reason = SuspensionReason.PolicyViolation;
+        var suspensionBy = SuspensionBy.Admin;
+        var suspendedAt = new DateTimeOffset(2026, 1, 6, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+
+        // Act
+
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
+            suspendedAt,
+            suspendedUntil,
+            noteInvalid);
+
+        // Assert
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.NoteTooLong(noteInvalid.Length, 500));
+    }
+
+    [Fact]
+    public void Create_WhenSuspendedUntilEqualsSuspendedAt_ShouldFail_WithSuspensionInfoErrorsSuspendedUntilNotAfterSuspendedAt()
+    {
+        // Arrange
+
+        var suspendedAt = new DateTimeOffset(2026, 1, 7, 12, 0, 0, TimeSpan.Zero);
+        var suspendedUntilInvalid = suspendedAt;
+
+        var reason = SuspensionReason.PolicyViolation;
+        var suspensionBy = SuspensionBy.Admin;        
+        string? note = null;
+
+        // Act
+
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
+            suspendedAt,
+            suspendedUntilInvalid,
+            note);
+
+        // Assert
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(
+            SuspensionInfoErrors.SuspendedUntilNotAfterSuspendedAt(suspendedAt, suspendedUntilInvalid));
+    }
+
+    [Fact]
+    public void Create_WhenSuspendedUntilIsBeforeSuspendedAt_ShouldFail_WithSuspensionInfoErrorsSuspendedUntilNotAfterSuspendedAt()
+    {
+        // Arrange
+
+        var reason = SuspensionReason.PolicyViolation;
+        var suspensionBy = SuspensionBy.Admin;
+        var suspendedAt = new DateTimeOffset(2026, 1, 8, 12, 0, 0, TimeSpan.Zero);
+        var suspendedUntilInvalid = suspendedAt.AddTicks(-1);
+        string? note = null;
+
+        // Act
+
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
+            suspendedAt,
+            suspendedUntilInvalid,
+            note);
+
+        // Assert
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(SuspensionInfoErrors.SuspendedUntilNotAfterSuspendedAt(suspendedAt, suspendedUntilInvalid));
+    }
+
+    // IsSuccess
 
     [Fact]
     public void Create_WhenAllDataIsValid_ShouldSucceed()
@@ -185,27 +233,28 @@ public class SuspensionInfoCreateTests
         // Arrange
 
         var reason = SuspensionReason.PolicyViolation;
-        var by = SuspensionBy.Admin;
-        var suspendedAt = CreateSuspendedAt();
+        var suspensionBy = SuspensionBy.Admin;
+        var suspendedAt = new DateTimeOffset(2026, 1, 9, 12, 0, 0, TimeSpan.Zero);
         var suspendedUntil = suspendedAt.AddDays(30);
         var note = "Policy violation confirmed.";
 
         // Act
 
-        var suspensionInfo = SuspensionInfo.Create(
+        var result = SuspensionInfo.Create(
             reason,
-            by,
+            suspensionBy,
             suspendedAt,
             suspendedUntil,
             note);
 
         // Assert
 
-        suspensionInfo.Reason.Should().Be(reason);
-        suspensionInfo.By.Should().Be(by);
-        suspensionInfo.SuspendedAt.Should().Be(suspendedAt);
-        suspensionInfo.SuspendedUntil.Should().Be(suspendedUntil);
-        suspensionInfo.Note.Should().Be(note);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Reason.Should().Be(reason);
+        result.Value.By.Should().Be(suspensionBy);
+        result.Value.SuspendedAt.Should().Be(suspendedAt);
+        result.Value.SuspendedUntil.Should().Be(suspendedUntil);
+        result.Value.Note.Should().Be(note);
     }
 
     [Fact]
@@ -213,20 +262,27 @@ public class SuspensionInfoCreateTests
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
+        var reason = SuspensionReason.FraudRisk;
+        var suspensionBy = SuspensionBy.System;
+        var suspendedAt = new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        string? note = null;
 
         // Act
 
-        var suspensionInfo = SuspensionInfo.Create(
-            SuspensionReason.FraudRisk,
-            SuspensionBy.System,
-            suspendedAt);
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
+            suspendedAt,
+            suspendedUntil,
+            note);
 
         // Assert
 
-        suspensionInfo.SuspendedUntil.Should().BeNull();
-        suspensionInfo.Note.Should().BeNull();
-        suspensionInfo.IsIndefinite().Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.SuspendedUntil.Should().BeNull();
+        result.Value.Note.Should().BeNull();
+        result.Value.IsIndefinite().Should().BeTrue();
     }
 
     [Fact]
@@ -234,19 +290,25 @@ public class SuspensionInfoCreateTests
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
+        var reason = SuspensionReason.UserRequested;
+        var suspensionBy = SuspensionBy.User;
+        var suspendedAt = new DateTimeOffset(2026, 1, 11, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        var note = "   ";
 
         // Act
 
-        var suspensionInfo = SuspensionInfo.Create(
-            SuspensionReason.UserRequested,
-            SuspensionBy.User,
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
             suspendedAt,
-            note: "   ");
+            suspendedUntil,
+            note);
 
         // Assert
 
-        suspensionInfo.Note.Should().BeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Note.Should().BeNull();
     }
 
     [Fact]
@@ -254,19 +316,25 @@ public class SuspensionInfoCreateTests
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
+        var reason = SuspensionReason.Inactivity;
+        var suspensionBy = SuspensionBy.System;
+        var suspendedAt = new DateTimeOffset(2026, 1, 12, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
+        var note = "  Account inactive.  ";
 
         // Act
 
-        var suspensionInfo = SuspensionInfo.Create(
-            SuspensionReason.Inactivity,
-            SuspensionBy.System,
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
             suspendedAt,
-            note: "  Account inactive.  ");
+            suspendedUntil,
+            note);
 
         // Assert
 
-        suspensionInfo.Note.Should().Be("Account inactive.");
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Note.Should().Be("Account inactive.");
     }
 
     [Fact]
@@ -274,22 +342,24 @@ public class SuspensionInfoCreateTests
     {
         // Arrange
 
-        var suspendedAt = CreateSuspendedAt();
+        var reason = SuspensionReason.PaymentFailure;
+        var suspensionBy = SuspensionBy.System;
+        var suspendedAt = new DateTimeOffset(2026, 1, 13, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset? suspendedUntil = null;
         var note = new string('a', 500);
 
         // Act
 
-        var suspensionInfo = SuspensionInfo.Create(
-            SuspensionReason.PaymentFailure,
-            SuspensionBy.System,
+        var result = SuspensionInfo.Create(
+            reason,
+            suspensionBy,
             suspendedAt,
-            note: note);
+            suspendedUntil,
+            note);
 
         // Assert
 
-        suspensionInfo.Note.Should().Be(note);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Note.Should().Be(note);
     }
-
-    private static DateTimeOffset CreateSuspendedAt()
-        => new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 }

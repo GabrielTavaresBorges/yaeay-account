@@ -3,7 +3,7 @@ using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.Errors.Telephones;
 using YaeaY.Account.Domain.ValueObjects.Telephones;
 
-namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Telephones;
+namespace YaeaY.Account.Domain.UnitTests.ValueObjects.Telephones.TelehponeNumberTests;
 
 public class TelephoneNumberCreateTests
 {

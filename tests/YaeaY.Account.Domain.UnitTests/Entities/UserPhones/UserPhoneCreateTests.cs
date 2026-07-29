@@ -9,6 +9,8 @@ namespace YaeaY.Account.Domain.UnitTests.Entities.UserPhones;
 
 public class UserPhoneCreateTests
 {
+    // IsFailure
+
     [Fact]
     public void Create_WhenNumberIsNull_ShouldThrowDomainException_WithUserPhoneErrorsNumberRequired()
     {
@@ -25,6 +27,8 @@ public class UserPhoneCreateTests
         var exception = act.Should().Throw<DomainException>().Which;
         exception.Error.Should().Be(UserPhoneErrors.NumberRequired);
     }
+
+    // IsSuccess
 
     [Fact]
     public void Create_WhenNumberIsValid_ShouldSucceed()
