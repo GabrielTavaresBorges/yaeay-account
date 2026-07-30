@@ -15,7 +15,7 @@ public sealed record SuspensionInfo
     private readonly string? _note;
 
     public SuspensionReason Reason => _reason;
-    public SuspensionBy By => _suspensionBy;
+    public SuspensionBy SuspensionBy => _suspensionBy;
     public DateTimeOffset SuspendedAt => _suspendedAt;
     public DateTimeOffset? SuspendedUntil => _suspendedUntil;
     public string? Note => _note;

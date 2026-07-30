@@ -36,12 +36,11 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
 
         builder.Navigation(n => n.PasswordHash).IsRequired();
 
-
         // ===== FullName (VO) =====
         builder.OwnsOne(o => o.FullName, name =>
         {
             name.Property(p => p.Name)
-                .HasColumnName("FullName")
+                .HasColumnName("UserName")
                 .HasMaxLength(100)
                 .IsRequired();
         });
@@ -74,6 +73,11 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
             .HasMaxLength(50)
             .IsRequired();
 
+        // ===== CreatedAt =====
+        builder.Property(p => p.CreatedAt)
+            .HasColumnName("CreatedAt")
+            .IsRequired();
+
         // ===== SuspensionInfo (nullable) =====
         builder.OwnsOne(typeof(SuspensionInfo), "_suspension", si =>
         {
@@ -81,7 +85,7 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
             .HasColumnName("SuspensionReason")
             .HasConversion<int>();
 
-            si.Property(nameof(SuspensionInfo.By))
+            si.Property(nameof(SuspensionInfo.SuspensionBy))
             .HasColumnName("SuspensionBy")
             .HasConversion<int>();
 
@@ -97,12 +101,7 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         });
 
         builder.Navigation("_suspension")
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        // ===== CreatedAt =====
-        builder.Property(p => p.CreatedAt)
-            .HasColumnName("CreatedAt")
-            .IsRequired();
+            .UsePropertyAccessMode(PropertyAccessMode.Field);        
 
         // ===== Documents (OwnsMany) =====
         builder.OwnsMany(o => o.Documents, doc =>
