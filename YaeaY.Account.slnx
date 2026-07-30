@@ -11,5 +11,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/YaeaY.Account.Domain.UnitTests/YaeaY.Account.Domain.UnitTests.csproj" Id="d7717e91-dc57-473b-a909-fe84b2a3b78f" />
+    <Project Path="tests/YaeaY.Account.Infrastructure.UnitTests/YaeaY.Account.Infrastructure.UnitTests.csproj" Id="b7ba5ed7-b341-4934-8e64-75d88425b663" />
   </Folder>
 </Solution>

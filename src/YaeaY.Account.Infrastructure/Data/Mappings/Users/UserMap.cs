@@ -101,34 +101,26 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         });
 
         builder.Navigation("_suspension")
-            .UsePropertyAccessMode(PropertyAccessMode.Field);        
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // ===== Documents (OwnsMany) =====
-        builder.OwnsMany(o => o.Documents, doc =>
-        {
-            doc.ToTable("UserDocuments");
-            doc.HasKey("Id");
+        // ===== Phones =====
+        builder.HasMany(user => user.Phones)
+            .WithOne()
+            .HasForeignKey("UserId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-            doc.WithOwner().HasForeignKey("UserId");
+        builder.Navigation(user => user.Phones)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-            doc.Property<DocumentType>("_documentType")
-                .HasColumnName("DocumentType")
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
+        // ===== Documents =====
+        builder.HasMany(user => user.Documents)
+            .WithOne()
+            .HasForeignKey("UserId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-            doc.Property(p => p.DocumentNumber)
-                .HasColumnName("DocumentNumber")
-                .HasMaxLength(50)
-                .IsRequired();
-
-            doc.Property(p => p.CreatedAt)
-                .HasColumnName("CreatedAt")
-                .IsRequired();
-        });
-
-        builder.Navigation(n => n.Documents)
+        builder.Navigation(user => user.Documents)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
-
