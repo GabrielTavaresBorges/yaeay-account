@@ -11,6 +11,7 @@ public sealed record Command(
     string FullName,
     DateOnly BirthDate,
     Gender Gender,
+    string CallingCode,
     string RegionCode,
     string? AreaCode,
     TelephoneType PhoneType,

@@ -5,6 +5,24 @@ namespace YaeaY.Account.Application.Services.TelephoneNumbers.Errors;
 
 public static class TelephoneNumberIdentificationErrors
 {
+    public static readonly Error CallingCodeInvalid = new(
+        Code: "account.telephone-number.identification.calling-code.invalid",
+        Message: "The telephone calling code is invalid.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.InvalidFormat);
+
+    public static readonly Error CallingCodeDoesNotMatchRegion = new(
+        Code: "account.telephone-number.identification.calling-code.region-mismatch",
+        Message: "The telephone calling code does not match the specified region.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.InvalidValue);
+
+    public static readonly Error CallingCodeDoesNotMatchNumber = new(
+        Code: "account.telephone-number.identification.calling-code.number-mismatch",
+        Message: "The telephone calling code does not match the identified telephone number.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.InvalidValue);
+
     public static readonly Error NumberNotIdentified = new(
        Code: "account.telephone-number.identification.not-identified",
        Message: "The telephone number could not be identified.",

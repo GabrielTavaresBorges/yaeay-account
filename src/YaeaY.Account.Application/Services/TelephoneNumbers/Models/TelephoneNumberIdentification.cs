@@ -4,9 +4,8 @@ namespace YaeaY.Account.Application.Services.TelephoneNumbers.Models;
 
 public sealed class TelephoneNumberIdentification
 {
+    public int CallingCode { get; }
     public string RegionCode { get; }
-
-    public int CountryCallingCode { get; }
 
     public string? AreaCode { get; }
 
@@ -17,15 +16,15 @@ public sealed class TelephoneNumberIdentification
     public TelephoneType TelephoneType { get; }
 
     public TelephoneNumberIdentification(
-        string regionCode,
         int countryCallingCode,
+        string regionCode,
         string? areaCode,
         string nationalNumber,
         string internationalNumber,
         TelephoneType telephoneType)
     {
+        CallingCode = countryCallingCode;
         RegionCode = regionCode;
-        CountryCallingCode = countryCallingCode;
         AreaCode = areaCode;
         NationalNumber = nationalNumber;
         InternationalNumber = internationalNumber;
