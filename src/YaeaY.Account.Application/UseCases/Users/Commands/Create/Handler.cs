@@ -8,6 +8,7 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
+using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
@@ -24,19 +25,22 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
     private readonly ILogger<Handler> _logger;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITelephoneNumberService _telephoneNumberService;
+    private readonly ITelephoneNumberFactory _telephoneNumberFactory;
 
     public Handler(
         IUserRepository usersRepository,
         IUnityOfWork unitOfWork,
         ILogger<Handler> logger,
         IPasswordHasher passwordHasher,
-        ITelephoneNumberService telephoneNumberService)
+        ITelephoneNumberService telephoneNumberService,
+        ITelephoneNumberFactory telephoneNumberFactory)
     {
         _userRepository = usersRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
         _passwordHasher = passwordHasher;
         _telephoneNumberService = telephoneNumberService;
+        _telephoneNumberFactory = telephoneNumberFactory;
     }
 
     public async Task<Result<Response>> Handle(Command command, CancellationToken cancellationToken)
@@ -63,7 +67,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (birthDateResult.IsFailure)
                 return Result<Response>.Failure(birthDateResult.Error);
 
-            var initialTelephoneNumberResult =  CreateInitialTelephoneNumber(command);
+            var initialTelephoneNumberResult = CreateInitialTelephoneNumber(command);
 
             if (initialTelephoneNumberResult.IsFailure)
                 return Result<Response>.Failure(
@@ -114,9 +118,10 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
     {
         var identificationResult =
             _telephoneNumberService.ValidateAndIdentify(
+            callingCode: command.CallingCode,
             regionCode: command.RegionCode,
             areaCode: command.AreaCode,
-            number: command.PhoneNumber,
+            internationalNumber: command.PhoneNumber,
             expectedPhoneType: command.PhoneType);
 
         if (identificationResult.IsFailure)
@@ -124,8 +129,8 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
 
         var identification = identificationResult.Value;
 
-        return TelephoneNumber.Create(
-            callingCode: $"+{identification.CountryCallingCode}",
+        return _telephoneNumberFactory.Create(
+            callingCode: identification.CallingCode,
             regionCode: identification.RegionCode,
             areaCode: identification.AreaCode,
             phoneType: identification.TelephoneType,

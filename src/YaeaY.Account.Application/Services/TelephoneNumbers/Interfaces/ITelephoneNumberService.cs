@@ -7,8 +7,9 @@ namespace YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 public interface ITelephoneNumberService
 {
     Result<TelephoneNumberIdentification> ValidateAndIdentify(
+        string callingCode,
         string regionCode,
         string? areaCode,
-        string number,
+        string internationalNumber,
         TelephoneType expectedPhoneType);
 }

@@ -9,9 +9,9 @@ public sealed record PasswordHash
 
     public string Password => _passwordHash;
 
-    private PasswordHash(string passwordHash)
+    private PasswordHash(string password)
     {
-        _passwordHash = passwordHash;
+        _passwordHash = password;
     }
 
     public static Result<PasswordHash> Create(string hashed)

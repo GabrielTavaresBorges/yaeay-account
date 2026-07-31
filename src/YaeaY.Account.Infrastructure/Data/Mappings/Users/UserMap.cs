@@ -36,12 +36,11 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
 
         builder.Navigation(n => n.PasswordHash).IsRequired();
 
-
         // ===== FullName (VO) =====
         builder.OwnsOne(o => o.FullName, name =>
         {
             name.Property(p => p.Name)
-                .HasColumnName("FullName")
+                .HasColumnName("UserName")
                 .HasMaxLength(100)
                 .IsRequired();
         });
@@ -74,6 +73,11 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
             .HasMaxLength(50)
             .IsRequired();
 
+        // ===== CreatedAt =====
+        builder.Property(p => p.CreatedAt)
+            .HasColumnName("CreatedAt")
+            .IsRequired();
+
         // ===== SuspensionInfo (nullable) =====
         builder.OwnsOne(typeof(SuspensionInfo), "_suspension", si =>
         {
@@ -81,7 +85,7 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
             .HasColumnName("SuspensionReason")
             .HasConversion<int>();
 
-            si.Property(nameof(SuspensionInfo.By))
+            si.Property(nameof(SuspensionInfo.SuspensionBy))
             .HasColumnName("SuspensionBy")
             .HasConversion<int>();
 
@@ -99,37 +103,24 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         builder.Navigation("_suspension")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // ===== CreatedAt =====
-        builder.Property(p => p.CreatedAt)
-            .HasColumnName("CreatedAt")
-            .IsRequired();
+        // ===== Phones =====
+        builder.HasMany(user => user.Phones)
+            .WithOne()
+            .HasForeignKey("UserId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // ===== Documents (OwnsMany) =====
-        builder.OwnsMany(o => o.Documents, doc =>
-        {
-            doc.ToTable("UserDocuments");
-            doc.HasKey("Id");
+        builder.Navigation(user => user.Phones)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-            doc.WithOwner().HasForeignKey("UserId");
+        // ===== Documents =====
+        builder.HasMany(user => user.Documents)
+            .WithOne()
+            .HasForeignKey("UserId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-            doc.Property<DocumentType>("_documentType")
-                .HasColumnName("DocumentType")
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
-
-            doc.Property(p => p.DocumentNumber)
-                .HasColumnName("DocumentNumber")
-                .HasMaxLength(50)
-                .IsRequired();
-
-            doc.Property(p => p.CreatedAt)
-                .HasColumnName("CreatedAt")
-                .IsRequired();
-        });
-
-        builder.Navigation(n => n.Documents)
+        builder.Navigation(user => user.Documents)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
-

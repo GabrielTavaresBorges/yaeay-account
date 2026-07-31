@@ -18,39 +18,53 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
     }
 
     public Result<TelephoneNumberIdentification> ValidateAndIdentify(
+        string callingCode,
         string regionCode,
         string? areaCode,
         string number,
         TelephoneType expectedPhoneType)
     {
+        var callingCodeValidation = ValidateCallingCode(callingCode);
+
+        if (callingCodeValidation.IsFailure)
+            return Result<TelephoneNumberIdentification>.Failure(callingCodeValidation.Error);
+
+        var normalizedCallingCode = callingCodeValidation.Value;
+        var normalizedRegionCode = regionCode
+            .Trim()
+            .ToUpperInvariant();
+
+        var callingCodeRegionValidation = ValidateCallingCodeForRegion(
+            normalizedCallingCode,
+            normalizedRegionCode);
+
+        if (callingCodeRegionValidation.IsFailure)
+            return Result<TelephoneNumberIdentification>.Failure(callingCodeRegionValidation.Error);
+
         var validationResult = ValidateTelephoneNumber(
-            regionCode,
+            normalizedCallingCode,
+            normalizedRegionCode,
             areaCode,
             number);
 
         if (validationResult.IsFailure)
-            return Result<TelephoneNumberIdentification>.Failure(
-                validationResult.Error);
+            return Result<TelephoneNumberIdentification>.Failure(validationResult.Error);
 
-        var telephoneNumberIdentificationResult = IdentifyValidatedTelephoneNumber(
-            validationResult.Value,
-            expectedPhoneType);
+        var telephoneNumberIdentificationResult = IdentifyValidatedTelephoneNumber(validationResult.Value, expectedPhoneType);
 
         return telephoneNumberIdentificationResult;
     }
 
     private Result<PhoneNumber> ValidateTelephoneNumber(
+        int callingCode,
         string regionCode,
         string? areaCode,
         string number)
     {
         var telephoneNumberToParse = BuildTelephoneNumber(
+            callingCode,
             areaCode,
             number);
-
-        var normalizedRegionCode = regionCode
-            .Trim()
-            .ToUpperInvariant();
 
         PhoneNumber identifiedTelephoneNumber;
 
@@ -58,7 +72,7 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
         {
             identifiedTelephoneNumber = _phoneNumberUtil.Parse(
                 telephoneNumberToParse,
-                normalizedRegionCode);
+                regionCode);
         }
         catch (NumberParseException exception)
         {
@@ -68,81 +82,104 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
             return Result<PhoneNumber>.Failure(error);
         }
 
-        var possibilityValidation =
-            _phoneNumberUtil.IsPossibleNumberWithReason(
-                identifiedTelephoneNumber);
+        if (identifiedTelephoneNumber.CountryCode != callingCode)
+            return Result<PhoneNumber>.Failure(
+                TelephoneNumberIdentificationErrors.CallingCodeDoesNotMatchNumber);
 
-        var possibilityError =
-            LibPhoneNumberErrorMap.FromValidationResult(
-                possibilityValidation);
+        var possibilityValidation = _phoneNumberUtil.IsPossibleNumberWithReason(identifiedTelephoneNumber);
+
+        var possibilityError = LibPhoneNumberErrorMap.FromValidationResult(possibilityValidation);
 
         if (possibilityError is not null)
             return Result<PhoneNumber>.Failure(possibilityError);
 
-        if (!_phoneNumberUtil.IsValidNumber(identifiedTelephoneNumber))
+        if (!_phoneNumberUtil.IsValidNumberForRegion(
+                identifiedTelephoneNumber,
+                regionCode))
+            return Result<PhoneNumber>.Failure(TelephoneNumberIdentificationErrors.NumberInvalidForRegion);
+
+        return Result<PhoneNumber>.Success(identifiedTelephoneNumber);
+    }
+
+    private Result<int> ValidateCallingCode(string callingCode)
+    {
+        if (string.IsNullOrWhiteSpace(callingCode))
+            return Result<int>.Failure(
+                TelephoneNumberIdentificationErrors.CallingCodeInvalid);
+
+        var normalizedCallingCode = callingCode.Trim();
+
+        if (normalizedCallingCode.StartsWith('+'))
+            normalizedCallingCode = normalizedCallingCode[1..];
+
+        var hasValidFormat =
+            normalizedCallingCode.Length > 0 &&
+            normalizedCallingCode.All(char.IsDigit);
+
+        if (!hasValidFormat ||
+            !int.TryParse(normalizedCallingCode, out var parsedCallingCode) ||
+            parsedCallingCode <= 0 ||
+            _phoneNumberUtil.GetRegionCodesForCountryCode(parsedCallingCode).Count == 0)
         {
-            return Result<PhoneNumber>.Failure(
-                TelephoneNumberIdentificationErrors
-                    .NumberInvalidForRegion);
+            return Result<int>.Failure(
+                TelephoneNumberIdentificationErrors.CallingCodeInvalid);
         }
 
-        return Result<PhoneNumber>.Success(
-            identifiedTelephoneNumber);
+        return Result<int>.Success(parsedCallingCode);
+    }
+
+    private Result<bool> ValidateCallingCodeForRegion(
+        int callingCode,
+        string regionCode)
+    {
+        var supportedRegions =
+            _phoneNumberUtil.GetRegionCodesForCountryCode(callingCode);
+
+        var callingCodeMatchesRegion = supportedRegions.Any(
+            supportedRegion =>
+                string.Equals(
+                    supportedRegion,
+                    regionCode,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (!callingCodeMatchesRegion)
+        {
+            return Result<bool>.Failure(
+                TelephoneNumberIdentificationErrors.CallingCodeDoesNotMatchRegion);
+        }
+
+        return Result<bool>.Success(true);
     }
 
     private Result<TelephoneNumberIdentification> IdentifyValidatedTelephoneNumber(
         PhoneNumber identifiedTelephoneNumber,
         TelephoneType expectedPhoneType)
     {
-        var identifiedRegionCode =
-            _phoneNumberUtil.GetRegionCodeForNumber(
-                identifiedTelephoneNumber);
+        var identifiedRegionCode = _phoneNumberUtil.GetRegionCodeForNumber(identifiedTelephoneNumber);
 
         if (string.IsNullOrWhiteSpace(identifiedRegionCode))
-            return Result<TelephoneNumberIdentification>.Failure(
-                TelephoneNumberIdentificationErrors
-                    .RegionNotIdentified);
+            return Result<TelephoneNumberIdentification>.Failure(TelephoneNumberIdentificationErrors.RegionNotIdentified);
 
-        var libraryTelephoneType =
-            _phoneNumberUtil.GetNumberType(
-                identifiedTelephoneNumber);
+        var libraryTelephoneType = _phoneNumberUtil.GetNumberType(identifiedTelephoneNumber);
 
-        var identifiedTelephoneType =
-            LibPhoneNumberTypeMap.ToTelephoneType(
-                libraryTelephoneType);
+        var identifiedTelephoneType = LibPhoneNumberTypeMap.ToTelephoneType(libraryTelephoneType);
 
         if (identifiedTelephoneType is null)
-            return Result<TelephoneNumberIdentification>.Failure(
-                TelephoneNumberIdentificationErrors
-                    .TelephoneTypeNotSupported);
+            return Result<TelephoneNumberIdentification>.Failure(TelephoneNumberIdentificationErrors.TelephoneTypeNotSupported);
 
         if (identifiedTelephoneType == TelephoneType.Unknown)
-            return Result<TelephoneNumberIdentification>.Failure(
-                TelephoneNumberIdentificationErrors
-                    .TelephoneTypeNotIdentified);
+            return Result<TelephoneNumberIdentification>.Failure(TelephoneNumberIdentificationErrors.TelephoneTypeNotIdentified);
 
-        if (!MatchesExpectedType(
-                identifiedTelephoneType.Value,
-                expectedPhoneType))
-            return Result<TelephoneNumberIdentification>.Failure(
-                TelephoneNumberIdentificationErrors
-                    .TelephoneTypeDoesNotMatchExpected);
+        if (!MatchesExpectedType(identifiedTelephoneType.Value,expectedPhoneType))
+            return Result<TelephoneNumberIdentification>.Failure(TelephoneNumberIdentificationErrors.TelephoneTypeDoesNotMatchExpected);
 
-        var nationalSignificantNumber =
-            _phoneNumberUtil.GetNationalSignificantNumber(
-                identifiedTelephoneNumber);
+        var nationalSignificantNumber = _phoneNumberUtil.GetNationalSignificantNumber(identifiedTelephoneNumber);
 
-        var identifiedAreaCode = IdentifyAreaCode(
-            identifiedTelephoneNumber,
-            nationalSignificantNumber);
+        var identifiedAreaCode = IdentifyAreaCode(identifiedTelephoneNumber, nationalSignificantNumber);
 
-        var subscriberNumber = ExtractSubscriberNumber(
-            nationalSignificantNumber,
-            identifiedAreaCode);
+        var subscriberNumber = ExtractSubscriberNumber(nationalSignificantNumber, identifiedAreaCode);
 
-        var internationalNumber = _phoneNumberUtil.Format(
-            identifiedTelephoneNumber,
-            PhoneNumberFormat.E164);
+        var internationalNumber = _phoneNumberUtil.Format(identifiedTelephoneNumber, PhoneNumberFormat.E164);
 
         var identification = new TelephoneNumberIdentification(
             regionCode: identifiedRegionCode,
@@ -152,11 +189,11 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
             internationalNumber: internationalNumber,
             telephoneType: identifiedTelephoneType.Value);
 
-        return Result<TelephoneNumberIdentification>.Success(
-            identification);
+        return Result<TelephoneNumberIdentification>.Success(identification);
     }
 
     private static string BuildTelephoneNumber(
+        int callingCode,
         string? areaCode,
         string number)
     {
@@ -165,15 +202,14 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
         if (normalizedNumber.StartsWith('+'))
             return normalizedNumber;
 
-        if (string.IsNullOrWhiteSpace(areaCode))
-            return normalizedNumber;
+        var normalizedAreaCode = string.IsNullOrWhiteSpace(areaCode)
+            ? string.Empty
+            : areaCode.Trim();
 
-        return $"{areaCode.Trim()}{normalizedNumber}";
+        return $"+{callingCode}{normalizedAreaCode}{normalizedNumber}";
     }
 
-    private static bool MatchesExpectedType(
-        TelephoneType identifiedTelephoneType,
-        TelephoneType expectedTelephoneType)
+    private static bool MatchesExpectedType(TelephoneType identifiedTelephoneType, TelephoneType expectedTelephoneType)
     {
         if (expectedTelephoneType == TelephoneType.Unknown)
             return true;
@@ -182,13 +218,10 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
             return true;
 
         return identifiedTelephoneType == TelephoneType.FixedLineOrMobile &&
-               expectedTelephoneType is
-                   TelephoneType.Mobile or TelephoneType.Landline;
+               expectedTelephoneType is TelephoneType.Mobile or TelephoneType.Landline;
     }
 
-    private static string ExtractSubscriberNumber(
-        string nationalSignificantNumber,
-        string? areaCode)
+    private static string ExtractSubscriberNumber(string nationalSignificantNumber, string? areaCode)
     {
         if (string.IsNullOrEmpty(areaCode))
             return nationalSignificantNumber;
@@ -196,13 +229,9 @@ internal sealed class LibPhoneNumberService : ITelephoneNumberService
         return nationalSignificantNumber[areaCode.Length..];
     }
 
-    private string? IdentifyAreaCode(
-        PhoneNumber identifiedTelephoneNumber,
-        string nationalNumber)
+    private string? IdentifyAreaCode(PhoneNumber identifiedTelephoneNumber, string nationalNumber)
     {
-        var areaCodeLength =
-            _phoneNumberUtil.GetLengthOfGeographicalAreaCode(
-                identifiedTelephoneNumber);
+        var areaCodeLength = _phoneNumberUtil.GetLengthOfGeographicalAreaCode(identifiedTelephoneNumber);
 
         if (areaCodeLength <= 0)
             return null;

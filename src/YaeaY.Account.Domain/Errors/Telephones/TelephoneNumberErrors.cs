@@ -29,6 +29,12 @@ public static class TelephoneNumberErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidFormat);
 
+    public static readonly Error CountryNotSupported = new(
+        Code: "phone-number.country.not-supported",
+        Message: "Phone numbers from the identified country are not supported.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.InvalidValue);
+
     public static readonly Error AreaCodeInvalid = new(
         Code: "phone-number.area-code.invalid",
         Message: "The phone area code must contain digits only.",

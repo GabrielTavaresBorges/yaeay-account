@@ -251,7 +251,7 @@ public class SuspensionInfoCreateTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Reason.Should().Be(reason);
-        result.Value.By.Should().Be(suspensionBy);
+        result.Value.SuspensionBy.Should().Be(suspensionBy);
         result.Value.SuspendedAt.Should().Be(suspendedAt);
         result.Value.SuspendedUntil.Should().Be(suspendedUntil);
         result.Value.Note.Should().Be(note);
