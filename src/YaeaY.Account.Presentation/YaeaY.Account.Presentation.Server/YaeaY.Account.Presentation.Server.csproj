@@ -7,6 +7,7 @@
     <SpaRoot>..\yaeay.account.presentation.client</SpaRoot>
     <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
     <SpaProxyServerUrl>https://localhost:57830</SpaProxyServerUrl>
+    <UserSecretsId>eb1042e1-b1e6-4d18-91cc-511fa5e518b7</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

@@ -22,7 +22,9 @@ namespace YaeaY.Account.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -30,22 +32,28 @@ public static class DependencyInjection
             throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' não encontrada. Verifique appsettings.json (Presentation.Server).");
 
+        // Persistence
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(connectionString));
 
         services.AddScoped<IUnityOfWork, UnityOfWork>();
 
+        // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
         services.AddScoped<IEmailConfirmationSettingRepository, EmailConfirmationSettingRepository>();
 
-        // Security and Identity 
+        // Security and identity
         services.AddScoped<IPasswordHasher, AspNetIdentityPasswordHasher>();
 
-        // Services
+        // External service adapters
         services.AddSingleton<ITelephoneNumberService, LibPhoneNumberService>();
         services.AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
+
+        // Email delivery
         //services.AddScoped<IEmailSender, EmailSender>();
+
+        // Domain event dispatching
         services.AddScoped<DomainEventDispatcher>();
         services.AddScoped<MediatRDomainEventPublisher>();
 
