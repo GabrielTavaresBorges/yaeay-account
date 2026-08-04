@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using YaeaY.Account.Application.Services.TelephoneNumbers;
 
 namespace YaeaY.Account.Application;
 
@@ -8,6 +9,8 @@ public static class DependencyInjection
     {
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+
+        services.AddTelephoneNumbers();
 
         return services;
     }

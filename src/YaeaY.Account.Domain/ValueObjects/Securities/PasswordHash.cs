@@ -31,7 +31,6 @@ public sealed record PasswordHash
         if (string.IsNullOrWhiteSpace(passwordHash))
             return Result<string>.Failure(PasswordHashErrors.Required);
 
-
         passwordHash = passwordHash.Trim();
 
         const int MaxLength = 1024;

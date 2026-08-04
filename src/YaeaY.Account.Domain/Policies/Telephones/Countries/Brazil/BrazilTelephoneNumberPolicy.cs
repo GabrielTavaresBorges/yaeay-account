@@ -6,7 +6,7 @@ using YaeaY.Account.Domain.Errors.Telephones.Countries.Brazil;
 
 namespace YaeaY.Account.Domain.Policies.Telephones.Countries.Brazil;
 
-internal sealed class BrazilTelephoneNumberPolicy : ITelephoneNumberCountryPolicy
+public sealed class BrazilTelephoneNumberPolicy : ITelephoneNumberCountryPolicy
 {
     private static readonly IReadOnlyDictionary<string, string> FederativeUnitsByAreaCode =
         new Dictionary<string, string>
