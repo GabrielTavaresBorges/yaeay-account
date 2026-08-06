@@ -8,6 +8,8 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
+using YaeaY.Account.Domain.Errors.Emails;
+using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
@@ -51,6 +53,11 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (emailResult.IsFailure)
                 return Result<Response>.Failure(emailResult.Error);
 
+            var email = emailResult.Value;
+
+            if (await _userRepository.ExistsByEmailAsync(email, cancellationToken))
+                return Result<Response>.Failure(UserErrors.EmailAlreadyInUse);
+
             var passwordTextResult = PasswordText.Create(command.Password);
             if (passwordTextResult.IsFailure)
                 return Result<Response>.Failure(passwordTextResult.Error);
@@ -82,7 +89,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                 initialPhoneNumber: initialTelephoneNumberResult.Value);
 
             await _userRepository.CreateUserAsync(user, cancellationToken);
-            await _unitOfWork.CommitAsync();
+            await _unitOfWork.CommitAsync(cancellationToken);
 
             return Result<Response>.Success(
                 new Response(
@@ -91,9 +98,18 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                     message: "User created successfully!")
                 );
         }
+
+        catch (DomainException ex)
+            when (ex.Category == ErrorCategory.Conflict)
+        {
+            _logger.LogWarning(ex, "Conflict while creating user.");
+
+            return Result<Response>.Failure(ex.Error);
+        }
         catch (DomainException ex)
         {
             _logger.LogError(ex, "Domain Error creating user.");
+
             return Result<Response>.Failure(
                 new Error(
                     Code: ex.Code,
@@ -104,6 +120,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error creating user.");
+
             return Result<Response>.Failure(
                 new Error(
                     Code: "unexpected.error",

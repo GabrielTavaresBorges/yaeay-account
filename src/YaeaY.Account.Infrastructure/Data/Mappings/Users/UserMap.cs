@@ -20,6 +20,10 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
                 .HasColumnName("Email")
                 .HasMaxLength(254)
                 .IsRequired();
+
+            email.HasIndex(p => p.EmailAddress)
+                .IsUnique()
+                .HasDatabaseName("UX_User_Email");
         });
 
         builder.Navigation(n => n.Email)

@@ -7,6 +7,12 @@ namespace YaeaY.Account.Domain.Errors.Users;
 
 public static class UserErrors
 {
+    public static readonly Error EmailAlreadyInUse = new(
+        Code: "user.email.already-in-use",
+        Message: "The email address is already associated with another user.",
+        Category: ErrorCategory.Conflict,
+        Rule: ErrorRule.AlreadyExists);
+
     public static readonly Error EmailRequired = new(
         Code: "user.email.required",
         Message: "A user must have an email address.",
