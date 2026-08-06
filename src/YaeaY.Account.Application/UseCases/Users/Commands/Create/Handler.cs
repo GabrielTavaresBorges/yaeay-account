@@ -8,6 +8,7 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
+using YaeaY.Account.Domain.Errors.Emails;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
@@ -97,9 +98,18 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                     message: "User created successfully!")
                 );
         }
+
+        catch (DomainException ex)
+            when (ex.Category == ErrorCategory.Conflict)
+        {
+            _logger.LogWarning(ex, "Conflict while creating user.");
+
+            return Result<Response>.Failure(ex.Error);
+        }
         catch (DomainException ex)
         {
             _logger.LogError(ex, "Domain Error creating user.");
+
             return Result<Response>.Failure(
                 new Error(
                     Code: ex.Code,
@@ -110,6 +120,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error creating user.");
+
             return Result<Response>.Failure(
                 new Error(
                     Code: "unexpected.error",
