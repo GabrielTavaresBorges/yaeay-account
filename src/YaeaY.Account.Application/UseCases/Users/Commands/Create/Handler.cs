@@ -23,7 +23,7 @@ namespace YaeaY.Account.Application.UseCases.Users.Commands.Create;
 public sealed class Handler : IRequestHandler<Command, Result<Response>>
 {
     private readonly IUserRepository _userRepository;
-    private readonly IUnityOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<Handler> _logger;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITelephoneNumberService _telephoneNumberService;
@@ -31,7 +31,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
 
     public Handler(
         IUserRepository usersRepository,
-        IUnityOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         ILogger<Handler> logger,
         IPasswordHasher passwordHasher,
         ITelephoneNumberService telephoneNumberService,
