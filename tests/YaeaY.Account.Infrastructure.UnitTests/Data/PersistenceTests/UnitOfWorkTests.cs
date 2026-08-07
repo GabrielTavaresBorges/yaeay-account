@@ -15,7 +15,7 @@ using YaeaY.Account.Infrastructure.Events.Publishers;
 
 namespace YaeaY.Account.Infrastructure.UnitTests.Data.PersistenceTests;
 
-public sealed class UnityOfWorkTests
+public sealed class UnitOfWorkTests
 {
     [Fact]
     public async Task CommitAsync_WhenThereAreNoDomainEvents_ShouldSaveChangesWithoutDispatching()
@@ -27,11 +27,11 @@ public sealed class UnityOfWorkTests
 
         using var context = CreateContext();
         var publisher = new RecordingPublisher();
-        var unityOfWork = CreateUnityOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context, publisher);
 
         // Act
 
-        await unityOfWork.CommitAsync(cancellationToken);
+        await unitOfWork.CommitAsync(cancellationToken);
 
         // Assert
 
@@ -55,11 +55,11 @@ public sealed class UnityOfWorkTests
         context.Add(entity);
 
         var publisher = new RecordingPublisher();
-        var unityOfWork = CreateUnityOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context, publisher);
 
         // Act
 
-        await unityOfWork.CommitAsync(cancellationToken);
+        await unitOfWork.CommitAsync(cancellationToken);
 
         // Assert
 
@@ -96,11 +96,11 @@ public sealed class UnityOfWorkTests
         context.SaveChangesException = dbUpdateException;
 
         var publisher = new RecordingPublisher();
-        var unityOfWork = CreateUnityOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context, publisher);
 
         // Act
 
-        Func<Task> act = () => unityOfWork.CommitAsync();
+        Func<Task> act = () => unitOfWork.CommitAsync();
 
         // Assert
 
@@ -129,11 +129,11 @@ public sealed class UnityOfWorkTests
         context.SaveChangesException = dbUpdateException;
 
         var publisher = new RecordingPublisher();
-        var unityOfWork = CreateUnityOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context, publisher);
 
         // Act
 
-        Func<Task> act = () => unityOfWork.CommitAsync();
+        Func<Task> act = () => unitOfWork.CommitAsync();
 
         // Assert
 
@@ -152,14 +152,14 @@ public sealed class UnityOfWorkTests
         return new TestAppDbContext(options);
     }
 
-    private static UnityOfWork CreateUnityOfWork(
+    private static UnitOfWork CreateUnitOfWork(
         AppDbContext context,
         IPublisher publisher)
     {
         var domainEventPublisher = new MediatRDomainEventPublisher(publisher);
         var domainEventDispatcher = new DomainEventDispatcher(domainEventPublisher);
 
-        return new UnityOfWork(context, domainEventDispatcher);
+        return new UnitOfWork(context, domainEventDispatcher);
     }
 
     private static PostgresException CreatePostgresException(

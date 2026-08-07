@@ -9,12 +9,12 @@ using YaeaY.Account.Infrastructure.Events.Dispatchers;
 
 namespace YaeaY.Account.Infrastructure.Data.Persistence;
 
-public sealed class UnityOfWork : IUnityOfWork
+public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
     private readonly DomainEventDispatcher _domainEventDispatcher;
 
-    public UnityOfWork(AppDbContext context, DomainEventDispatcher domainEventDispatcher)
+    public UnitOfWork(AppDbContext context, DomainEventDispatcher domainEventDispatcher)
     {
         _context = context;
         _domainEventDispatcher = domainEventDispatcher;

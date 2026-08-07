@@ -17,10 +17,10 @@ namespace YaeaY.Account.Application.UseCases.Users.Commands.Update;
 public sealed class Handler : IRequestHandler<Command, Result<Response>>
 {
     private readonly IUserRepository _userRepository;
-    private readonly IUnityOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<Handler> _logger;
 
-    public Handler(IUserRepository usersRepository, IUnityOfWork unitOfWork, ILogger<Handler> logger)
+    public Handler(IUserRepository usersRepository, IUnitOfWork unitOfWork, ILogger<Handler> logger)
     {
         _userRepository = usersRepository;
         _unitOfWork = unitOfWork;
