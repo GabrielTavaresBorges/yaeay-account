@@ -1,21 +1,26 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
+using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Infrastructure.Data.Context;
-using YaeaY.Account.Infrastructure.Messaging.Outbox;
 
 namespace YaeaY.Account.Infrastructure.Data.Persistence;
 
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
+    private readonly IDomainEventSerializer _domainEventSerializer;
 
-    public UnitOfWork(AppDbContext context)
+    public UnitOfWork(
+        AppDbContext context,
+        IDomainEventSerializer domainEventSerializer)
     {
         _context = context;
+        _domainEventSerializer = domainEventSerializer;
     }
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
@@ -31,7 +36,7 @@ public sealed class UnitOfWork : IUnitOfWork
             .ToList();
 
         var outboxMessages = domainEvents
-            .Select(OutboxMessage.From)
+            .Select(CreateOutboxMessage)
             .ToList();
 
         _context.OutboxMessages.AddRange(outboxMessages);
@@ -60,6 +65,16 @@ public sealed class UnitOfWork : IUnitOfWork
         {
             entity.ClearDomainEvents();
         }
+    }
+
+    private OutboxMessage CreateOutboxMessage(IDomainEvent domainEvent)
+    {
+        var content = _domainEventSerializer.Serialize(domainEvent);
+
+        return OutboxMessage.Create(
+            domainEvent.EventId,
+            content,
+            domainEvent.OccurredOnUtc);
     }
 
     private void Detach(IEnumerable<OutboxMessage> outboxMessages)

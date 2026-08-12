@@ -7,6 +7,7 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Data.Persistence;
+using YaeaY.Account.Infrastructure.Messaging.Outbox;
 
 namespace YaeaY.Account.Infrastructure.UnitTests.Data.PersistenceTests;
 
@@ -66,8 +67,8 @@ public sealed class UnitOfWorkTests
             .Which;
 
         outboxMessage.Id.Should().Be(domainEvent.EventId);
-        outboxMessage.EventType.Should().Be(typeof(TestDomainEvent).FullName);
-        outboxMessage.Payload.Should().Contain("test-value");
+        outboxMessage.Content.EventType.Should().Be(typeof(TestDomainEvent).FullName);
+        outboxMessage.Content.Payload.Should().Contain("test-value");
         outboxMessage.OccurredOnUtc.Should().Be(domainEvent.OccurredOnUtc);
         outboxMessage.NextAttemptOnUtc.Should().Be(domainEvent.OccurredOnUtc);
         outboxMessage.ProcessedOnUtc.Should().BeNull();
@@ -174,7 +175,7 @@ public sealed class UnitOfWorkTests
 
     private static UnitOfWork CreateUnitOfWork(AppDbContext context)
     {
-        return new UnitOfWork(context);
+        return new UnitOfWork(context, new JsonDomainEventSerializer());
     }
 
     private static PostgresException CreatePostgresException(

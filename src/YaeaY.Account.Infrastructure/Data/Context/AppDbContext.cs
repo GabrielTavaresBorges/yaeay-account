@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTokens;
+using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
-using YaeaY.Account.Infrastructure.Messaging.Outbox;
 
 namespace YaeaY.Account.Infrastructure.Data.Context;
 
