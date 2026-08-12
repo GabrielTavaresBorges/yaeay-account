@@ -2,6 +2,7 @@
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
+using YaeaY.Account.Infrastructure.Messaging.Outbox;
 
 namespace YaeaY.Account.Infrastructure.Data.Context;
 
@@ -10,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users => Set<User>();
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
     public DbSet<EmailConfirmationSetting> EmailConfirmationSettings => Set<EmailConfirmationSetting>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

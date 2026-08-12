@@ -1,24 +1,19 @@
-﻿using System;
-using FluentAssertions;
-using MediatR;
+﻿using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using YaeaY.Account.Application.Events.Notifications;
 using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Events;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Data.Persistence;
-using YaeaY.Account.Infrastructure.Events.Dispatchers;
-using YaeaY.Account.Infrastructure.Events.Publishers;
 
 namespace YaeaY.Account.Infrastructure.UnitTests.Data.PersistenceTests;
 
 public sealed class UnitOfWorkTests
 {
     [Fact]
-    public async Task CommitAsync_WhenThereAreNoDomainEvents_ShouldSaveChangesWithoutDispatching()
+    public async Task CommitAsync_WhenThereAreNoDomainEvents_ShouldSaveChangesWithoutCreatingOutboxMessages()
     {
         // Arrange
 
@@ -26,8 +21,7 @@ public sealed class UnitOfWorkTests
         var cancellationToken = cancellationTokenSource.Token;
 
         using var context = CreateContext();
-        var publisher = new RecordingPublisher();
-        var unitOfWork = CreateUnitOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context);
 
         // Act
 
@@ -37,25 +31,24 @@ public sealed class UnitOfWorkTests
 
         context.SaveChangesCallCount.Should().Be(1);
         context.SaveChangesCancellationToken.Should().Be(cancellationToken);
-        publisher.Notifications.Should().BeEmpty();
+        context.OutboxMessages.Local.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task CommitAsync_WhenEntityHasDomainEvent_ShouldSaveDispatchAndClearDomainEvents()
+    public async Task CommitAsync_WhenEntityHasDomainEvent_ShouldSaveOutboxMessageAndClearDomainEvents()
     {
         // Arrange
 
         using var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
 
-        var domainEvent = new TestDomainEvent();
+        var domainEvent = new TestDomainEvent("test-value");
         var entity = new TestEntity(domainEvent);
 
         using var context = CreateContext();
         context.Add(entity);
 
-        var publisher = new RecordingPublisher();
-        var unitOfWork = CreateUnitOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context);
 
         // Act
 
@@ -67,16 +60,18 @@ public sealed class UnitOfWorkTests
         context.SaveChangesCancellationToken.Should().Be(cancellationToken);
         entity.DomainEvents.Should().BeEmpty();
 
-        var notification = publisher.Notifications
+        var outboxMessage = context.OutboxMessages.Local
             .Should()
             .ContainSingle()
             .Which;
 
-        notification.Should().BeOfType<DomainEventNotification<TestDomainEvent>>();
-
-        var domainEventNotification = (DomainEventNotification<TestDomainEvent>)notification;
-        domainEventNotification.DomainEvent.Should().BeSameAs(domainEvent);
-        publisher.CancellationTokens.Should().ContainSingle().Which.Should().Be(cancellationToken);
+        outboxMessage.Id.Should().Be(domainEvent.EventId);
+        outboxMessage.EventType.Should().Be(typeof(TestDomainEvent).FullName);
+        outboxMessage.Payload.Should().Contain("test-value");
+        outboxMessage.OccurredOnUtc.Should().Be(domainEvent.OccurredOnUtc);
+        outboxMessage.NextAttemptOnUtc.Should().Be(domainEvent.OccurredOnUtc);
+        outboxMessage.ProcessedOnUtc.Should().BeNull();
+        outboxMessage.AttemptCount.Should().Be(0);
     }
 
     [Fact]
@@ -95,8 +90,7 @@ public sealed class UnitOfWorkTests
         using var context = CreateContext();
         context.SaveChangesException = dbUpdateException;
 
-        var publisher = new RecordingPublisher();
-        var unitOfWork = CreateUnitOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context);
 
         // Act
 
@@ -108,7 +102,7 @@ public sealed class UnitOfWorkTests
         exception.Which.Error.Should().Be(UserErrors.EmailAlreadyInUse);
         exception.Which.InnerException.Should().BeSameAs(dbUpdateException);
         context.SaveChangesCallCount.Should().Be(1);
-        publisher.Notifications.Should().BeEmpty();
+        context.OutboxMessages.Local.Should().BeEmpty();
     }
 
     [Theory]
@@ -128,8 +122,7 @@ public sealed class UnitOfWorkTests
         using var context = CreateContext();
         context.SaveChangesException = dbUpdateException;
 
-        var publisher = new RecordingPublisher();
-        var unitOfWork = CreateUnitOfWork(context, publisher);
+        var unitOfWork = CreateUnitOfWork(context);
 
         // Act
 
@@ -140,7 +133,34 @@ public sealed class UnitOfWorkTests
         var exception = await act.Should().ThrowAsync<DbUpdateException>();
         exception.Which.Should().BeSameAs(dbUpdateException);
         context.SaveChangesCallCount.Should().Be(1);
-        publisher.Notifications.Should().BeEmpty();
+        context.OutboxMessages.Local.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CommitAsync_WhenSaveChangesFails_ShouldKeepDomainEventAndDetachOutboxMessage()
+    {
+        // Arrange
+
+        var domainEvent = new TestDomainEvent("test-value");
+        var entity = new TestEntity(domainEvent);
+        var dbUpdateException = new DbUpdateException("Save failed.");
+
+        using var context = CreateContext();
+        context.Add(entity);
+        context.SaveChangesException = dbUpdateException;
+
+        var unitOfWork = CreateUnitOfWork(context);
+
+        // Act
+
+        Func<Task> act = () => unitOfWork.CommitAsync();
+
+        // Assert
+
+        var exception = await act.Should().ThrowAsync<DbUpdateException>();
+        exception.Which.Should().BeSameAs(dbUpdateException);
+        entity.DomainEvents.Should().ContainSingle().Which.Should().BeSameAs(domainEvent);
+        context.OutboxMessages.Local.Should().BeEmpty();
     }
 
     private static TestAppDbContext CreateContext()
@@ -152,14 +172,9 @@ public sealed class UnitOfWorkTests
         return new TestAppDbContext(options);
     }
 
-    private static UnitOfWork CreateUnitOfWork(
-        AppDbContext context,
-        IPublisher publisher)
+    private static UnitOfWork CreateUnitOfWork(AppDbContext context)
     {
-        var domainEventPublisher = new MediatRDomainEventPublisher(publisher);
-        var domainEventDispatcher = new DomainEventDispatcher(domainEventPublisher);
-
-        return new UnitOfWork(context, domainEventDispatcher);
+        return new UnitOfWork(context);
     }
 
     private static PostgresException CreatePostgresException(
@@ -220,33 +235,6 @@ public sealed class UnitOfWorkTests
         }
     }
 
-    private sealed class RecordingPublisher : IPublisher
-    {
-        public List<INotification> Notifications { get; } = new();
-        public List<CancellationToken> CancellationTokens { get; } = new();
-
-        public Task Publish(
-            object notification,
-            CancellationToken cancellationToken = default)
-        {
-            Notifications.Add((INotification)notification);
-            CancellationTokens.Add(cancellationToken);
-
-            return Task.CompletedTask;
-        }
-
-        public Task Publish<TNotification>(
-            TNotification notification,
-            CancellationToken cancellationToken = default)
-            where TNotification : INotification
-        {
-            Notifications.Add(notification);
-            CancellationTokens.Add(cancellationToken);
-
-            return Task.CompletedTask;
-        }
-    }
-
     private sealed class TestEntity : Entity
     {
         private TestEntity()
@@ -259,5 +247,5 @@ public sealed class UnitOfWorkTests
         }
     }
 
-    private sealed record TestDomainEvent : DomainEvent;
+    private sealed record TestDomainEvent(string Value) : DomainEvent;
 }

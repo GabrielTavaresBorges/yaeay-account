@@ -5,19 +5,17 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Infrastructure.Data.Context;
-using YaeaY.Account.Infrastructure.Events.Dispatchers;
+using YaeaY.Account.Infrastructure.Messaging.Outbox;
 
 namespace YaeaY.Account.Infrastructure.Data.Persistence;
 
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
-    private readonly DomainEventDispatcher _domainEventDispatcher;
 
-    public UnitOfWork(AppDbContext context, DomainEventDispatcher domainEventDispatcher)
+    public UnitOfWork(AppDbContext context)
     {
         _context = context;
-        _domainEventDispatcher = domainEventDispatcher;
     }
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
@@ -32,10 +30,11 @@ public sealed class UnitOfWork : IUnitOfWork
             .SelectMany(entity => entity.DomainEvents)
             .ToList();
 
-        foreach (var entity in entitiesWithEvents)
-        {
-            entity.ClearDomainEvents();
-        }
+        var outboxMessages = domainEvents
+            .Select(OutboxMessage.From)
+            .ToList();
+
+        _context.OutboxMessages.AddRange(outboxMessages);
 
         try
         {
@@ -48,12 +47,26 @@ public sealed class UnitOfWork : IUnitOfWork
                 ConstraintName: "UX_User_Email"
             })
         {
+            Detach(outboxMessages);
             throw new DomainException(UserErrors.EmailAlreadyInUse, ex);
-        }        
+        }
+        catch
+        {
+            Detach(outboxMessages);
+            throw;
+        }
 
-        if (domainEvents.Count == 0)
-            return;
+        foreach (var entity in entitiesWithEvents)
+        {
+            entity.ClearDomainEvents();
+        }
+    }
 
-        await _domainEventDispatcher.DispatchAsync(domainEvents, cancellationToken);
+    private void Detach(IEnumerable<OutboxMessage> outboxMessages)
+    {
+        foreach (var outboxMessage in outboxMessages)
+        {
+            _context.Entry(outboxMessage).State = EntityState.Detached;
+        }
     }
 }
