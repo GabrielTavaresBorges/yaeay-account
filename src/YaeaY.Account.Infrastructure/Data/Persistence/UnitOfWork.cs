@@ -1,23 +1,26 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
+using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Infrastructure.Data.Context;
-using YaeaY.Account.Infrastructure.Events.Dispatchers;
 
 namespace YaeaY.Account.Infrastructure.Data.Persistence;
 
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
-    private readonly DomainEventDispatcher _domainEventDispatcher;
+    private readonly IDomainEventSerializer _domainEventSerializer;
 
-    public UnitOfWork(AppDbContext context, DomainEventDispatcher domainEventDispatcher)
+    public UnitOfWork(
+        AppDbContext context,
+        IDomainEventSerializer domainEventSerializer)
     {
         _context = context;
-        _domainEventDispatcher = domainEventDispatcher;
+        _domainEventSerializer = domainEventSerializer;
     }
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
@@ -32,10 +35,11 @@ public sealed class UnitOfWork : IUnitOfWork
             .SelectMany(entity => entity.DomainEvents)
             .ToList();
 
-        foreach (var entity in entitiesWithEvents)
-        {
-            entity.ClearDomainEvents();
-        }
+        var outboxMessages = domainEvents
+            .Select(CreateOutboxMessage)
+            .ToList();
+
+        _context.OutboxMessages.AddRange(outboxMessages);
 
         try
         {
@@ -48,12 +52,36 @@ public sealed class UnitOfWork : IUnitOfWork
                 ConstraintName: "UX_User_Email"
             })
         {
+            Detach(outboxMessages);
             throw new DomainException(UserErrors.EmailAlreadyInUse, ex);
-        }        
+        }
+        catch
+        {
+            Detach(outboxMessages);
+            throw;
+        }
 
-        if (domainEvents.Count == 0)
-            return;
+        foreach (var entity in entitiesWithEvents)
+        {
+            entity.ClearDomainEvents();
+        }
+    }
 
-        await _domainEventDispatcher.DispatchAsync(domainEvents, cancellationToken);
+    private OutboxMessage CreateOutboxMessage(IDomainEvent domainEvent)
+    {
+        var content = _domainEventSerializer.Serialize(domainEvent);
+
+        return OutboxMessage.Create(
+            domainEvent.EventId,
+            content,
+            domainEvent.OccurredOnUtc);
+    }
+
+    private void Detach(IEnumerable<OutboxMessage> outboxMessages)
+    {
+        foreach (var outboxMessage in outboxMessages)
+        {
+            _context.Entry(outboxMessage).State = EntityState.Detached;
+        }
     }
 }

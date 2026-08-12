@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
@@ -16,6 +17,7 @@ using YaeaY.Account.Infrastructure.Events.Dispatchers;
 using YaeaY.Account.Infrastructure.Events.Publishers;
 using YaeaY.Account.Infrastructure.Identity.Securities;
 using YaeaY.Account.Infrastructure.Identity.Services;
+using YaeaY.Account.Infrastructure.Messaging.Outbox;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 
 namespace YaeaY.Account.Infrastructure;
@@ -37,6 +39,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton<IDomainEventSerializer, JsonDomainEventSerializer>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
