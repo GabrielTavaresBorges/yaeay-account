@@ -5,6 +5,24 @@ namespace YaeaY.Account.Domain.Errors.EmailConfirmationTokens;
 
 public static class EmailConfirmationTokenErrors
 {
+    public static readonly Error AccountNotPendingEmailConfirmation = new(
+        Code: "email-confirmation-token.account.not-pending-email-confirmation",
+        Message: "The account is not pending email confirmation.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error PendingTokenAlreadyExists = new(
+        Code: "email-confirmation-token.pending.already-exists",
+        Message: "The user already has a pending email confirmation token.",
+        Category: ErrorCategory.Conflict,
+        Rule: ErrorRule.AlreadyExists);
+
+    public static readonly Error InitialStageExpired = new(
+        Code: "email-confirmation-token.initial-stage.expired",
+        Message: "The initial email confirmation stage has expired.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
     public static readonly Error UserIdRequired = new(
         Code: "email-confirmation-token.user-id.required",
         Message: "The user identifier is required.",

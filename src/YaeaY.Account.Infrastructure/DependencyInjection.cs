@@ -5,6 +5,7 @@ using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
+using YaeaY.Account.Domain.Policies.EmailConfirmations;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Repositories.Users;
@@ -15,6 +16,7 @@ using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Infrastructure.Data.Repositories.Users;
 using YaeaY.Account.Infrastructure.Events.Dispatchers;
 using YaeaY.Account.Infrastructure.Events.Publishers;
+using YaeaY.Account.Infrastructure.Identity.Policies;
 using YaeaY.Account.Infrastructure.Identity.Securities;
 using YaeaY.Account.Infrastructure.Identity.Services;
 using YaeaY.Account.Infrastructure.Messaging.Outbox;
@@ -48,6 +50,10 @@ public static class DependencyInjection
 
         // Security and identity
         services.AddScoped<IPasswordHasher, AspNetIdentityPasswordHasher>();
+        services.AddSingleton<TimeProvider>(TimeProvider.System);
+        services.AddSingleton<
+            IEmailConfirmationTokenExpirationPolicy,
+            ConfigurationEmailConfirmationTokenExpirationPolicy>();
 
         // External service adapters
         services.AddSingleton<ITelephoneNumberService, LibPhoneNumberService>();
