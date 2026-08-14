@@ -1,14 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
+using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTemplates;
 
-namespace YaeaY.Account.Infrastructure.Data.Mappings.EmailConfirmationSettings;
+namespace YaeaY.Account.Infrastructure.Data.Mappings.EmailConfirmationTemplates;
 
-public sealed class EmailConfirmationSettingMap : IEntityTypeConfiguration<EmailConfirmationSetting>
+public sealed class EmailConfirmationTemplateMap : IEntityTypeConfiguration<EmailConfirmationTemplate>
 {
-    public void Configure(EntityTypeBuilder<EmailConfirmationSetting> builder)
+    public void Configure(EntityTypeBuilder<EmailConfirmationTemplate> builder)
     {
-        builder.ToTable("EmailConfirmationSettings");
+        builder.ToTable("EmailConfirmationTemplate");
         builder.HasKey(h => h.Id);
 
         // ===== FromEmail (VO) =====

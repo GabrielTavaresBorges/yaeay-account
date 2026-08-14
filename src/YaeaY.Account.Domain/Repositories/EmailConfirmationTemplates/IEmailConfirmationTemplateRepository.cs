@@ -1,12 +1,12 @@
-﻿using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
+using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTemplates;
 
-namespace YaeaY.Account.Domain.Repositories.EmailConfirmationSettings;
+namespace YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
 
-public interface IEmailConfirmationSettingRepository : IRepository<EmailConfirmationSetting>
+public interface IEmailConfirmationTemplateRepository : IRepository<EmailConfirmationTemplate>
 {
-    Task CreateEmailConfirmationSettingsAsync(
-        EmailConfirmationSetting emailConfirmationSettings,
+    Task CreateEmailConfirmationTemplateAsync(
+        EmailConfirmationTemplate emailConfirmationTemplate,
         CancellationToken cancellationToken);
 
-    Task<EmailConfirmationSetting?> GetSettingsActiveAsync(CancellationToken cancellationToken);
+    Task<EmailConfirmationTemplate?> GetActiveTemplateAsync(CancellationToken cancellationToken);
 }

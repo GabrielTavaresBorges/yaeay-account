@@ -1,16 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Repositories.EmailConfirmationSettings;
+using YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Data.Persistence;
-using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationSettings;
+using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Infrastructure.Data.Repositories.Users;
 using YaeaY.Account.Infrastructure.Events.Dispatchers;
@@ -44,7 +44,7 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
-        services.AddScoped<IEmailConfirmationSettingRepository, EmailConfirmationSettingRepository>();
+        services.AddScoped<IEmailConfirmationTemplateRepository, EmailConfirmationTemplateRepository>();
 
         // Security and identity
         services.AddScoped<IPasswordHasher, AspNetIdentityPasswordHasher>();

@@ -1,12 +1,12 @@
 using YaeaY.Account.Domain.Abstraction.Entities;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
-using YaeaY.Account.Domain.Errors.EmailConfirmationSettings;
+using YaeaY.Account.Domain.Errors.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 
-namespace YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
+namespace YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTemplates;
 
-public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
+public sealed class EmailConfirmationTemplate : Entity, IAggregateRoot
 {
     private readonly Email _fromEmail = null!;
     private readonly string _fromName = string.Empty;
@@ -22,9 +22,9 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
     public bool IsActive => _isActive;
     public DateTimeOffset UpdatedAt => _updatedAt;
 
-    private EmailConfirmationSetting() { }
+    private EmailConfirmationTemplate() { }
 
-    private EmailConfirmationSetting(
+    private EmailConfirmationTemplate(
         Email fromEmail,
         string fromName,
         string subject,
@@ -39,7 +39,7 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
         _updatedAt = DateTimeOffset.UtcNow;
     }
 
-    public static EmailConfirmationSetting Create(
+    public static EmailConfirmationTemplate Create(
         Email fromEmail,
         string fromName,
         string subject,
@@ -48,14 +48,14 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
     {
         Validate(fromEmail, fromName, subject, bodyHtml);
 
-        var emailConfirmationSetting = new EmailConfirmationSetting(
+        var emailConfirmationTemplate = new EmailConfirmationTemplate(
             fromEmail,
             fromName,
             subject,
             bodyHtml,
-            isActive = true);
+            isActive);
 
-        return emailConfirmationSetting;
+        return emailConfirmationTemplate;
     }
 
     private static void Validate(
@@ -65,21 +65,21 @@ public sealed class EmailConfirmationSetting : Entity, IAggregateRoot
         string bodyHtml)
     {
         if (fromEmail is null)
-            throw new DomainException(EmailConfirmationSettingErrors.FromEmailRequired);
+            throw new DomainException(EmailConfirmationTemplateErrors.FromEmailRequired);
 
         if (string.IsNullOrWhiteSpace(fromName))
-            throw new DomainException(EmailConfirmationSettingErrors.FromNameRequired);
+            throw new DomainException(EmailConfirmationTemplateErrors.FromNameRequired);
 
         if (fromName.Trim().Length > 150)
-            throw new DomainException(EmailConfirmationSettingErrors.FromNameTooLong);
+            throw new DomainException(EmailConfirmationTemplateErrors.FromNameTooLong);
 
         if (string.IsNullOrWhiteSpace(subject))
-            throw new DomainException(EmailConfirmationSettingErrors.SubjectRequired);
+            throw new DomainException(EmailConfirmationTemplateErrors.SubjectRequired);
 
         if (subject.Trim().Length > 200)
-            throw new DomainException(EmailConfirmationSettingErrors.SubjectTooLong);
+            throw new DomainException(EmailConfirmationTemplateErrors.SubjectTooLong);
 
         if (string.IsNullOrWhiteSpace(bodyHtml))
-            throw new DomainException(EmailConfirmationSettingErrors.BodyHtmlRequired);
+            throw new DomainException(EmailConfirmationTemplateErrors.BodyHtmlRequired);
     }
 }

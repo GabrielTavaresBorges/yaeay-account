@@ -8,7 +8,6 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
-using YaeaY.Account.Domain.Errors.Emails;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
