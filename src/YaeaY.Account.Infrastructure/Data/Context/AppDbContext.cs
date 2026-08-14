@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
+using Microsoft.EntityFrameworkCore;
+using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
@@ -10,7 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
-    public DbSet<EmailConfirmationSetting> EmailConfirmationSettings => Set<EmailConfirmationSetting>();
+    public DbSet<EmailConfirmationTemplate> EmailConfirmationTemplates => Set<EmailConfirmationTemplate>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -23,4 +23,28 @@ public sealed class JsonDomainEventSerializer : IDomainEventSerializer
 
         return contentResult.Value;
     }
+
+    public IDomainEvent Deserialize(SerializedDomainEvent serializedDomainEvent)
+    {
+        ArgumentNullException.ThrowIfNull(serializedDomainEvent);
+
+        var eventType = typeof(IDomainEvent).Assembly
+            .GetTypes()
+            .SingleOrDefault(type =>
+                type.FullName == serializedDomainEvent.EventType &&
+                typeof(IDomainEvent).IsAssignableFrom(type) &&
+                !type.IsAbstract &&
+                !type.IsInterface);
+
+        if (eventType is null)
+        {
+            throw new InvalidOperationException(
+                $"Domain event type '{serializedDomainEvent.EventType}' is not registered in the Domain assembly.");
+        }
+
+        var domainEvent = JsonSerializer.Deserialize(serializedDomainEvent.Payload, eventType) as IDomainEvent;
+
+        return domainEvent ?? throw new InvalidOperationException(
+            $"Domain event '{serializedDomainEvent.EventType}' could not be deserialized.");
+    }
 }

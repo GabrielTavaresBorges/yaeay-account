@@ -1,19 +1,19 @@
 using FluentAssertions;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
-using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationSettings;
-using YaeaY.Account.Domain.Errors.EmailConfirmationSettings;
+using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTemplates;
+using YaeaY.Account.Domain.Errors.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 
-namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.EmailConfirmationSettingsTests;
+namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.EmailConfirmationTemplatesTests;
 
-public class EmailConfirmationSettingsCreateTests
+public class EmailConfirmationTemplateCreateTests
 {
     // IsFailure
 
     #region FromEmail
 
     [Fact]
-    public void Create_WhenFromEmailIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromEmailRequired()
+    public void Create_WhenFromEmailIsNull_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsFromEmailRequired()
     {
         // Arrange
 
@@ -25,12 +25,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmailInvalid, fromName, subject, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmailInvalid, fromName, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromEmailRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.FromEmailRequired);
     }
 
     #endregion
@@ -38,7 +38,7 @@ public class EmailConfirmationSettingsCreateTests
     #region FromName
 
     [Fact]
-    public void Create_WhenFromNameIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameRequired()
+    public void Create_WhenFromNameIsNull_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsFromNameRequired()
     {
         // Arrange
 
@@ -53,16 +53,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.FromNameRequired);
     }
 
     [Fact]
-    public void Create_WhenFromNameIsEmpty_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameRequired()
+    public void Create_WhenFromNameIsEmpty_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsFromNameRequired()
     {
         // Arrange
 
@@ -77,16 +77,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.FromNameRequired);
     }
 
     [Fact]
-    public void Create_WhenFromNameContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameRequired()
+    public void Create_WhenFromNameContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsFromNameRequired()
     {
         // Arrange
 
@@ -101,16 +101,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.FromNameRequired);
     }
 
     [Fact]
-    public void Create_WhenFromNameIsTooLong_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsFromNameTooLong()
+    public void Create_WhenFromNameIsTooLong_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsFromNameTooLong()
     {
         // Arrange
 
@@ -125,12 +125,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromNameInvalid, subject, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromNameInvalid, subject, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.FromNameTooLong);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.FromNameTooLong);
     }
 
     #endregion
@@ -138,7 +138,7 @@ public class EmailConfirmationSettingsCreateTests
     #region Subject
 
     [Fact]
-    public void Create_WhenSubjectIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectRequired()
+    public void Create_WhenSubjectIsNull_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsSubjectRequired()
     {
         // Arrange
 
@@ -153,16 +153,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.SubjectRequired);
     }
 
     [Fact]
-    public void Create_WhenSubjectIsEmpty_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectRequired()
+    public void Create_WhenSubjectIsEmpty_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsSubjectRequired()
     {
         // Arrange
 
@@ -177,16 +177,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.SubjectRequired);
     }
 
     [Fact]
-    public void Create_WhenSubjectContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectRequired()
+    public void Create_WhenSubjectContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsSubjectRequired()
     {
         // Arrange
 
@@ -201,16 +201,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.SubjectRequired);
     }
 
     [Fact]
-    public void Create_WhenSubjectIsTooLong_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsSubjectTooLong()
+    public void Create_WhenSubjectIsTooLong_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsSubjectTooLong()
     {
         // Arrange
 
@@ -225,12 +225,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subjectInvalid, body);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subjectInvalid, body);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.SubjectTooLong);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.SubjectTooLong);
     }
 
     #endregion
@@ -238,7 +238,7 @@ public class EmailConfirmationSettingsCreateTests
     #region Body
 
     [Fact]
-    public void Create_WhenBodyIsNull_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsBodyHtmlRequired()
+    public void Create_WhenBodyIsNull_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsBodyHtmlRequired()
     {
         // Arrange
 
@@ -253,16 +253,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, bodyInvalid);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subject, bodyInvalid);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.BodyHtmlRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.BodyHtmlRequired);
     }
 
     [Fact]
-    public void Create_WhenBodyIsEmpty_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsBodyHtmlRequired()
+    public void Create_WhenBodyIsEmpty_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsBodyHtmlRequired()
     {
         // Arrange
 
@@ -277,16 +277,16 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, bodyInvalid);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subject, bodyInvalid);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.BodyHtmlRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.BodyHtmlRequired);
     }
 
     [Fact]
-    public void Create_WhenBodyContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationSettingErrorsBodyHtmlRequired()
+    public void Create_WhenBodyContainsWhiteSpaceOnly_ShouldThrowDomainException_WithEmailConfirmationTemplateErrorsBodyHtmlRequired()
     {
         // Arrange
 
@@ -301,12 +301,12 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        Action act = () => EmailConfirmationSetting.Create(fromEmail, fromName, subject, bodyInvalid);
+        Action act = () => EmailConfirmationTemplate.Create(fromEmail, fromName, subject, bodyInvalid);
 
         // Assert
 
         var exeption = act.Should().Throw<DomainException>().Which;
-        exeption.Error.Should().Be(EmailConfirmationSettingErrors.BodyHtmlRequired);
+        exeption.Error.Should().Be(EmailConfirmationTemplateErrors.BodyHtmlRequired);
     }
 
     #endregion
@@ -328,7 +328,7 @@ public class EmailConfirmationSettingsCreateTests
 
         // Act
 
-        var emailConfirmationSetting = EmailConfirmationSetting.Create(
+        var emailConfirmationTemplate = EmailConfirmationTemplate.Create(
             fromEmail,
             fromName,
             subject,
@@ -336,11 +336,32 @@ public class EmailConfirmationSettingsCreateTests
 
         // Assert
 
-        emailConfirmationSetting.Should().NotBeNull();
-        emailConfirmationSetting.FromEmail.Should().Be(fromEmail);
-        emailConfirmationSetting.FromName.Should().Be(fromName);
-        emailConfirmationSetting.Subject.Should().Be(subject);
-        emailConfirmationSetting.BodyHtml.Should().Be(body);
-        emailConfirmationSetting.IsActive.Should().BeTrue();
+        emailConfirmationTemplate.Should().NotBeNull();
+        emailConfirmationTemplate.FromEmail.Should().Be(fromEmail);
+        emailConfirmationTemplate.FromName.Should().Be(fromName);
+        emailConfirmationTemplate.Subject.Should().Be(subject);
+        emailConfirmationTemplate.BodyHtml.Should().Be(body);
+        emailConfirmationTemplate.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Create_WhenTemplateIsInactive_ShouldPreserveInactiveState()
+    {
+        // Arrange
+
+        var emailResult = Email.Create("example@domain.com");
+
+        // Act
+
+        var emailConfirmationTemplate = EmailConfirmationTemplate.Create(
+            emailResult.Value,
+            "Example Account",
+            "Confirm your email address.",
+            "Welcome! Confirm your email to activate your account.",
+            isActive: false);
+
+        // Assert
+
+        emailConfirmationTemplate.IsActive.Should().BeFalse();
     }
 }

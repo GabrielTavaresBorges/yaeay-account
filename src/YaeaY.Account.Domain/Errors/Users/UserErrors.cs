@@ -7,6 +7,12 @@ namespace YaeaY.Account.Domain.Errors.Users;
 
 public static class UserErrors
 {
+    public static readonly Error NotFound = new(
+        Code: "user.not-found",
+        Message: "The user was not found.",
+        Category: ErrorCategory.NotFound,
+        Rule: ErrorRule.NotFound);
+
     public static readonly Error EmailAlreadyInUse = new(
         Code: "user.email.already-in-use",
         Message: "The email address is already associated with another user.",

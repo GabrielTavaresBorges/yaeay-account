@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Infrastructure.Identity.Models;
 
