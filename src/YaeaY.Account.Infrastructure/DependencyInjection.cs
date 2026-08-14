@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
+using YaeaY.Account.Application.Services.Scheduling.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
@@ -20,6 +22,7 @@ using YaeaY.Account.Infrastructure.Identity.Policies;
 using YaeaY.Account.Infrastructure.Identity.Securities;
 using YaeaY.Account.Infrastructure.Identity.Services;
 using YaeaY.Account.Infrastructure.Messaging.Outbox;
+using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 
 namespace YaeaY.Account.Infrastructure;
@@ -42,6 +45,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IDomainEventSerializer, JsonDomainEventSerializer>();
+        services.AddScoped<IOutboxMessageProcessor, OutboxMessageProcessor>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -65,6 +69,36 @@ public static class DependencyInjection
         // Domain event dispatching
         services.AddScoped<DomainEventDispatcher>();
         services.AddScoped<MediatRDomainEventPublisher>();
+
+        // Scheduling
+        services.AddOptions<OutboxProcessingScheduleOptions>()
+            .Bind(configuration.GetRequiredSection(OutboxProcessingScheduleOptions.SectionName))
+            .Validate(
+                options => options.IntervalInSeconds > 0,
+                "Scheduling:OutboxProcessing:IntervalInSeconds must be positive.")
+            .Validate(
+                options => options.BatchSize > 0,
+                "Scheduling:OutboxProcessing:BatchSize must be positive.")
+            .Validate(
+                options => options.RetryDelayInSeconds > 0,
+                "Scheduling:OutboxProcessing:RetryDelayInSeconds must be positive.")
+            .ValidateOnStart();
+
+        services.AddQuartz(quartz =>
+        {
+            var jobKey = new JobKey(
+                QuartzJobKeys.ProcessOutboxMessages,
+                QuartzJobKeys.Group);
+
+            quartz.AddJob<ProcessOutboxMessagesJob>(job =>
+                job.WithIdentity(jobKey).StoreDurably());
+        });
+
+        services.AddQuartzHostedService(options =>
+            options.WaitForJobsToComplete = true);
+
+        services.AddSingleton<IJobScheduler, QuartzJobScheduler>();
+        services.AddHostedService<QuartzSchedulingHostedService>();
 
         return services;
     }
