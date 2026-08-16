@@ -190,6 +190,7 @@
       fullName: form.fullName.trim(),
       birthDate: birthDateIso.value,
       gender: form.gender as Gender,
+      callingCode: form.phones.callingCode,
       regionCode: form.phones.country,
       areaCode: form.phones.areaCode,
       phoneType: form.phones.phoneType,
@@ -362,10 +363,11 @@
                 <v-btn block
                        size="large"
                        rounded="pill"
-                       class="btn-disabled-dev mt-2"
-                       type="button"
-                       disabled>
-                  Criar conta - DESABILITADO
+                       class="create-account-button mt-2"
+                       type="submit"
+                       :loading="loading"
+                       :disabled="loading">
+                  Criar conta
                 </v-btn>
 
                 <!-- SNACKBAR -->
@@ -421,14 +423,18 @@
     margin-top: 24px;
   }
 
-  .btn-disabled-dev {
-    background-color: #ba1a1a !important;
+  .create-account-button {
+    background-color: #183729 !important;
     color: #ffffff !important;
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: 0.2px;
     text-transform: none;
-    opacity: 1;
-    cursor: not-allowed;
+    box-shadow: 0 12px 24px rgba(24, 55, 41, 0.18);
+  }
+
+  .create-account-button:focus-visible {
+    outline: 3px solid #8ea588;
+    outline-offset: 3px;
   }
 
 

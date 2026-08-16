@@ -114,22 +114,14 @@
                       </v-btn>
                     </div>
 
-                    <!--<v-btn block
-                           size="x-large"
-                           rounded="pill"
-                           class="login-button"
-                           :prepend-icon="mdiLogin">
-                      Entrar
-                    </v-btn>-->
-
                     <v-btn block
                            size="x-large"
                            rounded="pill"
-                           class="login-button-disabled-dev"
+                           class="login-button--disabled"
                            :prepend-icon="mdiLogin"
                            type="button"
                            disabled>
-                      Entrar - DESABILITADO
+                      Entrar
                     </v-btn>
                   </v-form>
 
@@ -466,7 +458,7 @@
     box-shadow: 0 14px 28px rgba(24, 55, 41, 0.18);
   }
 
-  .login-button-disabled-dev {
+  .login-button--disabled {
     margin-top: 4px;
     background: #8f8f8f !important;
     color: #ffffff !important;

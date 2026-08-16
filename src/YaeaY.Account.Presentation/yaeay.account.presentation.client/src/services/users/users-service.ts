@@ -4,7 +4,7 @@ import type { CreateUserRequest, CreateUserResponse, UpdateUserRequest, UpdateUs
 import { throwApiError } from '@/services/http/http-error'
 
 export async function createUser(payload: CreateUserRequest): Promise<CreateUserResponse> {
-  const response = await fetch('/api/users', {
+  const response = await fetch('/api/User', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
