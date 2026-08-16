@@ -145,6 +145,36 @@ public class User : Entity, IAggregateRoot
         _phones.Add(UserPhone.Create(phoneNumber, isPrimary));
     }
 
+    public void ConfirmEmail(DateTimeOffset confirmedAtUtc)
+    {
+        if (confirmedAtUtc == default)
+            throw new DomainException(UserErrors.EmailConfirmationDateRequired);
+
+        if (confirmedAtUtc < _createdAt)
+            throw new DomainException(UserErrors.EmailConfirmationBeforeAccountCreation);
+
+        if (_emailConfirmedAt.HasValue || _status == AccountStatus.Active)
+            throw new DomainException(UserErrors.EmailAlreadyConfirmed);
+
+        if (_status == AccountStatus.Suspended)
+        {
+            if (_suspension is null ||
+                _suspension.SuspensionBy != SuspensionBy.System ||
+                _suspension.Reason != SuspensionReason.Inactivity)
+            {
+                throw new DomainException(UserErrors.SuspensionPreventsEmailConfirmation);
+            }
+        }
+        else if (_status != AccountStatus.PendingEmailConfirmation)
+        {
+            throw new DomainException(UserErrors.AccountCannotBeEmailConfirmed);
+        }
+
+        _emailConfirmedAt = confirmedAtUtc;
+        _suspension = null;
+        _status = AccountStatus.Active;
+    }
+
     public void ChangeEmail(Email email)
     {
         if (email is null)

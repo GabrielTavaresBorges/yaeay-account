@@ -82,6 +82,15 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
             .HasColumnName("CreatedAt")
             .IsRequired();
 
+        builder.Property(p => p.EmailConfirmedAt)
+            .HasColumnName("EmailConfirmedAt");
+
+        builder.Property(p => p.FirstLoginAt)
+            .HasColumnName("FirstLoginAt");
+
+        builder.Property(p => p.LastLoginAt)
+            .HasColumnName("LastLoginAt");
+
         // ===== SuspensionInfo (nullable) =====
         builder.OwnsOne(typeof(SuspensionInfo), "_suspension", si =>
         {

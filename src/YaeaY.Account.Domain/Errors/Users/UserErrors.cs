@@ -7,6 +7,36 @@ namespace YaeaY.Account.Domain.Errors.Users;
 
 public static class UserErrors
 {
+    public static readonly Error EmailConfirmationDateRequired = new(
+        Code: "user.email-confirmation.date.required",
+        Message: "The email confirmation date is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error EmailConfirmationBeforeAccountCreation = new(
+        Code: "user.email-confirmation.before-account-creation",
+        Message: "The email cannot be confirmed before the account was created.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error EmailAlreadyConfirmed = new(
+        Code: "user.email.already-confirmed",
+        Message: "The account email has already been confirmed.",
+        Category: ErrorCategory.Conflict,
+        Rule: ErrorRule.AlreadyExists);
+
+    public static readonly Error AccountCannotBeEmailConfirmed = new(
+        Code: "user.account.cannot-be-email-confirmed",
+        Message: "The account cannot be confirmed in its current state.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error SuspensionPreventsEmailConfirmation = new(
+        Code: "user.suspension.prevents-email-confirmation",
+        Message: "Only an automatic inactivity suspension can be removed by email confirmation.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
     public static readonly Error NotFound = new(
         Code: "user.not-found",
         Message: "The user was not found.",
