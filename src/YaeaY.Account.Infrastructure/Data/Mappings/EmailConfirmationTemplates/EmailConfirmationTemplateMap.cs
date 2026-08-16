@@ -41,7 +41,7 @@ public sealed class EmailConfirmationTemplateMap : IEntityTypeConfiguration<Emai
         // ===== BodyHtml =====
         builder.Property(p => p.BodyHtml)
             .HasColumnName("BodyHtml")
-            .HasColumnType("varchar(max)")
+            .HasColumnType("text")
             .IsRequired();
 
         // ===== IsActive =====
