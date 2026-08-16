@@ -74,6 +74,8 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         return Result<Response>.Success(
             new Response(
                 tokenId: confirmationToken.Id,
+                toEmail: user.Email.EmailAddress,
+                fullName: user.FullName.Name,
                 rawToken: generatedToken.RevealRawToken(),
                 expiresAt: confirmationToken.ExpiresAt));
     }

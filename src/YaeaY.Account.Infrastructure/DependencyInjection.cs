@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
+using YaeaY.Account.Application.Services.Emails.Interfaces;
 using YaeaY.Account.Application.Services.Scheduling.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
@@ -24,6 +25,8 @@ using YaeaY.Account.Infrastructure.Identity.Services;
 using YaeaY.Account.Infrastructure.Messaging.Outbox;
 using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
+using YaeaY.Account.Infrastructure.Services.Emails;
+using YaeaY.Account.Infrastructure.Services.Emails.Smtp;
 
 namespace YaeaY.Account.Infrastructure;
 
@@ -64,7 +67,42 @@ public static class DependencyInjection
         services.AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
 
         // Email delivery
-        //services.AddScoped<IEmailSender, EmailSender>();
+        services.AddOptions<EmailConfirmationLinkOptions>()
+            .Bind(configuration.GetRequiredSection(
+                EmailConfirmationLinkOptions.SectionName))
+            .Validate(
+                options => ConfiguredEmailConfirmationLinkBuilder
+                    .IsValidConfirmationPageUrl(options.ConfirmationPageUrl),
+                "EmailConfirmationLink:ConfirmationPageUrl must be an absolute HTTPS URL without query or fragment.")
+            .ValidateOnStart();
+
+        services.AddSingleton<
+            IEmailConfirmationLinkBuilder,
+            ConfiguredEmailConfirmationLinkBuilder>();
+
+        services.AddOptions<SmtpEmailOptions>()
+            .Bind(configuration.GetRequiredSection(SmtpEmailOptions.SectionName))
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.Host),
+                "EmailDelivery:Smtp:Host is required.")
+            .Validate(
+                options => options.Port is > 0 and <= 65535,
+                "EmailDelivery:Smtp:Port must be between 1 and 65535.")
+            .Validate(
+                options => Enum.IsDefined(options.SecurityMode),
+                "EmailDelivery:Smtp:SecurityMode is invalid.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.Username),
+                "EmailDelivery:Smtp:Username is required.")
+            .Validate(
+                options => options.TimeoutInSeconds is > 0 and <= 300,
+                "EmailDelivery:Smtp:TimeoutInSeconds must be between 1 and 300.")
+            .Validate(
+                options => !options.IsActive || !string.IsNullOrWhiteSpace(options.Password),
+                "EmailDelivery:Smtp:Password is required when SMTP delivery is active.")
+            .ValidateOnStart();
+
+        services.AddScoped<IEmailSender, HostingerSmtpEmailSender>();
 
         // Domain event dispatching
         services.AddScoped<DomainEventDispatcher>();

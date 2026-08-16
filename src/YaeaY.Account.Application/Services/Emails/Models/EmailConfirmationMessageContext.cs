@@ -1,33 +1,27 @@
-namespace YaeaY.Account.Application.UseCases.EmailConfirmations.Commands.IssueInitialToken;
+namespace YaeaY.Account.Application.Services.Emails.Models;
 
-public sealed class Response
+public sealed class EmailConfirmationMessageContext
 {
     private readonly string _rawToken;
 
-    public Guid TokenId { get; }
     public string ToEmail { get; }
     public string FullName { get; }
-    public DateTimeOffset ExpiresAt { get; }
 
-    public Response(
-        Guid tokenId,
+    public EmailConfirmationMessageContext(
         string toEmail,
         string fullName,
-        string rawToken,
-        DateTimeOffset expiresAt)
+        string rawToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toEmail);
         ArgumentException.ThrowIfNullOrWhiteSpace(fullName);
         ArgumentException.ThrowIfNullOrWhiteSpace(rawToken);
 
-        TokenId = tokenId;
         ToEmail = toEmail;
         FullName = fullName;
-        ExpiresAt = expiresAt;
         _rawToken = rawToken;
     }
 
     public string RevealRawToken() => _rawToken;
 
-    public override string ToString() => nameof(Response);
+    public override string ToString() => nameof(EmailConfirmationMessageContext);
 }
