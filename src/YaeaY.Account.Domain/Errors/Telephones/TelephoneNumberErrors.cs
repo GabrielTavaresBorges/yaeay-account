@@ -77,6 +77,15 @@ public static class TelephoneNumberErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidFormat);
 
+    public static Error NationalNumberTooLong(
+        int currentLength,
+        int maximumLength) => new(
+        Code: "phone-number.national-number.too-long",
+        Message: $"The phone national number is too long. Current length: {currentLength} characters. " +
+                 $"Maximum allowed length: {maximumLength} characters.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.MaximumLength);
+
     public static readonly Error InvalidForRegion = new(
         Code: "phone-number.invalid-for-region",
         Message: "The phone number is not valid for the informed region.",

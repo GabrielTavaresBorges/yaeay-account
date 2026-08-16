@@ -2,7 +2,7 @@
 
 namespace YaeaY.Account.Domain.Abstraction.Result;
 
-public sealed record Result<T>
+public sealed record Result<T> : IValidationResult<Result<T>>
 {
     public bool IsSuccess { get; }
     public bool IsFailure => !IsSuccess;
