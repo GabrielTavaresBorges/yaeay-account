@@ -7,7 +7,6 @@ using YaeaY.Account.Domain.Events.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
-using YaeaY.Account.Domain.ValueObjects.Securities;
 using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.UsersTests;
@@ -23,10 +22,6 @@ public class UserCreateTests
 
         Email emailInvalid = null!;
 
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
-
         var fullNameTest = "Full Name Test";
         var fullNameResult = FullName.Create(fullNameTest);
         var fullName = fullNameResult.Value;
@@ -53,11 +48,10 @@ public class UserCreateTests
 
         var telephoneNumber = telephoneNumberResult.Value;
 
-        // Act
+        // Action
 
         Action act = () => User.Create(
             emailInvalid,
-            passwordHash,
             fullName,
             birthDate,
             gender,
@@ -70,59 +64,6 @@ public class UserCreateTests
     }
 
     [Fact]
-    public void Create_WhenPasswordHashIsNull_ShouldThrowDomainException_WithUserErrorsPasswordRequired()
-    {
-        // Arrange
-
-        var emailAddressTest = "example@domain.com";
-        var emailResult = Email.Create(emailAddressTest);
-        var email = emailResult.Value;
-
-        PasswordHash passwordHashInvalid = null!;
-
-        var fullNameTest = "Full Name Test";
-        var fullNameResult = FullName.Create(fullNameTest);
-        var fullName = fullNameResult.Value;
-
-        var gender = Gender.Male;
-
-        var birthDateTest = new DateOnly(2026, 1, 1);
-        var birthDateResult = BirthDate.Create(birthDateTest);
-        var birthDate = birthDateResult.Value;
-
-        var callingCode = "+55";
-        var regionCode = "BR";
-        var areaCode = "48";
-        var phoneType = TelephoneType.Mobile;
-        var nationalNumber = "12345678";
-        var e164 = "+554812345678";
-        var telephoneNumberResult = TelephoneNumber.Create(
-            callingCode,
-            regionCode,
-            areaCode,
-            phoneType,
-            nationalNumber,
-            e164);
-
-        var telephoneNumber = telephoneNumberResult.Value;
-
-        // Act
-
-        Action act = () => User.Create(
-            email,
-            passwordHashInvalid,
-            fullName,
-            birthDate,
-            gender,
-            telephoneNumber);
-
-        // Assert
-
-        var exception = act.Should().Throw<DomainException>().Which;
-        exception.Error.Should().Be(UserErrors.PasswordRequired);
-    }
-
-    [Fact]
     public void Create_WhenFullNameIsNull_ShouldThrowDomainException_WithUserErrorsFullNameRequired()
     {
         // Arrange
@@ -130,10 +71,6 @@ public class UserCreateTests
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
         var email = emailResult.Value;
-
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
 
         FullName fullNameInvalid = null!;
 
@@ -159,11 +96,10 @@ public class UserCreateTests
 
         var telephoneNumber = telephoneNumberResult.Value;
 
-        // Act
+        // Action
 
         Action act = () => User.Create(
             email,
-            passwordHash,
             fullNameInvalid,
             birthDate,
             gender,
@@ -183,10 +119,6 @@ public class UserCreateTests
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
         var email = emailResult.Value;
-
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
 
         var fullNameTest = "Full Name Test";
         var fullNameResult = FullName.Create(fullNameTest);
@@ -212,11 +144,10 @@ public class UserCreateTests
 
         var telephoneNumber = telephoneNumberResult.Value;
 
-        // Act
+        // Action
 
         Action act = () => User.Create(
             email,
-            passwordHash,
             fullName,
             birthDateInvalid,
             gender,
@@ -236,10 +167,6 @@ public class UserCreateTests
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
         var email = emailResult.Value;
-
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
 
         var fullNameTest = "Full Name Test";
         var fullNameResult = FullName.Create(fullNameTest);
@@ -267,11 +194,10 @@ public class UserCreateTests
 
         var telephoneNumber = telephoneNumberResult.Value;
 
-        // Act
+        // Action
 
         Action act = () => User.Create(
             email,
-            passwordHash,
             fullName,
             birthDate,
             genderInvalid,
@@ -291,10 +217,6 @@ public class UserCreateTests
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
         var email = emailResult.Value;
-
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
 
         var fullNameTest = "Full Name Test";
         var fullNameResult = FullName.Create(fullNameTest);
@@ -322,11 +244,10 @@ public class UserCreateTests
 
         var telephoneNumber = telephoneNumberResult.Value;
 
-        // Act
+        // Action
 
         Action act = () => User.Create(
             email,
-            passwordHash,
             fullName,
             birthDate,
             genderInvalid,
@@ -347,15 +268,11 @@ public class UserCreateTests
         var emailResult = Email.Create(emailAddressTest);
         var email = emailResult.Value;
 
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
-
         var fullNameTest = "Full Name Test";
         var fullNameResult = FullName.Create(fullNameTest);
         var fullName = fullNameResult.Value;
 
-        var gender= Gender.Male;
+        var gender = Gender.Male;
 
         var birthDateTest = new DateOnly(2026, 1, 1);
         var birthDateResult = BirthDate.Create(birthDateTest);
@@ -363,11 +280,10 @@ public class UserCreateTests
 
         TelephoneNumber telephoneNumberInvalid = null!;
 
-        // Act
+        // Action
 
         Action act = () => User.Create(
             email,
-            passwordHash,
             fullName,
             birthDate,
             gender,
@@ -389,10 +305,6 @@ public class UserCreateTests
         var emailAddressTest = "example@domain.com";
         var emailResult = Email.Create(emailAddressTest);
         var email = emailResult.Value;
-
-        var passwordHashTest = "hashed_password_test";
-        var passwordHashResult = PasswordHash.Create(passwordHashTest);
-        var passwordHash = passwordHashResult.Value;
 
         var fullNameTest = "Full Name Test";
         var fullNameResult = FullName.Create(fullNameTest);
@@ -420,13 +332,12 @@ public class UserCreateTests
 
         var telephoneNumber = telephoneNumberResult.Value;
 
-        // Act
+        // Action
 
         var beforeCreation = DateTimeOffset.UtcNow;
 
         var resultUser = User.Create(
             email,
-            passwordHash,
             fullName,
             birthDate,
             gender,
@@ -438,7 +349,6 @@ public class UserCreateTests
 
         resultUser.Should().NotBeNull();
         resultUser.Email.Should().Be(email);
-        resultUser.PasswordHash.Should().Be(passwordHash);
         resultUser.FullName.Should().Be(fullName);
         resultUser.BirthDate.Should().Be(birthDate);
         resultUser.Gender.Should().Be(gender);

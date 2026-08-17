@@ -61,6 +61,42 @@ public static class UserErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.Required);
 
+    public static readonly Error LoginDateRequired = new(
+        Code: "user.login.date.required",
+        Message: "The login date is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error AccountCannotLogin = new(
+        Code: "user.account.cannot-login",
+        Message: "The account cannot login in its current state.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error EmailConfirmationRequiredForLogin = new(
+        Code: "user.login.email-confirmation-required",
+        Message: "The email address must be confirmed before login.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error SuspendedAccountCannotLogin = new(
+        Code: "user.login.account-suspended",
+        Message: "A suspended account cannot login.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error DisabledAccountCannotLogin = new(
+        Code: "user.login.account-disabled",
+        Message: "A disabled account cannot login.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error LoginBeforePreviousAccountActivity = new(
+        Code: "user.login.before-previous-account-activity",
+        Message: "The login date cannot be before the previous account activity.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
     public static readonly Error FullNameRequired = new(
         Code: "user.full-name.required",
         Message: "A user must have a full name.",

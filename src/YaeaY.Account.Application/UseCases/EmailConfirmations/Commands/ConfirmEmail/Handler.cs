@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using YaeaY.Account.Application.Services.Security.Interfaces;
+using YaeaY.Account.Application.Services.Identity.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Errors;
 using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
@@ -19,6 +20,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenService _tokenService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IIdentityAccountService _identityAccountService;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<Handler> _logger;
 
@@ -27,6 +29,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         IUserRepository userRepository,
         IEmailConfirmationTokenService tokenService,
         IUnitOfWork unitOfWork,
+        IIdentityAccountService identityAccountService,
         TimeProvider timeProvider,
         ILogger<Handler> logger)
     {
@@ -34,6 +37,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         _userRepository = userRepository;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
+        _identityAccountService = identityAccountService;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -84,16 +88,28 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
                     EmailConfirmationTokenErrors.EmailDoesNotMatchAccount);
             }
 
-            user.ConfirmEmail(nowUtc);
-            confirmationToken.MarkAsUsed(nowUtc);
+            return await _unitOfWork.ExecuteInTransactionAsync(
+                async transactionCancellationToken =>
+                {
+                    user.ConfirmEmail(nowUtc);
+                    confirmationToken.MarkAsUsed(nowUtc);
 
-            await _unitOfWork.CommitAsync(cancellationToken);
+                    var identityResult = await _identityAccountService.ConfirmEmailAsync(
+                        user.Id,
+                        transactionCancellationToken);
 
-            return Result<Response>.Success(
-                new Response(
-                    UserId: user.Id,
-                    Status: user.Status,
-                    EmailConfirmedAt: user.EmailConfirmedAt!.Value));
+                    if (identityResult.IsFailure)
+                        return Result<Response>.Failure(identityResult.Error);
+
+                    await _unitOfWork.CommitAsync(transactionCancellationToken);
+
+                    return Result<Response>.Success(
+                        new Response(
+                            UserId: user.Id,
+                            Status: user.Status,
+                            EmailConfirmedAt: user.EmailConfirmedAt!.Value));
+                },
+                cancellationToken);
         }
         catch (DomainException exception)
         {

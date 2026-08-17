@@ -114,7 +114,6 @@ public sealed class GetConfirmationPreviewHandlerTests
     private static User CreateUser(string emailAddress)
     {
         var email = Email.Create(emailAddress).Value;
-        var passwordHash = PasswordHash.Create("hashed-password").Value;
         var fullName = FullName.Create("Example Person").Value;
         var birthDate = BirthDate.Create(new DateOnly(2000, 1, 1)).Value;
         var telephoneNumber = TelephoneNumber.Create(
@@ -127,7 +126,6 @@ public sealed class GetConfirmationPreviewHandlerTests
 
         return User.Create(
             email,
-            passwordHash,
             fullName,
             birthDate,
             Gender.Male,
@@ -185,6 +183,9 @@ public sealed class GetConfirmationPreviewHandlerTests
         }
 
         public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+            => Task.FromResult<User?>(_user);
+
+        public Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken)
             => Task.FromResult<User?>(_user);
 
         public Task<bool> ExistsByEmailAsync(

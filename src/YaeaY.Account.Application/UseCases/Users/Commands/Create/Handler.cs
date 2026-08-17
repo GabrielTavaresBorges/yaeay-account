@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using YaeaY.Account.Application.Services.Security.Interfaces;
+using YaeaY.Account.Application.Services.Identity.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Errors;
 using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
@@ -24,7 +25,7 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<Handler> _logger;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly IIdentityAccountService _identityAccountService;
     private readonly ITelephoneNumberService _telephoneNumberService;
     private readonly ITelephoneNumberFactory _telephoneNumberFactory;
 
@@ -32,14 +33,14 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         IUserRepository usersRepository,
         IUnitOfWork unitOfWork,
         ILogger<Handler> logger,
-        IPasswordHasher passwordHasher,
+        IIdentityAccountService identityAccountService,
         ITelephoneNumberService telephoneNumberService,
         ITelephoneNumberFactory telephoneNumberFactory)
     {
         _userRepository = usersRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
-        _passwordHasher = passwordHasher;
+        _identityAccountService = identityAccountService;
         _telephoneNumberService = telephoneNumberService;
         _telephoneNumberFactory = telephoneNumberFactory;
     }
@@ -61,10 +62,6 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
             if (passwordTextResult.IsFailure)
                 return Result<Response>.Failure(passwordTextResult.Error);
 
-            var passwordHashResult = _passwordHasher.Hash(passwordTextResult.Value);
-            if (passwordHashResult.IsFailure)
-                return Result<Response>.Failure(passwordHashResult.Error);
-
             var fullNameResult = FullName.Create(command.FullName);
             if (fullNameResult.IsFailure)
                 return Result<Response>.Failure(fullNameResult.Error);
@@ -81,21 +78,34 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
 
             var user = User.Create(
                 emailAddress: emailResult.Value,
-                passwordHash: passwordHashResult.Value,
                 fullName: fullNameResult.Value,
                 birthDate: birthDateResult.Value,
                 gender: command.Gender,
                 initialPhoneNumber: initialTelephoneNumberResult.Value);
 
-            await _userRepository.CreateUserAsync(user, cancellationToken);
-            await _unitOfWork.CommitAsync(cancellationToken);
+            return await _unitOfWork.ExecuteInTransactionAsync(
+                async transactionCancellationToken =>
+                {
+                    await _userRepository.CreateUserAsync(user, transactionCancellationToken);
 
-            return Result<Response>.Success(
-                new Response(
-                    id: user.Id,
-                    fullName: user.FullName.Name,
-                    message: "User created successfully!")
-                );
+                    var identityResult = await _identityAccountService.CreateAsync(
+                        user.Id,
+                        user.Email,
+                        passwordTextResult.Value,
+                        transactionCancellationToken);
+
+                    if (identityResult.IsFailure)
+                        return Result<Response>.Failure(identityResult.Error);
+
+                    await _unitOfWork.CommitAsync(transactionCancellationToken);
+
+                    return Result<Response>.Success(
+                        new Response(
+                            id: user.Id,
+                            fullName: user.FullName.Name,
+                            message: "User created successfully!"));
+                },
+                cancellationToken);
         }
 
         catch (DomainException ex)

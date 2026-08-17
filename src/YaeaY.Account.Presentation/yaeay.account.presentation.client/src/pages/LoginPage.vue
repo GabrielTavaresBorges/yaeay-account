@@ -1,6 +1,7 @@
 <!-- src/pages/LoginPage.vue -->
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { reactive, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import {
     mdiEye,
     mdiEyeOff,
@@ -10,9 +11,61 @@
   } from '@mdi/js'
   import AppTopbar from '@/components/layout/AppTopbar.vue'
   import AppFooter from '@/components/layout/AppFooter.vue'
+  import { login } from '@/services/authentication-service'
+  import type { ApiError } from '@/services/http/api-error'
 
   const showPassword = ref<boolean>(false)
+  const route = useRoute()
+  const router = useRouter()
   const rememberMe = ref<boolean>(false)
+  const email = ref('')
+  const password = ref('')
+  const loading = ref(false)
+  const feedback = reactive({ show: false, text: '', success: false })
+
+  function required(value: string): true | string {
+    return value.trim().length > 0 || 'Campo obrigatório.'
+  }
+
+  function loginErrorMessage(error: ApiError): string {
+    switch (error.identifier) {
+      case 'identity.credentials.invalid': return 'E-mail ou senha inválidos.'
+      case 'identity.account.locked-out': return 'Acesso temporariamente bloqueado. Tente novamente mais tarde.'
+      case 'user.login.email-confirmation-required': return 'Confirme seu e-mail antes de acessar o Account.'
+      case 'user.login.account-suspended': return 'Seu Account está suspenso.'
+      case 'user.login.account-disabled': return 'Seu Account está desabilitado.'
+      default: return 'Não foi possível acessar o Account. Tente novamente.'
+    }
+  }
+
+  async function submitLogin(): Promise<void> {
+    if (!email.value.trim() || !password.value) return
+
+    loading.value = true
+    feedback.show = false
+
+    try {
+      await login({
+        emailAddress: email.value,
+        password: password.value,
+        rememberMe: rememberMe.value,
+      })
+
+      const redirect = typeof route.query.redirect === 'string'
+        && route.query.redirect.startsWith('/')
+        && !route.query.redirect.startsWith('//')
+        ? route.query.redirect
+        : '/home'
+
+      await router.replace(redirect)
+    } catch (error) {
+      feedback.text = loginErrorMessage(error as ApiError)
+      feedback.success = false
+      feedback.show = true
+    } finally {
+      loading.value = false
+    }
+  }
 </script>
 
 <template>
@@ -69,14 +122,17 @@
                     Acessar
                   </h2>
 
-                  <v-form class="form-panel__form">
+                  <v-form class="form-panel__form" @submit.prevent="submitLogin">
                     <div class="field-block">
                       <label class="field-block__label">
                         Email
                       </label>
 
-                      <v-text-field placeholder="nome@exemplo.com"
+                      <v-text-field v-model="email"
+                                    placeholder="nome@exemplo.com"
                                     type="email"
+                                    autocomplete="username"
+                                    :rules="[required]"
                                     variant="plain"
                                     density="comfortable"
                                     hide-details
@@ -88,8 +144,11 @@
                         Senha
                       </label>
 
-                      <v-text-field :type="showPassword ? 'text' : 'password'"
+                      <v-text-field v-model="password"
+                                    :type="showPassword ? 'text' : 'password'"
                                     placeholder="••••••••"
+                                    autocomplete="current-password"
+                                    :rules="[required]"
                                     variant="plain"
                                     density="comfortable"
                                     hide-details
@@ -114,13 +173,21 @@
                       </v-btn>
                     </div>
 
+                    <v-alert v-if="feedback.show"
+                             :type="feedback.success ? 'success' : 'error'"
+                             variant="tonal"
+                             density="compact">
+                      {{ feedback.text }}
+                    </v-alert>
+
                     <v-btn block
                            size="x-large"
                            rounded="pill"
-                           class="login-button--disabled"
+                           class="login-button"
                            :prepend-icon="mdiLogin"
-                           type="button"
-                           disabled>
+                           type="submit"
+                           :loading="loading"
+                           :disabled="loading || !email.trim() || !password">
                       Entrar
                     </v-btn>
                   </v-form>
@@ -457,18 +524,6 @@
     letter-spacing: 0.02em;
     box-shadow: 0 14px 28px rgba(24, 55, 41, 0.18);
   }
-
-  .login-button--disabled {
-    margin-top: 4px;
-    background: #8f8f8f !important;
-    color: #ffffff !important;
-    font-weight: 700;
-    text-transform: none;
-    letter-spacing: 0.02em;
-    opacity: 1;
-    cursor: not-allowed;
-  }
-
 
   /* =========================================================
      MOBILE CTA
