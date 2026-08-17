@@ -187,7 +187,7 @@
                            :prepend-icon="mdiLogin"
                            type="submit"
                            :loading="loading"
-                           :disabled="loading || !email.trim() || !password">
+                           :disabled="loading">
                       Entrar
                     </v-btn>
                   </v-form>
