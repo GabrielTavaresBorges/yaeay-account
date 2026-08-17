@@ -10,7 +10,6 @@ using YaeaY.Account.Domain.ValueObjects.Accounts;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
-using YaeaY.Account.Domain.ValueObjects.Securities;
 using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Domain.Entities.AggregateRoots.Users;
@@ -18,7 +17,6 @@ namespace YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 public class User : Entity, IAggregateRoot
 {
     private Email _email = null!;
-    private PasswordHash _passwordHash = null!;
     private FullName _fullName = null!;
     private BirthDate _birthDate = null!;
     private AccountStatus _status;
@@ -33,7 +31,6 @@ public class User : Entity, IAggregateRoot
     private readonly List<UserPhone> _phones = new();
 
     public Email Email => _email;
-    public PasswordHash PasswordHash => _passwordHash;
     public FullName FullName => _fullName;
     public BirthDate BirthDate => _birthDate;
     public AccountStatus Status => _status;
@@ -51,14 +48,12 @@ public class User : Entity, IAggregateRoot
 
     private User(
         Email email,
-        PasswordHash passwordHash,
         FullName fullName,
         BirthDate birthDate,
         Gender gender,
         TelephoneNumber initialPhoneNumber)
     {
         _email = email;
-        _passwordHash = passwordHash;
         _fullName = fullName;
         _birthDate = birthDate;
         _gender = gender;
@@ -71,17 +66,15 @@ public class User : Entity, IAggregateRoot
 
     public static User Create(
         Email emailAddress,
-        PasswordHash passwordHash,
         FullName fullName,
         BirthDate birthDate,
         Gender gender,
         TelephoneNumber initialPhoneNumber)
     {
-        Validate(emailAddress, passwordHash, fullName, birthDate, gender, initialPhoneNumber);
+        Validate(emailAddress, fullName, birthDate, gender, initialPhoneNumber);
 
         var user = new User(
             emailAddress,
-            passwordHash,
             fullName,
             birthDate,
             gender,
@@ -100,7 +93,6 @@ public class User : Entity, IAggregateRoot
 
     private static void Validate(
         Email emailAddress,
-        PasswordHash passwordHash,
         FullName fullName,
         BirthDate birthDate,
         Gender gender,
@@ -108,9 +100,6 @@ public class User : Entity, IAggregateRoot
     {
         if (emailAddress is null)
             throw new DomainException(UserErrors.EmailRequired);
-
-        if (passwordHash is null)
-            throw new DomainException(UserErrors.PasswordRequired);
 
         if (fullName is null)
             throw new DomainException(UserErrors.FullNameRequired);
@@ -145,6 +134,36 @@ public class User : Entity, IAggregateRoot
         _phones.Add(UserPhone.Create(phoneNumber, isPrimary));
     }
 
+    public void ConfirmEmail(DateTimeOffset confirmedAtUtc)
+    {
+        if (confirmedAtUtc == default)
+            throw new DomainException(UserErrors.EmailConfirmationDateRequired);
+
+        if (confirmedAtUtc < _createdAt)
+            throw new DomainException(UserErrors.EmailConfirmationBeforeAccountCreation);
+
+        if (_emailConfirmedAt.HasValue || _status == AccountStatus.Active)
+            throw new DomainException(UserErrors.EmailAlreadyConfirmed);
+
+        if (_status == AccountStatus.Suspended)
+        {
+            if (_suspension is null ||
+                _suspension.SuspensionBy != SuspensionBy.System ||
+                _suspension.Reason != SuspensionReason.Inactivity)
+            {
+                throw new DomainException(UserErrors.SuspensionPreventsEmailConfirmation);
+            }
+        }
+        else if (_status != AccountStatus.PendingEmailConfirmation)
+        {
+            throw new DomainException(UserErrors.AccountCannotBeEmailConfirmed);
+        }
+
+        _emailConfirmedAt = confirmedAtUtc;
+        _suspension = null;
+        _status = AccountStatus.Active;
+    }
+
     public void ChangeEmail(Email email)
     {
         if (email is null)
@@ -155,14 +174,22 @@ public class User : Entity, IAggregateRoot
         _email = email;
     }
 
-    public void ChangePasswordHash(PasswordHash passwordHash)
+    public void RegisterSuccessfulLogin(DateTimeOffset occurredAtUtc)
     {
-        if (passwordHash is null)
-            throw new DomainException(
-                message: "Password hash cannot be null.",
-                code: "PASSWORD_HASH_NULL");
+        if (occurredAtUtc == default)
+            throw new DomainException(UserErrors.LoginDateRequired);
 
-        _passwordHash = passwordHash;
+        if (_status != AccountStatus.Active || !_emailConfirmedAt.HasValue)
+            throw new DomainException(UserErrors.AccountCannotLogin);
+
+        if (occurredAtUtc < _emailConfirmedAt.Value ||
+            (_lastLoginAt.HasValue && occurredAtUtc < _lastLoginAt.Value))
+        {
+            throw new DomainException(UserErrors.LoginBeforePreviousAccountActivity);
+        }
+
+        _firstLoginAt ??= occurredAtUtc;
+        _lastLoginAt = occurredAtUtc;
     }
 
     public void ChangeFullName(FullName fullName)

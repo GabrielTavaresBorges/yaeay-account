@@ -13,6 +13,7 @@ export type UserCreateCore = {
   fullName: string
   birthDate: string
   gender: Gender
+  callingCode: string
   regionCode: string
   areaCode: string
   phoneType: PhoneType

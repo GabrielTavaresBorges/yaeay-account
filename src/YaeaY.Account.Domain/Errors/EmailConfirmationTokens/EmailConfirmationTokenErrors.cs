@@ -5,6 +5,30 @@ namespace YaeaY.Account.Domain.Errors.EmailConfirmationTokens;
 
 public static class EmailConfirmationTokenErrors
 {
+    public static readonly Error RawTokenRequired = new(
+        Code: "email-confirmation-token.raw-token.required",
+        Message: "The email confirmation token is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error RawTokenTooLong = new(
+        Code: "email-confirmation-token.raw-token.too-long",
+        Message: "The email confirmation token exceeds the maximum allowed length.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.MaximumLength);
+
+    public static readonly Error NotFound = new(
+        Code: "email-confirmation-token.not-found",
+        Message: "The email confirmation token was not found.",
+        Category: ErrorCategory.NotFound,
+        Rule: ErrorRule.NotFound);
+
+    public static readonly Error EmailDoesNotMatchAccount = new(
+        Code: "email-confirmation-token.email.does-not-match-account",
+        Message: "The token does not belong to the account's current email address.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
     public static readonly Error AccountNotPendingEmailConfirmation = new(
         Code: "email-confirmation-token.account.not-pending-email-confirmation",
         Message: "The account is not pending email confirmation.",

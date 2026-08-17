@@ -11,7 +11,7 @@ import type { ApiError, ApiErrorBody } from './api-error'
  *
  * Como funciona:
  * 1) Recebe um objeto `Response` do fetch (a resposta HTTP do servidor)
- * 2) Tenta ler o body como JSON no formato { identifier, message }
+ * 2) Tenta ler o body como JSON no formato atual { code, message }
  * 3) Monta uma mensagem final (body.message ou fallback com status HTTP)
  * 4) Lança (throw) um objeto que satisfaz o tipo ApiError (inclui statusCode)
  *
@@ -21,7 +21,7 @@ import type { ApiError, ApiErrorBody } from './api-error'
 export async function throwApiError(response: Response): Promise<never> {
   /**
    * Corpo de erro no formato que esperamos da API:
-   * { identifier?: string, message?: string }
+   * { code?: string, message?: string }
    *
    * Pode ser null porque:
    * - algumas respostas de erro podem não ter body JSON (ex.: 500 com HTML)
@@ -46,14 +46,15 @@ export async function throwApiError(response: Response): Promise<never> {
   /**
    * Lança um erro padronizado (ApiError):
    * - statusCode: HTTP status code (ex.: 422, 404, 500)
-   * - identifier/message: dados retornados pela API (quando existir)
+   * - identifier: código normalizado recebido em `code` pela API
+   * - message: mensagem retornada pela API (quando existir)
    *
    * "satisfies ApiError" garante, em tempo de compilação (TypeScript),
    * que o objeto tem o formato esperado de ApiError.
    */
   throw {
     statusCode: response.status,
-    identifier: body?.identifier,
+    identifier: body?.code ?? body?.identifier,
     message,
   } satisfies ApiError
 }

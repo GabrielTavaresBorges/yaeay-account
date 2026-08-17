@@ -8,7 +8,11 @@
     mdiHelpCircleOutline,
     mdiShieldLockOutline,
     mdiCheckCircle,
-    mdiCalendar
+    mdiCalendar,
+    mdiEmailCheckOutline,
+    mdiInboxArrowDownOutline,
+    mdiAlertCircleOutline,
+    mdiArrowRight
   } from '@mdi/js'
 
   import { createUser } from '@/services/users/users-service'
@@ -46,6 +50,9 @@
   /* refs */
   const formRef = ref<VForm | null>(null)
   const loading = ref(false)
+  const accountCreated = ref(false)
+  const registeredEmail = ref('')
+  const registeredFullName = ref('')
 
   /* password */
 
@@ -139,6 +146,22 @@
     return callingOk && countryOk && typeOk && numberOk
   }
 
+  function clearRegistrationForm(): void {
+    form.email = ''
+    form.password = ''
+    form.confirmPassword = ''
+    form.fullName = ''
+    form.birthDate = null
+    form.gender = null
+    form.phones.callingCode = '+55'
+    form.phones.country = 'BR'
+    form.phones.phoneType = 'Mobile'
+    form.phones.areaCode = '11'
+    form.phones.number = ''
+    birthMenu.value = false
+    openedPanels.value = ['accessData']
+  }
+
   function getPanelsWithErrors(): string[] {
     const panels = new Set<string>()
 
@@ -190,6 +213,7 @@
       fullName: form.fullName.trim(),
       birthDate: birthDateIso.value,
       gender: form.gender as Gender,
+      callingCode: form.phones.callingCode,
       regionCode: form.phones.country,
       areaCode: form.phones.areaCode,
       phoneType: form.phones.phoneType,
@@ -199,7 +223,12 @@
     try {
       loading.value = true
       const result = await createUser(payload)
-      notify(result.message || 'Usuário criado com sucesso!')
+      registeredEmail.value = payload.emailAddress
+      registeredFullName.value = result.fullName
+      clearRegistrationForm()
+      accountCreated.value = true
+      await nextTick()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e: any) {
       notify(e?.message || 'Erro ao criar usuário.')
     } finally {
@@ -210,12 +239,70 @@
 
 <template>
   <v-main class="page">
-    <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
+    <AppTopbar
+      :action-text="accountCreated ? 'Acessar' : 'Ajuda'"
+      :action-to="accountCreated ? '/login' : '/forgot-password'"
+    />
 
     <v-container fluid class="user-create-container py-6 py-md-10">
       <v-row class="user-create-row" justify="center" align="start">
         <v-col cols="12" class="user-create-column">
 
+          <template v-if="accountCreated">
+            <v-card class="registration-success" rounded="xl" elevation="0">
+              <div class="registration-success__icon" aria-hidden="true">
+                <v-icon :icon="mdiEmailCheckOutline" size="68" />
+              </div>
+
+              <p class="registration-success__eyebrow">Cadastro concluído</p>
+              <h1>Seu Account foi criado com sucesso.</h1>
+              <p class="registration-success__greeting">
+                Olá, {{ registeredFullName }}.
+              </p>
+              <p class="registration-success__lead">
+                Enviamos um e-mail de confirmação para:
+              </p>
+
+              <div class="registration-success__email">
+                {{ registeredEmail }}
+              </div>
+
+              <p class="registration-success__instruction">
+                Abra a mensagem enviada pela YaeaY e selecione
+                <strong>Confirmar meu e-mail</strong> para ativar seu Account.
+              </p>
+
+              <div class="registration-success__notice">
+                <v-icon :icon="mdiInboxArrowDownOutline" size="30" />
+                <div>
+                  <strong>Não encontrou a mensagem?</strong>
+                  <p>
+                    Aguarde alguns minutos e verifique também as pastas de spam,
+                    lixo eletrônico e promoções.
+                  </p>
+                </div>
+              </div>
+
+              <div class="registration-success__security">
+                <v-icon :icon="mdiAlertCircleOutline" size="21" />
+                <span>
+                  O acesso será liberado somente após a confirmação do endereço de e-mail.
+                </span>
+              </div>
+
+              <v-btn
+                rounded="pill"
+                size="large"
+                class="registration-success__login"
+                :append-icon="mdiArrowRight"
+                :to="{ name: 'login' }"
+              >
+                Já confirmei — acessar Account
+              </v-btn>
+            </v-card>
+          </template>
+
+          <template v-else>
           <!-- ALERT -->
           <v-alert class="privacy-alert"
                    color="blue"
@@ -362,10 +449,11 @@
                 <v-btn block
                        size="large"
                        rounded="pill"
-                       class="btn-disabled-dev mt-2"
-                       type="button"
-                       disabled>
-                  Criar conta - DESABILITADO
+                       class="create-account-button mt-2"
+                       type="submit"
+                       :loading="loading"
+                       :disabled="loading">
+                  Criar conta
                 </v-btn>
 
                 <!-- SNACKBAR -->
@@ -378,6 +466,7 @@
               </v-form>
             </div>
           </v-card>
+          </template>
         </v-col>
       </v-row>
     </v-container>
@@ -390,6 +479,134 @@
 </template>
 
 <style scoped>
+  .registration-success {
+    width: 100%;
+    padding: 52px 54px 48px;
+    text-align: center;
+    border: 1px solid rgba(24, 55, 41, 0.12);
+    background: #ffffff;
+    box-shadow: 0 28px 70px rgba(24, 55, 41, 0.1) !important;
+  }
+
+  .registration-success__icon {
+    width: 112px;
+    height: 112px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 26px;
+    border-radius: 50%;
+    color: #176143;
+    background: #eaf3ee;
+    border: 1px solid #cfe0d6;
+  }
+
+  .registration-success__eyebrow {
+    margin: 0 0 12px;
+    color: #497064;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+  }
+
+  .registration-success h1 {
+    max-width: 590px;
+    margin: 0 auto;
+    color: #173f32;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    line-height: 1.16;
+    letter-spacing: -0.035em;
+  }
+
+  .registration-success__greeting {
+    margin: 24px 0 0;
+    color: #273f37;
+    font-size: 1.05rem;
+  }
+
+  .registration-success__lead {
+    margin: 28px 0 12px;
+    color: #4e5f59;
+    font-size: 1rem;
+  }
+
+  .registration-success__email {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 15px 22px;
+    overflow-wrap: anywhere;
+    border: 1px solid #b9cec2;
+    border-radius: 12px;
+    color: #143f31;
+    background: #f3f7f5;
+    font-size: 1.06rem;
+    font-weight: 750;
+  }
+
+  .registration-success__instruction {
+    max-width: 570px;
+    margin: 28px auto 0;
+    color: #344b43;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .registration-success__instruction strong {
+    color: #174c39;
+    font-weight: 750;
+  }
+
+  .registration-success__notice {
+    max-width: 590px;
+    display: flex;
+    align-items: flex-start;
+    gap: 17px;
+    margin: 34px auto 0;
+    padding: 22px 24px;
+    text-align: left;
+    border-left: 4px solid #d5a72f;
+    border-radius: 10px;
+    color: #594c2e;
+    background: #fff8e5;
+  }
+
+  .registration-success__notice strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #493d25;
+    font-weight: 750;
+  }
+
+  .registration-success__notice p {
+    margin: 0;
+    color: #6b6047;
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+
+  .registration-success__security {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 24px;
+    color: #68756f;
+    font-size: 0.85rem;
+  }
+
+  .registration-success__login {
+    width: min(100%, 350px);
+    margin-top: 34px;
+    color: #ffffff !important;
+    background: #183f31 !important;
+    font-weight: 750;
+    letter-spacing: 0;
+    text-transform: none;
+    box-shadow: 0 12px 24px rgba(24, 55, 41, 0.17);
+  }
+
   .form-heading {
     margin: -12px auto 8px;
     padding-inline: 24px;
@@ -421,14 +638,18 @@
     margin-top: 24px;
   }
 
-  .btn-disabled-dev {
-    background-color: #ba1a1a !important;
+  .create-account-button {
+    background-color: #183729 !important;
     color: #ffffff !important;
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: 0.2px;
     text-transform: none;
-    opacity: 1;
-    cursor: not-allowed;
+    box-shadow: 0 12px 24px rgba(24, 55, 41, 0.18);
+  }
+
+  .create-account-button:focus-visible {
+    outline: 3px solid #8ea588;
+    outline-offset: 3px;
   }
 
 
@@ -453,6 +674,26 @@
     width: 100%;
     max-width: 760px;
     margin-inline: auto;
+  }
+
+  @media (max-width: 600px) {
+    .registration-success {
+      padding: 38px 22px 34px;
+    }
+
+    .registration-success__icon {
+      width: 92px;
+      height: 92px;
+    }
+
+    .registration-success__notice {
+      padding: 19px 17px;
+    }
+
+    .registration-success__security {
+      align-items: flex-start;
+      text-align: left;
+    }
   }
 
   .access-field {

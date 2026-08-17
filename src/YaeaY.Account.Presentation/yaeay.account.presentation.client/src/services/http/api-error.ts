@@ -5,13 +5,16 @@
  *
  * No seu backend (ASP.NET), quando ocorre falha (ex.: 422),
  * o controller retorna algo como:
- * { identifier: "SOME_ERROR", message: "Human readable message" }
+ * { code: "some.error-code", message: "Human readable message" }
  *
  * Observação: as propriedades são opcionais porque:
  * - o backend pode não retornar JSON em alguns erros (500/HTML)
  * - pode retornar um shape diferente dependendo do endpoint/middleware
  */
 export type ApiErrorBody = {
+  /** Código de erro usado atualmente pela API do Account. */
+  code?: string
+
   /** Código/identificador de erro (útil para lógica e mapeamento de mensagens). */
   identifier?: string
 
@@ -23,7 +26,7 @@ export type ApiErrorBody = {
  * Representa um erro HTTP padronizado no client.
  *
  * É o tipo que o client "lança" (throw) após receber um status não-OK
- * e tentar extrair { identifier, message } do body.
+ * e tentar extrair { code, message } do body.
  *
  * Por que existe?
  * - padroniza o formato de erro para todos os services

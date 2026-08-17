@@ -1,6 +1,7 @@
 ﻿using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTokens;
 using Microsoft.EntityFrameworkCore;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTokens;
+using YaeaY.Account.Domain.ValueObjects.Securities;
 using YaeaY.Account.Infrastructure.Data.Context;
 
 namespace YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
@@ -12,6 +13,17 @@ public sealed class EmailConfirmationTokenRepository : IEmailConfirmationTokenRe
     public EmailConfirmationTokenRepository(AppDbContext context)
     {
         _context = context;
+    }
+
+    public Task<EmailConfirmationToken?> GetByHashAsync(
+        TokenHash tokenHash,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(tokenHash);
+
+        return _context.EmailConfirmationTokens.SingleOrDefaultAsync(
+            token => token.TokenHash.Token == tokenHash.Token,
+            cancellationToken);
     }
 
     public Task<bool> HasPendingTokenAsync(Guid userId, CancellationToken cancellationToken)

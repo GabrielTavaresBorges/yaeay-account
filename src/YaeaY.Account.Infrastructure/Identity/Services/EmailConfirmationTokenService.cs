@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Exceptions;
+using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.Errors.EmailConfirmationTokens;
 using YaeaY.Account.Domain.ValueObjects.Securities;
 
 namespace YaeaY.Account.Infrastructure.Identity.Services;
@@ -12,9 +14,7 @@ public sealed class EmailConfirmationTokenService : IEmailConfirmationTokenServi
         const int tokenSizeInBytes = 32;
 
         var rawToken = GenerateSecureToken(tokenSizeInBytes);
-        var tokenHash = GenerateTokenHash(rawToken);
-
-        var tokenHashResult = TokenHash.Create(tokenHash);
+        var tokenHashResult = HashToken(rawToken);
         if (tokenHashResult.IsFailure)
             throw new DomainException(
                 message: tokenHashResult.Error.Message,
@@ -25,6 +25,19 @@ public sealed class EmailConfirmationTokenService : IEmailConfirmationTokenServi
             tokenHash: tokenHashResult.Value);
 
         return Task.FromResult(result);
+    }
+
+    public Result<TokenHash> HashToken(string rawToken)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken))
+            return Result<TokenHash>.Failure(EmailConfirmationTokenErrors.RawTokenRequired);
+
+        const int maximumRawTokenLength = 1024;
+        if (rawToken.Length > maximumRawTokenLength)
+            return Result<TokenHash>.Failure(EmailConfirmationTokenErrors.RawTokenTooLong);
+
+        var tokenHash = GenerateTokenHash(rawToken);
+        return TokenHash.Create(tokenHash);
     }
 
     private static string GenerateSecureToken(int sizeInBytes)

@@ -10,6 +10,7 @@
     <Project Path="src/YaeaY.Account.Presentation/YaeaY.Account.Presentation.Server/YaeaY.Account.Presentation.Server.csproj" Id="c0cd471d-061b-4b49-b26d-57e62a52aa2d" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/YaeaY.Account.Application.UnitTests/YaeaY.Account.Application.UnitTests.csproj" />
     <Project Path="tests/YaeaY.Account.Domain.UnitTests/YaeaY.Account.Domain.UnitTests.csproj" Id="d7717e91-dc57-473b-a909-fe84b2a3b78f" />
     <Project Path="tests/YaeaY.Account.Infrastructure.UnitTests/YaeaY.Account.Infrastructure.UnitTests.csproj" Id="b7ba5ed7-b341-4934-8e64-75d88425b663" />
   </Folder>

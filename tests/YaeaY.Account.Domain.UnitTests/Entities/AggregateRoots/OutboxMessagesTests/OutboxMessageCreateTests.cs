@@ -8,43 +8,95 @@ namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.OutboxMessagesT
 
 public sealed class OutboxMessageCreateTests
 {
+    // IsFailure
+
     [Fact]
     public void Create_WhenIdIsEmpty_ShouldThrowDomainException()
     {
-        var content = CreateContent();
+        // Arrange
 
-        Action act = () => OutboxMessage.Create(Guid.Empty, content, DateTimeOffset.UtcNow);
+        var idInvalid = Guid.Empty;
 
-        act.Should().Throw<DomainException>()
-            .Which.Error.Should().Be(OutboxMessageErrors.IdRequired);
+        var eventType = "UserRegistered";
+        var payload = "{}";
+        var contentResult = SerializedDomainEvent.Create(eventType, payload);
+        var content = contentResult.Value;
+
+        var occurredOnUtc = DateTimeOffset.UtcNow;
+
+        // Action
+
+        Action act = () => OutboxMessage.Create(idInvalid, content, occurredOnUtc);
+
+        // Assert
+
+        var exception = act.Should().Throw<DomainException>().Which;
+        exception.Error.Should().Be(OutboxMessageErrors.IdRequired);
     }
 
     [Fact]
     public void Create_WhenContentIsNull_ShouldThrowDomainException()
     {
-        Action act = () => OutboxMessage.Create(Guid.NewGuid(), null!, DateTimeOffset.UtcNow);
+        // Arrange
 
-        act.Should().Throw<DomainException>()
-            .Which.Error.Should().Be(OutboxMessageErrors.ContentRequired);
+        var id = Guid.NewGuid();
+        SerializedDomainEvent contentInvalid = null!;
+        var occurredOnUtc = DateTimeOffset.UtcNow;
+
+        // Action
+
+        Action act = () => OutboxMessage.Create(id, contentInvalid, occurredOnUtc);
+
+        // Assert
+
+        var exception = act.Should().Throw<DomainException>().Which;
+        exception.Error.Should().Be(OutboxMessageErrors.ContentRequired);
     }
 
     [Fact]
     public void Create_WhenOccurrenceDateIsDefault_ShouldThrowDomainException()
     {
-        Action act = () => OutboxMessage.Create(Guid.NewGuid(), CreateContent(), default);
+        // Arrange
 
-        act.Should().Throw<DomainException>()
-            .Which.Error.Should().Be(OutboxMessageErrors.OccurredOnUtcRequired);
+        var id = Guid.NewGuid();
+
+        var eventType = "UserRegistered";
+        var payload = "{}";
+        var contentResult = SerializedDomainEvent.Create(eventType, payload);
+        var content = contentResult.Value;
+
+        var occurredOnUtcInvalid = default(DateTimeOffset);
+
+        // Action
+
+        Action act = () => OutboxMessage.Create(id, content, occurredOnUtcInvalid);
+
+        // Assert
+
+        var exception = act.Should().Throw<DomainException>().Which;
+        exception.Error.Should().Be(OutboxMessageErrors.OccurredOnUtcRequired);
     }
+
+    // IsSuccess
 
     [Fact]
     public void Create_WhenDataIsValid_ShouldCreatePendingMessage()
     {
+        // Arrange
+
         var id = Guid.NewGuid();
         var occurredOnUtc = DateTimeOffset.UtcNow;
-        var content = CreateContent();
+
+        var eventType = "UserRegistered";
+        var payload = "{}";
+        var contentResult = SerializedDomainEvent.Create(eventType, payload);
+        var content = contentResult.Value;
+
+        // Action
 
         var message = OutboxMessage.Create(id, content, occurredOnUtc);
+
+        // Assert
 
         message.Id.Should().Be(id);
         message.Content.Should().BeSameAs(content);
@@ -54,7 +106,4 @@ public sealed class OutboxMessageCreateTests
         message.IsProcessed.Should().BeFalse();
         message.CanBeProcessed(occurredOnUtc).Should().BeTrue();
     }
-
-    private static SerializedDomainEvent CreateContent() =>
-        SerializedDomainEvent.Create("UserRegistered", "{}").Value;
 }

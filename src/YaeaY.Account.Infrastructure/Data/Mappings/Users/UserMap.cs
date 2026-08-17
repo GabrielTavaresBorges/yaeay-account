@@ -29,17 +29,6 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         builder.Navigation(n => n.Email)
             .IsRequired();
 
-        // ===== PasswordHash (VO) =====
-        builder.OwnsOne(o => o.PasswordHash, pw =>
-        {
-            pw.Property(p => p.Password)
-              .HasColumnName("PasswordHash")
-              .HasMaxLength(1024)
-              .IsRequired();
-        });
-
-        builder.Navigation(n => n.PasswordHash).IsRequired();
-
         // ===== FullName (VO) =====
         builder.OwnsOne(o => o.FullName, name =>
         {
@@ -81,6 +70,15 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         builder.Property(p => p.CreatedAt)
             .HasColumnName("CreatedAt")
             .IsRequired();
+
+        builder.Property(p => p.EmailConfirmedAt)
+            .HasColumnName("EmailConfirmedAt");
+
+        builder.Property(p => p.FirstLoginAt)
+            .HasColumnName("FirstLoginAt");
+
+        builder.Property(p => p.LastLoginAt)
+            .HasColumnName("LastLoginAt");
 
         // ===== SuspensionInfo (nullable) =====
         builder.OwnsOne(typeof(SuspensionInfo), "_suspension", si =>
