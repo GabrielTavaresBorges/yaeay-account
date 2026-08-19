@@ -71,7 +71,7 @@
 <template>
   <v-main class="login-page">
     <section class="login-shell">
-      <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
+      <AppTopbar action-text="Ajuda" action-to="/help" />
       <v-container fluid class="login-content">
         <v-row class="login-row" justify="center" align="center">
           <v-col cols="12" class="login-column">

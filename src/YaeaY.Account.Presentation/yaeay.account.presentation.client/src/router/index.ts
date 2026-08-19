@@ -5,6 +5,7 @@ import { loginRoutes } from './routes/login-route'
 import { userCreateRoutes } from './routes/user-create-route'
 import { emailConfirmationRoutes } from './routes/email-confirmation-route'
 import { homeRoutes } from './routes/home-route'
+import { helpRoutes } from './routes/help-route'
 import { getCurrentSession } from '@/services/authentication-service'
 
 const routes = [
@@ -13,6 +14,7 @@ const routes = [
   ...userCreateRoutes,
   ...emailConfirmationRoutes,
   ...homeRoutes,
+  ...helpRoutes,
 ]
 
 export const router = createRouter({

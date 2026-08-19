@@ -241,7 +241,7 @@
   <v-main class="page">
     <AppTopbar
       :action-text="accountCreated ? 'Acessar' : 'Ajuda'"
-      :action-to="accountCreated ? '/login' : '/forgot-password'"
+      :action-to="accountCreated ? '/login' : '/help'"
     />
 
     <v-container fluid class="user-create-container py-6 py-md-10">
