@@ -241,7 +241,7 @@
   <v-main class="page">
     <AppTopbar
       :action-text="accountCreated ? 'Acessar' : 'Ajuda'"
-      :action-to="accountCreated ? '/login' : '/forgot-password'"
+      :action-to="accountCreated ? '/login' : '/help'"
     />
 
     <v-container fluid class="user-create-container py-6 py-md-10">
@@ -472,8 +472,12 @@
     </v-container>
 
     <AppFooter copyright="© 2026 YaeaY Software ®"
-               text-one="Termos"
-               href-one="#" />
+               text-one="Privacidade"
+               :to-one="{ name: 'privacy' }"
+               text-two="Termos"
+               :to-two="{ name: 'terms' }"
+               text-three="Segurança"
+               :to-three="{ name: 'security' }" />
 
   </v-main>
 </template>

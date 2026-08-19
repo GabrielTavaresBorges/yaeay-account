@@ -71,7 +71,7 @@
 <template>
   <v-main class="login-page">
     <section class="login-shell">
-      <AppTopbar action-text="Ajuda" action-to="/forgot-password" />
+      <AppTopbar action-text="Ajuda" action-to="/help" />
       <v-container fluid class="login-content">
         <v-row class="login-row" justify="center" align="center">
           <v-col cols="12" class="login-column">
@@ -222,11 +222,11 @@
 
       <AppFooter copyright="© 2026 YaeaY Software ®"
                  text-one="Privacidade"
-                 href-one="#"
+                 :to-one="{ name: 'privacy' }"
                  text-two="Termos"
-                 href-two="#"
+                 :to-two="{ name: 'terms' }"
                  text-three="Segurança"
-                 href-three="#" />
+                 :to-three="{ name: 'security' }" />
 
     </section>
   </v-main>
@@ -239,12 +239,12 @@
   ========================================================= */
 
   .login-page {
-    min-height: 100vh;
+    min-height: 100dvh;
     background: #ebebeb;
   }
 
   .login-shell {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
   }
@@ -618,6 +618,65 @@
 
     .hero-panel__content {
       max-width: 100%;
+    }
+  }
+
+  /* Em notebooks e monitores, todo o login cabe na área visível. */
+  @media (min-width: 961px) and (orientation: landscape) {
+    .login-page,
+    .login-shell {
+      height: 100dvh;
+      min-height: 0;
+    }
+
+    .login-page {
+      overflow: hidden;
+    }
+
+    .login-shell {
+      /* O v-main já reserva os 65px da AppTopbar fixa. */
+      height: calc(100dvh - 65px);
+      overflow: visible;
+    }
+
+    .login-content {
+      min-height: 0;
+      padding-top: clamp(14px, 2.5vh, 28px);
+      padding-bottom: clamp(14px, 2.5vh, 28px);
+    }
+
+    .hero-slogan {
+      margin-top: clamp(20px, 3vh, 32px);
+    }
+
+    .hero-cta {
+      margin-top: clamp(24px, 4vh, 42px);
+    }
+
+    .hero-cta__text {
+      margin-bottom: 18px;
+      line-height: 1.55;
+    }
+
+    .form-panel {
+      padding: clamp(25px, 4vh, 34px);
+    }
+
+    .form-panel__title {
+      margin-bottom: clamp(18px, 3vh, 26px);
+    }
+
+    .form-panel__form {
+      gap: clamp(14px, 2.2vh, 19px);
+    }
+
+    .tech-stripe {
+      margin-top: 12px;
+    }
+
+    :deep(.app-footer__content) {
+      padding-top: clamp(14px, 2.3vh, 22px);
+      padding-bottom: clamp(14px, 2.3vh, 22px);
     }
   }
 

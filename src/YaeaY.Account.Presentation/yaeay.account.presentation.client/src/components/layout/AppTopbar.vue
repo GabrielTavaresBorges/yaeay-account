@@ -10,7 +10,7 @@
     }>(),
     {
       actionText: 'Ajuda',
-      actionTo: '/forgot-password',
+      actionTo: '/help',
     }
   )
 </script>
