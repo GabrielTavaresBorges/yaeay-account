@@ -472,8 +472,12 @@
     </v-container>
 
     <AppFooter copyright="© 2026 YaeaY Software ®"
-               text-one="Termos"
-               href-one="#" />
+               text-one="Privacidade"
+               :to-one="{ name: 'privacy' }"
+               text-two="Termos"
+               :to-two="{ name: 'terms' }"
+               text-three="Segurança"
+               :to-three="{ name: 'security' }" />
 
   </v-main>
 </template>

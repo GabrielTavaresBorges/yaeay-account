@@ -475,11 +475,11 @@
 
       <AppFooter copyright="© 2026 YaeaY Software ®"
                  text-one="Privacidade"
-                 href-one="#"
+                 :to-one="{ name: 'privacy' }"
                  text-two="Termos"
-                 href-two="#"
+                 :to-two="{ name: 'terms' }"
                  text-three="Segurança"
-                 href-three="#" />
+                 :to-three="{ name: 'security' }" />
     </section>
   </v-main>
 </template>

@@ -6,6 +6,7 @@ import { userCreateRoutes } from './routes/user-create-route'
 import { emailConfirmationRoutes } from './routes/email-confirmation-route'
 import { homeRoutes } from './routes/home-route'
 import { helpRoutes } from './routes/help-route'
+import { publicInformationRoutes } from './routes/public-information-route'
 import { getCurrentSession } from '@/services/authentication-service'
 
 const routes = [
@@ -15,6 +16,7 @@ const routes = [
   ...emailConfirmationRoutes,
   ...homeRoutes,
   ...helpRoutes,
+  ...publicInformationRoutes,
 ]
 
 export const router = createRouter({
