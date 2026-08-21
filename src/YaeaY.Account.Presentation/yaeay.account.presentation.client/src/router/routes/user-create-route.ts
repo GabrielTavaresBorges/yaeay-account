@@ -6,5 +6,6 @@ export const userCreateRoutes: RouteRecordRaw[] = [
     path: '/users/create',
     name: 'user-create',
     component: () => import('@/pages/UserCreatePage.vue'),
+    meta: { title: 'Crie seu Account' },
   },
 ]

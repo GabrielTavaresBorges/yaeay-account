@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.Entities.AggregateRoots.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
+using YaeaY.Account.Domain.Entities.AggregateRoots.PasswordRecoveryChallenges;
+using YaeaY.Account.Domain.Entities.AggregateRoots.PasswordRecoveryTemplates;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 using YaeaY.Account.Infrastructure.Identity.Models;
 
@@ -16,6 +18,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
     public DbSet<EmailConfirmationTemplate> EmailConfirmationTemplates => Set<EmailConfirmationTemplate>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<PasswordRecoveryChallenge> PasswordRecoveryChallenges => Set<PasswordRecoveryChallenge>();
+    public DbSet<PasswordRecoveryTemplate> PasswordRecoveryTemplates => Set<PasswordRecoveryTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

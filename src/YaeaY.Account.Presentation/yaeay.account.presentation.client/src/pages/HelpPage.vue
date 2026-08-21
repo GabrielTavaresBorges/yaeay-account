@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, nextTick, ref } from 'vue'
   import {
     mdiAccountPlusOutline,
     mdiAlertCircleOutline,
@@ -44,6 +44,7 @@
   const search = ref('')
   const selectedCategory = ref<HelpCategoryId>('all')
   const openedItems = ref<string[]>([])
+  const answersSection = ref<HTMLElement | null>(null)
 
   const categories: HelpCategory[] = [
     {
@@ -274,9 +275,15 @@
     category => category.id === selectedCategory.value
   )?.label ?? 'Todos')
 
-  function selectCategory(categoryId: HelpCategoryId): void {
+  async function selectCategory(categoryId: HelpCategoryId): Promise<void> {
     selectedCategory.value = categoryId
     openedItems.value = []
+    await nextTick()
+
+    answersSection.value?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    })
   }
 
   function clearFilters(): void {
@@ -289,7 +296,7 @@
 <template>
   <v-main class="help-page">
     <section class="help-shell">
-      <AppTopbar action-text="Voltar para acessar" :action-to="{ name: 'login' }" />
+      <AppTopbar :show-action="false" />
 
       <header class="help-hero">
         <v-container class="help-container">
@@ -334,27 +341,34 @@
             </span>
           </div>
 
-          <div class="category-grid">
-            <button v-for="category in categories"
-                    :key="category.id"
-                    type="button"
-                    class="category-card"
-                    :class="{ 'category-card--active': selectedCategory === category.id }"
-                    :aria-pressed="selectedCategory === category.id"
-                    @click="selectCategory(category.id)">
-              <span class="category-card__icon">
-                <v-icon :icon="category.icon" size="23" />
-              </span>
-              <span class="category-card__copy">
-                <strong>{{ category.label }}</strong>
-                <small>{{ category.description }}</small>
-              </span>
-              <v-icon :icon="mdiChevronRight" size="18" />
-            </button>
-          </div>
+          <v-row class="category-grid" justify="center" density="comfortable">
+            <v-col v-for="category in categories"
+                   :key="category.id"
+                   cols="12"
+                   sm="6"
+                   md="4">
+              <v-card tag="button"
+                      type="button"
+                      variant="flat"
+                      ripple
+                      class="category-card"
+                      :class="{ 'category-card--active': selectedCategory === category.id }"
+                      :aria-pressed="selectedCategory === category.id"
+                      @click="selectCategory(category.id)">
+                <span class="category-card__icon">
+                  <v-icon :icon="category.icon" size="23" />
+                </span>
+                <span class="category-card__copy">
+                  <strong>{{ category.label }}</strong>
+                  <small>{{ category.description }}</small>
+                </span>
+                <v-icon :icon="mdiChevronRight" size="18" />
+              </v-card>
+            </v-col>
+          </v-row>
         </section>
 
-        <section class="answers-section" aria-labelledby="help-answers-title">
+        <section ref="answersSection" class="answers-section" aria-labelledby="help-answers-title">
           <div class="section-heading section-heading--answers">
             <div>
               <p class="section-heading__eyebrow">{{ selectedCategoryLabel }}</p>
@@ -499,6 +513,7 @@
 
   .help-container {
     width: min(1120px, 100%);
+    margin-inline: auto !important;
     padding-inline: 32px;
   }
 
@@ -551,10 +566,11 @@
   .help-hero h1 {
     margin: 0;
     color: #173f32;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(2.25rem, 6vw, 4rem);
-    line-height: 1.08;
-    letter-spacing: -0.045em;
+    font-family: inherit;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
   }
 
   .help-hero__lead {
@@ -584,6 +600,7 @@
   }
 
   .help-content {
+    width: min(1120px, 100%);
     padding-top: 54px;
     padding-bottom: 70px;
   }
@@ -591,9 +608,11 @@
   .section-heading {
     margin-bottom: 20px;
     display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
   }
 
   .section-heading h2,
@@ -606,19 +625,20 @@
   }
 
   .section-heading__count {
-    padding-bottom: 4px;
+    padding: 0;
     color: #6a7d74;
     font-size: 0.86rem;
     white-space: nowrap;
   }
 
   .category-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    width: 100%;
+    margin-inline: auto;
   }
 
   .category-card {
+    width: 100%;
+    height: 100%;
     min-height: 86px;
     padding: 16px;
     display: grid;
@@ -695,10 +715,11 @@
 
   .answers-section {
     padding-top: 58px;
+    scroll-margin-top: 24px;
   }
 
   .section-heading--answers {
-    align-items: start;
+    align-items: center;
   }
 
   .help-answers {
@@ -933,10 +954,6 @@
   }
 
   @media (max-width: 900px) {
-    .category-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .help-actions {
       align-items: flex-start;
       flex-direction: column;
@@ -965,17 +982,6 @@
       padding-bottom: 48px;
     }
 
-    .section-heading {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .section-heading__count {
-      padding: 0;
-    }
-
-    .category-grid,
     .quick-guide__grid {
       grid-template-columns: 1fr;
     }

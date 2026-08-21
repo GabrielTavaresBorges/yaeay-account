@@ -21,7 +21,7 @@ public sealed class IdentityAccountService(
     SignInManager<ApplicationUser> signInManager,
     IOptions<AccountSessionOptions> sessionOptions,
     TimeProvider timeProvider,
-    ILogger<IdentityAccountService> logger) : IIdentityAccountService
+    ILogger<IdentityAccountService> logger) : IIdentityAccountService, IIdentityPasswordService
 {
     public async Task<Result<IdentityOperation>> CreateAsync(
         Guid userId,
@@ -160,5 +160,32 @@ public sealed class IdentityAccountService(
     {
         cancellationToken.ThrowIfCancellationRequested();
         return signInManager.SignOutAsync();
+    }
+
+    public async Task<Result<IdentityOperation>> ResetPasswordAsync(
+        Guid userId,
+        PasswordText newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(newPassword);
+
+        var identityUser = await userManager.FindByIdAsync(userId.ToString());
+        if (identityUser is null)
+            return Result<IdentityOperation>.Failure(IdentityErrors.NotFound);
+
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(identityUser);
+        var result = await userManager.ResetPasswordAsync(identityUser, resetToken, newPassword.Password);
+        if (result.Succeeded)
+        {
+            await userManager.ResetAccessFailedCountAsync(identityUser);
+            return Result<IdentityOperation>.Success(IdentityOperation.Success);
+        }
+
+        logger.LogError(
+            "Identity password reset failed for user {UserId}. Codes: {Codes}",
+            userId,
+            string.Join(',', result.Errors.Select(error => error.Code)));
+        return Result<IdentityOperation>.Failure(IdentityErrors.PasswordResetFailed);
     }
 }

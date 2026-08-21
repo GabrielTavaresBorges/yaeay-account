@@ -24,6 +24,12 @@ export const router = createRouter({
   routes,
 })
 
+router.afterEach((to) => {
+  document.title = typeof to.meta.title === 'string'
+    ? to.meta.title
+    : 'YaeaY Account'
+})
+
 router.beforeEach(async (to) => {
   if (!to.meta.requiresAuthentication) return true
 

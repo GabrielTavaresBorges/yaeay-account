@@ -27,6 +27,7 @@ public interface IIdentityAccountService
         CancellationToken cancellationToken = default);
 
     Task SignOutAsync(CancellationToken cancellationToken = default);
+
 }
 
 public sealed record IdentityOperation(bool Completed)
