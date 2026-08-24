@@ -4,14 +4,17 @@
   import { computed, reactive, ref, watch, nextTick } from 'vue'
   import {
     mdiAccountPlusOutline,
-    mdiInformationOutline,
+    mdiAccountOutline,
     mdiHelpCircleOutline,
     mdiShieldLockOutline,
     mdiCheckCircle,
     mdiCalendar,
     mdiEmailCheckOutline,
+    mdiEmailOutline,
+    mdiPhoneOutline,
     mdiInboxArrowDownOutline,
     mdiAlertCircleOutline,
+    mdiArrowLeft,
     mdiArrowRight
   } from '@mdi/js'
 
@@ -30,6 +33,7 @@
   import type { PhoneModel } from '@/models/phone-model'
   import { PasswordRequirements } from '@/components/feedback'
   import { countryItems } from '@/constants/country'
+  import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
 
 
   type VForm = { validate: () => Promise<{ valid: boolean }> }
@@ -97,6 +101,21 @@
     )
   })
 
+  const accessDataCompleted = computed(() =>
+    runRules(rules.email, form.email) === true
+    && runRules(rules.password, form.password) === true
+    && form.confirmPassword.length > 0
+    && form.confirmPassword === form.password,
+  )
+
+  const personalDataCompleted = computed(() =>
+    runRules(rules.fullName, form.fullName) === true
+    && runRules(rules.gender, form.gender) === true
+    && birthDateFieldRules.value.every(rule => rule() === true),
+  )
+
+  const contactCompleted = computed(() => hasAtLeastOneValidPhone())
+
   /* birth date picker */
   const birthMenu = ref(false)
 
@@ -138,12 +157,18 @@
     if (!p) return false
 
     const rawNumber = (p.number ?? '').replace(/\D/g, '')
+    const rawAreaCode = (p.areaCode ?? '').replace(/\D/g, '')
     const callingOk = /^\+\d{1,3}$/.test((p.callingCode ?? '').trim())
     const countryOk = /^[A-Z]{2}$/.test((p.country ?? '').trim().toUpperCase())
     const typeOk = p.phoneType === 'Mobile' || p.phoneType === 'Landline'
-    const numberOk = rawNumber.length > 0
+    const areaCodeOk = p.country === 'BR'
+      ? rawAreaCode.length === 2
+      : rawAreaCode.length > 0
+    const digitsRange = getPhoneDigitsRange(p.callingCode, p.country, p.phoneType)
+    const numberOk = rawNumber.length >= digitsRange.minDigits
+      && rawNumber.length <= digitsRange.maxDigits
 
-    return callingOk && countryOk && typeOk && numberOk
+    return callingOk && countryOk && typeOk && areaCodeOk && numberOk
   }
 
   function clearRegistrationForm(): void {
@@ -245,7 +270,7 @@
     />
 
     <v-container fluid class="user-create-container py-6 py-md-10">
-      <v-row class="user-create-row" justify="center" align="start">
+      <v-row class="user-create-row" justify="center" align="center">
         <v-col cols="12" class="user-create-column">
 
           <template v-if="accountCreated">
@@ -303,34 +328,22 @@
           </template>
 
           <template v-else>
-          <!-- ALERT -->
-          <v-alert class="privacy-alert"
-                   color="blue"
-                   variant="tonal"
-                   rounded="lg"
-                   border="start"
-                   :icon="mdiInformationOutline">
-          Suas informações são protegidas e não serão compartilhadas com terceiros sem sua autorização.
-          </v-alert>
-
           <!-- CARD -->
           <v-card class="shell" rounded="xl" elevation="14">
             <!-- HEADER -->
-            <div class="form-avatar">
-              <v-avatar size="96"
-                        class="form-avatar__circle">
-                <v-icon :icon="mdiAccountPlusOutline"
-                        size="52" />
-              </v-avatar>
-            </div>
-
             <div class="form-heading">
-              <h1 class="form-heading__title">
-                Crie sua conta
-              </h1>
+              <div class="form-heading__main">
+                <span class="form-heading__icon" aria-hidden="true">
+                  <v-icon :icon="mdiAccountPlusOutline" size="36" />
+                </span>
+
+                <h1 class="form-heading__title">
+                  Crie sua conta
+                </h1>
+              </div>
 
               <p class="form-heading__subtitle">
-                Informe seus dados para criar seu acesso ao YaeaY Account.
+                Informe seus dados básicos para criar seu acesso no Account.
               </p>
             </div>
 
@@ -341,7 +354,19 @@
                   <!-- DADOS DE ACESSO -->
                   <v-expansion-panel class="panel" value="accessData">
                     <v-expansion-panel-title class="section-title">
-                      Dados de acesso
+                      <span class="section-title__content">
+                        <span class="section-title__label">
+                          <span class="section-title__icon">
+                            <v-icon :icon="mdiEmailOutline" size="23" />
+                          </span>
+                          <span>Dados de acesso</span>
+                        </span>
+                        <v-icon v-if="accessDataCompleted"
+                                class="panel-completed-icon"
+                                :icon="mdiCheckCircle"
+                                size="24"
+                                aria-label="Dados de acesso preenchidos corretamente" />
+                      </span>
                     </v-expansion-panel-title>
 
                     <v-expansion-panel-text>
@@ -385,7 +410,19 @@
                   <!-- DADOS PESSOAIS -->
                   <v-expansion-panel class="panel" value="personalData">
                     <v-expansion-panel-title class="section-title">
-                      Dados pessoais
+                      <span class="section-title__content">
+                        <span class="section-title__label">
+                          <span class="section-title__icon">
+                            <v-icon :icon="mdiAccountOutline" size="23" />
+                          </span>
+                          <span>Dados pessoais</span>
+                        </span>
+                        <v-icon v-if="personalDataCompleted"
+                                class="panel-completed-icon"
+                                :icon="mdiCheckCircle"
+                                size="24"
+                                aria-label="Dados pessoais preenchidos corretamente" />
+                      </span>
                     </v-expansion-panel-title>
 
                     <v-expansion-panel-text>
@@ -435,7 +472,19 @@
                   <!-- CONTATO -->
                   <v-expansion-panel class="panel" value="contact">
                     <v-expansion-panel-title class="section-title">
-                      Dados de Contato
+                      <span class="section-title__content">
+                        <span class="section-title__label">
+                          <span class="section-title__icon">
+                            <v-icon :icon="mdiPhoneOutline" size="23" />
+                          </span>
+                          <span>Dados de contato</span>
+                        </span>
+                        <v-icon v-if="contactCompleted"
+                                class="panel-completed-icon"
+                                :icon="mdiCheckCircle"
+                                size="24"
+                                aria-label="Dados de contato preenchidos corretamente" />
+                      </span>
                     </v-expansion-panel-title>
                     <v-expansion-panel-text>
                       <UserPhonesField v-model="form.phones"
@@ -446,14 +495,21 @@
                 </v-expansion-panels>
 
                 <!-- BOTÃO CRIAR CONTA -->
-                <v-btn block
-                       size="large"
+                <v-btn size="default"
                        rounded="pill"
-                       class="create-account-button mt-2"
+                       class="create-account-button"
                        type="submit"
                        :loading="loading"
                        :disabled="loading">
                   Criar conta
+                </v-btn>
+
+                <v-btn variant="text"
+                       class="create-account-back"
+                       :prepend-icon="mdiArrowLeft"
+                       :to="{ name: 'login' }"
+                       :ripple="false">
+                  Voltar
                 </v-btn>
 
                 <!-- SNACKBAR -->
@@ -612,25 +668,44 @@
   }
 
   .form-heading {
-    margin: -12px auto 8px;
-    padding-inline: 24px;
+    margin: 0 auto;
+    padding: clamp(32px, 5vw, 48px) 24px 14px;
     text-align: center;
   }
+
   .form-heading__title {
     margin: 0;
     color: #183729;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.75rem;
+    font-size: clamp(2.2rem, 5vw, 3rem);
     font-weight: 800;
-    letter-spacing: -0.03em;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+  }
+
+  .form-heading__main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  .form-heading__icon {
+    width: 68px;
+    height: 68px;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    color: #218354;
+    background: #edf6f1;
+    border-radius: 19px;
   }
 
   .form-heading__subtitle {
-    max-width: 460px;
-    margin: 10px auto 0;
-    color: #3e564f;
+    max-width: 470px;
+    margin: 14px auto 0;
+    color: #53675e;
     font-size: 0.98rem;
-    font-weight: 500;
     line-height: 1.55;
   }
 
@@ -643,6 +718,10 @@
   }
 
   .create-account-button {
+    width: min(100%, 280px);
+    min-height: 44px;
+    display: flex;
+    margin: 28px auto 0;
     background-color: #183729 !important;
     color: #ffffff !important;
     font-weight: 700;
@@ -656,6 +735,16 @@
     outline-offset: 3px;
   }
 
+  .create-account-back {
+    display: flex;
+    width: max-content;
+    margin: 18px auto 0;
+    color: #5f6a65;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
 
   /* ===== PAGE ===== */
   .page {
@@ -666,12 +755,16 @@
   }
 
   .user-create-container {
+    flex: 1;
     width: 100%;
+    display: flex;
+    align-items: safe center;
   }
 
   .user-create-row {
     width: 100%;
     margin-inline: 0;
+    align-items: safe center;
   }
 
   .user-create-column {
@@ -724,29 +817,12 @@
 
   /* ===== CARD ===== */
   .shell {
+    width: min(100%, 700px);
+    margin-inline: auto;
     overflow: hidden;
     border: 1px solid rgba(31, 27, 22, 0.08);
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
-  }
-
-  .form-avatar {
-    display: flex;
-    justify-content: center;
-    padding-top: 36px;
-    margin-bottom: 32px;
-  }
-
-  .form-avatar__circle {
-    background: #e8e8e8;
-    color: #3e564f;
-    border: 4px solid #f9f9f9;
-    box-shadow: 0 4px 12px rgba(24, 55, 41, 0.08);
-  }
-
-  /* ===== ALERT ===== */
-  .privacy-alert {
-    margin-bottom: 48px;
   }
 
   /* ===== PANELS ===== */
@@ -768,6 +844,38 @@
     font-size: 1.125rem;
     font-weight: 650;
     letter-spacing: 0.15px;
+  }
+
+  .section-title__content {
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .section-title__label {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .section-title__icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: #218354;
+    background: #edf6f1;
+    border-radius: 13px;
+  }
+
+  .panel-completed-icon {
+    flex: 0 0 auto;
+    color: #218354;
   }
 
   /* ===== BUTTONS ===== */

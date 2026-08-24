@@ -169,9 +169,10 @@
   .public-info-heading h1 {
     margin: 0;
     color: #173f32;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(2.3rem, 6vw, 3.7rem);
-    line-height: 1.08;
+    font-family: inherit;
+    font-size: clamp(2rem, 4vw, 2.65rem);
+    font-weight: 800;
+    line-height: 1.1;
     letter-spacing: -0.04em;
   }
 

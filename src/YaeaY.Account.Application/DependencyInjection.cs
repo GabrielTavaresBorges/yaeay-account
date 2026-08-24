@@ -21,6 +21,7 @@ public static class DependencyInjection
 
         services.AddTelephoneNumbers();
         services.AddSingleton<EmailConfirmationMessageComposer>();
+        services.AddSingleton<PasswordRecoveryMessageComposer>();
         services.AddSingleton<EmailAddressMasker>();
 
         return services;

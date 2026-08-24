@@ -6,5 +6,12 @@ export const loginRoutes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: () => import('@/pages/LoginPage.vue'),
+    meta: { title: 'YaeaY Account' },
+  },
+  {
+    path: '/forgot-password',
+    name: 'password-recovery',
+    component: () => import('@/pages/PasswordRecoveryPage.vue'),
+    meta: { title: 'Redefinir a senha' },
   },
 ]

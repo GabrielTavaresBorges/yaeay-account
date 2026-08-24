@@ -16,11 +16,16 @@ using YaeaY.Account.Domain.Policies.EmailConfirmations;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Repositories.Users;
+using YaeaY.Account.Domain.Repositories.PasswordRecoveryChallenges;
+using YaeaY.Account.Domain.Repositories.PasswordRecoveryTemplates;
+using YaeaY.Account.Domain.Policies.PasswordRecoveries;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Data.Persistence;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Infrastructure.Data.Repositories.Users;
+using YaeaY.Account.Infrastructure.Data.Repositories.PasswordRecoveryChallenges;
+using YaeaY.Account.Infrastructure.Data.Repositories.PasswordRecoveryTemplates;
 using YaeaY.Account.Infrastructure.Events.Dispatchers;
 using YaeaY.Account.Infrastructure.Events.Publishers;
 using YaeaY.Account.Infrastructure.Identity.Policies;
@@ -59,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
         services.AddScoped<IEmailConfirmationTemplateRepository, EmailConfirmationTemplateRepository>();
+        services.AddScoped<IPasswordRecoveryChallengeRepository, PasswordRecoveryChallengeRepository>();
+        services.AddScoped<IPasswordRecoveryTemplateRepository, PasswordRecoveryTemplateRepository>();
 
         // Security and identity
         services.AddOptions<AccountSessionOptions>()
@@ -98,6 +105,7 @@ public static class DependencyInjection
             })
             .AddRoles<ApplicationRole>()
             .AddSignInManager()
+            .AddDefaultTokenProviders()
             .AddEntityFrameworkStores<AppDbContext>();
 
         services.AddAuthentication(options =>
@@ -136,14 +144,28 @@ public static class DependencyInjection
                 sessionOptions.SecurityStampValidationIntervalInMinutes));
 
         services.AddScoped<IIdentityAccountService, IdentityAccountService>();
+        services.AddScoped<IIdentityPasswordService>(serviceProvider =>
+            (IdentityAccountService)serviceProvider.GetRequiredService<IIdentityAccountService>());
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton<
             IEmailConfirmationTokenExpirationPolicy,
             ConfigurationEmailConfirmationTokenExpirationPolicy>();
 
+        services.AddOptions<PasswordRecoveryOptions>()
+            .Bind(configuration.GetRequiredSection(PasswordRecoveryOptions.SectionName))
+            .Validate(options => options.CodeLifetimeInMinutes is > 0 and <= 30, "PasswordRecovery:CodeLifetimeInMinutes must be between 1 and 30.")
+            .Validate(options => options.ResetAuthorizationLifetimeInMinutes is > 0 and <= 30, "PasswordRecovery:ResetAuthorizationLifetimeInMinutes must be between 1 and 30.")
+            .Validate(options => options.ResendIntervalInSeconds is >= 30 and <= 3600, "PasswordRecovery:ResendIntervalInSeconds must be between 30 and 3600.")
+            .Validate(options => options.RequestWindowInMinutes is > 0 and <= 1440, "PasswordRecovery:RequestWindowInMinutes must be between 1 and 1440.")
+            .Validate(options => options.MaximumFailedAttempts is > 0 and <= 10, "PasswordRecovery:MaximumFailedAttempts must be between 1 and 10.")
+            .Validate(options => options.MaximumRequestsPerWindow is > 0 and <= 20, "PasswordRecovery:MaximumRequestsPerWindow must be between 1 and 20.")
+            .ValidateOnStart();
+        services.AddSingleton<IPasswordRecoveryPolicy, ConfigurationPasswordRecoveryPolicy>();
+
         // External service adapters
         services.AddSingleton<ITelephoneNumberService, LibPhoneNumberService>();
         services.AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
+        services.AddSingleton<IPasswordRecoveryCodeService, PasswordRecoveryCodeService>();
 
         // Email delivery
         services.AddOptions<EmailConfirmationLinkOptions>()

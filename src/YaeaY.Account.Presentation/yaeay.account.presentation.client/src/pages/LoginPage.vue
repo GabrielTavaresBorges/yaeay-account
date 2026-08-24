@@ -3,18 +3,20 @@
   import { reactive, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import {
-    mdiEye,
-    mdiEyeOff,
     mdiLogin,
     mdiArrowRight,
     mdiHelpCircleOutline,
   } from '@mdi/js'
   import AppTopbar from '@/components/layout/AppTopbar.vue'
   import AppFooter from '@/components/layout/AppFooter.vue'
+  import { EmailField, PasswordField } from '@/components/inputs'
+  import { rules } from '@/validators'
   import { login } from '@/services/authentication-service'
   import type { ApiError } from '@/services/http/api-error'
 
-  const showPassword = ref<boolean>(false)
+  type VForm = { validate: () => Promise<{ valid: boolean }> }
+
+  const formRef = ref<VForm | null>(null)
   const route = useRoute()
   const router = useRouter()
   const rememberMe = ref<boolean>(false)
@@ -22,10 +24,6 @@
   const password = ref('')
   const loading = ref(false)
   const feedback = reactive({ show: false, text: '', success: false })
-
-  function required(value: string): true | string {
-    return value.trim().length > 0 || 'Campo obrigatório.'
-  }
 
   function loginErrorMessage(error: ApiError): string {
     switch (error.identifier) {
@@ -39,7 +37,8 @@
   }
 
   async function submitLogin(): Promise<void> {
-    if (!email.value.trim() || !password.value) return
+    const validation = await formRef.value?.validate()
+    if (!validation?.valid) return
 
     loading.value = true
     feedback.show = false
@@ -122,40 +121,20 @@
                     Acessar
                   </h2>
 
-                  <v-form class="form-panel__form" @submit.prevent="submitLogin">
-                    <div class="field-block">
-                      <label class="field-block__label">
-                        Email
-                      </label>
+                  <v-form ref="formRef" class="form-panel__form" @submit.prevent="submitLogin">
+                    <EmailField v-model="email"
+                                :rules="rules.email"
+                                label="Email"
+                                placeholder="nome@exemplo.com"
+                                autocomplete="username"
+                                density="comfortable" />
 
-                      <v-text-field v-model="email"
-                                    placeholder="nome@exemplo.com"
-                                    type="email"
-                                    autocomplete="username"
-                                    :rules="[required]"
-                                    variant="plain"
-                                    density="comfortable"
-                                    hide-details
-                                    class="login-input" />
-                    </div>
-
-                    <div class="field-block">
-                      <label class="field-block__label">
-                        Senha
-                      </label>
-
-                      <v-text-field v-model="password"
-                                    :type="showPassword ? 'text' : 'password'"
-                                    placeholder="••••••••"
-                                    autocomplete="current-password"
-                                    :rules="[required]"
-                                    variant="plain"
-                                    density="comfortable"
-                                    hide-details
-                                    class="login-input"
-                                    :append-inner-icon="showPassword ? mdiEyeOff : mdiEye"
-                                    @click:append-inner="showPassword = !showPassword" />
-                    </div>
+                    <PasswordField v-model="password"
+                                   :rules="rules.password"
+                                   label="Senha"
+                                   placeholder="••••••••"
+                                   autocomplete="current-password"
+                                   density="comfortable" />
 
                     <div class="form-panel__options">
                       <v-checkbox v-model="rememberMe"
@@ -270,7 +249,7 @@
   */
   .login-column {
     width: 100%;
-    max-width: 1040px;
+    max-width: 1120px;
     margin-inline: auto;
   }
 
@@ -284,7 +263,7 @@
     width: 100%;
     display: grid;
     grid-template-columns: minmax(320px, 380px) minmax(420px, 520px);
-    gap: 64px;
+    gap: 96px;
     align-items: center;
   }
 
@@ -432,52 +411,6 @@
 
 
   /* =========================================================
-     FORM FIELDS
-     Labels e inputs do formulário de login
-  ========================================================= */
-
-  .field-block {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .field-block__label {
-    padding-left: 4px;
-    font-size: 0.74rem;
-    font-weight: 800;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #183729;
-  }
-
-  :deep(.login-input .v-field) {
-    background: #f4f4f4;
-    border-radius: 6px;
-    box-shadow: none;
-    border: none;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  :deep(.login-input .v-field__input) {
-    min-height: 56px;
-    color: #183729;
-    padding-left: 4px;
-    padding-right: 4px;
-  }
-
-  :deep(.login-input input::placeholder) {
-    color: rgba(24, 55, 41, 0.45);
-    opacity: 1;
-  }
-
-  :deep(.login-input .v-field__outline) {
-    display: none;
-  }
-
-
-  /* =========================================================
      FORM OPTIONS
      Lembrar-me + Esqueci minha senha
   ========================================================= */
@@ -613,7 +546,7 @@
 
     .login-grid {
       grid-template-columns: minmax(300px, 360px) minmax(400px, 500px);
-      gap: 40px;
+      gap: 56px;
     }
 
     .hero-panel__content {

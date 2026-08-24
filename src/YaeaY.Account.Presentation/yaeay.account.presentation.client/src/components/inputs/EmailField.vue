@@ -61,28 +61,28 @@
 </template>
 
 <style scoped>
-  :deep(.email-field .v-field) {
+  :deep(.v-field) {
     background-color: #e2e2e2;
   }
 
-  :deep(.email-field .v-field__overlay) {
+  :deep(.v-field__overlay) {
     background-color: transparent;
   }
 
-  :deep(.email-field .v-field__input) {
+  :deep(.v-field__input) {
     color: #183729;
   }
 
-  :deep(.email-field .v-field__prepend-inner),
-  :deep(.email-field .v-field__append-inner),
-  :deep(.email-field .v-field__clearable) {
+  :deep(.v-field__prepend-inner),
+  :deep(.v-field__append-inner),
+  :deep(.v-field__clearable) {
     color: #183729;
   }
 
-  :deep(.email-field input:-webkit-autofill),
-  :deep(.email-field input:-webkit-autofill:hover),
-  :deep(.email-field input:-webkit-autofill:focus),
-  :deep(.email-field input:-webkit-autofill:active) {
+  :deep(input:-webkit-autofill),
+  :deep(input:-webkit-autofill:hover),
+  :deep(input:-webkit-autofill:focus),
+  :deep(input:-webkit-autofill:active) {
     -webkit-box-shadow: 0 0 0 1000px #e2e2e2 inset;
     -webkit-text-fill-color: #183729;
     caret-color: #183729;

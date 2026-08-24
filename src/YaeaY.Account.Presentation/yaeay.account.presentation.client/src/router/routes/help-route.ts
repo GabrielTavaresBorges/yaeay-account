@@ -5,5 +5,6 @@ export const helpRoutes: RouteRecordRaw[] = [
     path: '/help',
     name: 'help',
     component: () => import('@/pages/HelpPage.vue'),
+    meta: { title: 'Ajuda' },
   },
 ]

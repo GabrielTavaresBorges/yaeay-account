@@ -40,4 +40,10 @@ public static class IdentityErrors
         Message: "The authenticated session could not be created.",
         Category: ErrorCategory.Unexpected,
         Rule: ErrorRule.Unexpected);
+
+    public static readonly Error PasswordResetFailed = new(
+        Code: "identity.password.reset-failed",
+        Message: "The account password could not be reset.",
+        Category: ErrorCategory.Unexpected,
+        Rule: ErrorRule.Unexpected);
 }
