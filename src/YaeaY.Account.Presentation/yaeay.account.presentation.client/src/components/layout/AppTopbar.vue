@@ -1,10 +1,10 @@
 <!-- src/components/layout/AppTopbar.vue -->
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, ref } from 'vue'
   import type { RouteLocationRaw } from 'vue-router'
   import { useDisplay } from 'vuetify'
-  import { getRuntimeConfiguration } from '@/services/runtime-configuration-service'
+  import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
 
   const props = withDefaults(
     defineProps<{
@@ -27,14 +27,6 @@
     return width.value <= 600 ? 112 : 76
   })
 
-  onMounted(async () => {
-    try {
-      const configuration = await getRuntimeConfiguration()
-      showTestModeBanner.value = configuration.showTestModeBanner
-    } catch {
-      showTestModeBanner.value = false
-    }
-  })
 </script>
 
 <template>
@@ -48,12 +40,10 @@
         <span class="app-topbar__brand-light">Account</span>
       </div>
 
-      <v-alert v-if="showTestModeBanner"
-               class="app-topbar__environment-banner"
-               density="compact"
-               title="Ambiente STAGE"
-               text="Modo para testes e homologação"
-               type="warning" />
+      <StageEnvironmentBanner
+        class="app-topbar__environment-banner"
+        @visibility-change="showTestModeBanner = $event"
+      />
 
       <v-btn v-if="props.showAction"
              variant="text"
@@ -91,16 +81,6 @@
     justify-self: center;
     width: max-content;
     max-width: 100%;
-  }
-
-  :deep(.app-topbar__environment-banner .v-alert-title) {
-    font-size: 0.8rem;
-    font-weight: 800;
-  }
-
-  :deep(.app-topbar__environment-banner .v-alert__content) {
-    font-size: 0.72rem;
-    line-height: 1.2;
   }
 
   .app-topbar--test-mode .app-topbar__content {
