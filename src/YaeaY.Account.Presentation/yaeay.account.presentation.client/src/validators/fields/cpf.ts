@@ -2,8 +2,17 @@
 
 export type Rule = (value: unknown) => true | string
 
-function digitsOnly(value: unknown): string {
+export function digitsOnly(value: unknown): string {
   return String(value ?? '').replace(/\D/g, '')
+}
+
+export function formatCpf(value: unknown): string {
+  const cpf = digitsOnly(value).slice(0, 11)
+
+  return cpf
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
 }
 
 function isAllSameDigits(s: string): boolean {

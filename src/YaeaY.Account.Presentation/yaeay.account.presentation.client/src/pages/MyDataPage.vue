@@ -1,29 +1,42 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import {
   mdiAccountCircleOutline,
   mdiAccountOutline,
+  mdiArrowLeft,
   mdiBellOutline,
   mdiCalendarMonthOutline,
   mdiCardAccountDetailsOutline,
   mdiCheck,
   mdiChevronDown,
+  mdiChevronLeft,
+  mdiChevronRight,
+  mdiCloudUploadOutline,
   mdiCogOutline,
+  mdiDeleteOutline,
+  mdiDeleteSweepOutline,
   mdiEmailOutline,
+  mdiEyeOffOutline,
+  mdiEyeOutline,
   mdiFileDocumentOutline,
   mdiHomeVariant,
+  mdiImageOutline,
   mdiLogoutVariant,
   mdiMapMarkerOutline,
   mdiMenu,
   mdiMenuOpen,
   mdiPhoneOutline,
+  mdiPencilOutline,
+  mdiPlus,
   mdiShieldCheckOutline,
   mdiViewGridOutline,
 } from '@mdi/js'
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
+import { CpfField } from '@/components/inputs'
 import { useSidebarState } from '@/composables/use-sidebar-state'
+import { formatCpf, isValidCpf } from '@/validators/fields/cpf'
 import {
   getCachedCurrentSession,
   getCurrentSession,
@@ -32,6 +45,38 @@ import {
 } from '@/services/authentication-service'
 
 type ProfileSection = 'basic' | 'contact' | 'documents' | 'address'
+type DocumentType = 'cpf' | 'rg' | 'driverLicense' | 'passport' | 'voterRegistration' | 'workCard'
+
+interface DocumentImageDraft {
+  id: string
+  file: File
+  previewUrl: string
+}
+
+interface UserDocumentDraft {
+  id: string
+  type: DocumentType
+  number: string
+  images: DocumentImageDraft[]
+}
+
+const MAX_DOCUMENT_IMAGES = 5
+const MAX_DOCUMENT_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+const ACCEPTED_DOCUMENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+const documentDefinitions: Array<{
+  value: DocumentType
+  title: string
+  numberLabel: string
+  placeholder: string
+}> = [
+  { value: 'cpf', title: 'CPF', numberLabel: 'Número do CPF', placeholder: '000.000.000-00' },
+  { value: 'rg', title: 'RG', numberLabel: 'Número do RG', placeholder: 'Informe o número do RG' },
+  { value: 'driverLicense', title: 'Carteira de Habilitação', numberLabel: 'Número de registro', placeholder: 'Informe o número da CNH' },
+  { value: 'passport', title: 'Passaporte', numberLabel: 'Número do passaporte', placeholder: 'Informe o número do passaporte' },
+  { value: 'voterRegistration', title: 'Título de Eleitor', numberLabel: 'Número do título', placeholder: 'Informe o número do título' },
+  { value: 'workCard', title: 'Carteira de Trabalho', numberLabel: 'Número do documento', placeholder: 'Informe o número da carteira' },
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -45,6 +90,12 @@ const session = ref<CurrentSessionResponse | null>(getCachedCurrentSession())
 const isLoggingOut = ref(false)
 const showLogoutError = ref(false)
 const showLayoutNotice = ref(false)
+const documentImageInput = ref<HTMLInputElement | null>(null)
+const replacementImageInput = ref<HTMLInputElement | null>(null)
+const documentUploadError = ref('')
+const documentFormError = ref('')
+const imageViewerDocumentId = ref<string | null>(null)
+const imageViewerIndex = ref(0)
 
 const profile = reactive({
   fullName: session.value?.fullName ?? '',
@@ -53,8 +104,6 @@ const profile = reactive({
   socialName: '',
   emailAddress: '',
   phoneNumber: '',
-  cpf: '',
-  rg: '',
   postalCode: '',
   street: '',
   number: '',
@@ -62,6 +111,36 @@ const profile = reactive({
   district: '',
   city: '',
   state: '',
+})
+
+const documentForm = reactive<Pick<UserDocumentDraft, 'type' | 'number'>>({
+  type: 'cpf',
+  number: '',
+})
+
+const registeredDocuments = ref<UserDocumentDraft[]>([])
+const documentNumberVisibility = reactive<Record<string, boolean>>({})
+const documentVisibilityTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+const availableDocumentDefinitions = computed(() =>
+  documentDefinitions.filter((definition) =>
+    !registeredDocuments.value.some((document) => document.type === definition.value)))
+
+const selectedDocumentDefinition = computed(() =>
+  documentDefinitions.find((document) => document.value === documentForm.type)
+    ?? documentDefinitions[0]!)
+
+const imageViewerDocument = computed(() =>
+  registeredDocuments.value.find((document) => document.id === imageViewerDocumentId.value) ?? null)
+
+const imageViewerImage = computed(() =>
+  imageViewerDocument.value?.images[imageViewerIndex.value] ?? null)
+
+const isImageViewerOpen = computed({
+  get: () => imageViewerDocument.value !== null,
+  set: (value: boolean) => {
+    if (!value) closeImageViewer()
+  },
 })
 
 const sectionDefinitions = [
@@ -81,7 +160,7 @@ const sectionDefinitions = [
     id: 'documents' as const,
     label: 'Documentos',
     icon: mdiFileDocumentOutline,
-    fields: ['cpf', 'rg'] as const,
+    fields: [] as const,
   },
   {
     id: 'address' as const,
@@ -99,14 +178,18 @@ const activeSection = computed<ProfileSection>(() => {
     : 'basic'
 })
 
-function completionFor(fields: readonly (keyof typeof profile)[]): number {
+function completionFor(fields: readonly (keyof typeof profile)[], sectionId: ProfileSection): number {
+  if (sectionId === 'documents') {
+    return registeredDocuments.value.length > 0 ? 100 : 0
+  }
+
   const completed = fields.filter((field) => profile[field].trim().length > 0).length
   return Math.round((completed / fields.length) * 100)
 }
 
 const sections = computed(() => sectionDefinitions.map((section) => ({
   ...section,
-  completion: completionFor(section.fields),
+  completion: completionFor(section.fields, section.id),
   to: { name: 'my-data-section', params: { section: section.id } },
 })))
 
@@ -156,6 +239,236 @@ async function handleLogout(): Promise<void> {
 function showPendingIntegration(): void {
   showLayoutNotice.value = true
 }
+
+function openDocumentImagePicker(): void {
+  documentUploadError.value = ''
+  documentImageInput.value?.click()
+}
+
+function addDocumentImages(files: File[], images: DocumentImageDraft[]): void {
+  documentUploadError.value = ''
+
+  for (const file of files) {
+    if (images.length >= MAX_DOCUMENT_IMAGES) {
+      documentUploadError.value = `Você pode adicionar no máximo ${MAX_DOCUMENT_IMAGES} imagens por documento.`
+      break
+    }
+
+    if (!ACCEPTED_DOCUMENT_IMAGE_TYPES.has(file.type)) {
+      documentUploadError.value = 'Formato inválido. Selecione apenas imagens JPEG, PNG ou WebP.'
+      continue
+    }
+
+    if (file.size > MAX_DOCUMENT_IMAGE_SIZE_BYTES) {
+      documentUploadError.value = `A imagem ${file.name} ultrapassa o limite de 5 MB.`
+      continue
+    }
+
+    const duplicate = images.some((image) =>
+      image.file.name === file.name
+      && image.file.size === file.size
+      && image.file.lastModified === file.lastModified)
+
+    if (duplicate) {
+      documentUploadError.value = `A imagem ${file.name} já foi adicionada.`
+      continue
+    }
+
+    images.push({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+    })
+  }
+}
+
+function handleDocumentImageSelection(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const document = imageViewerDocument.value
+  if (document) addDocumentImages(Array.from(input.files ?? []), document.images)
+  input.value = ''
+}
+
+function handleDocumentImageDrop(event: DragEvent): void {
+  const document = imageViewerDocument.value
+  if (document) addDocumentImages(Array.from(event.dataTransfer?.files ?? []), document.images)
+}
+
+function addDocument(): void {
+  documentFormError.value = ''
+
+  if (!documentForm.number.trim()) {
+    documentFormError.value = 'Informe o número do documento.'
+    return
+  }
+
+  if (documentForm.type === 'cpf' && !isValidCpf(documentForm.number)) {
+    documentFormError.value = 'Informe um CPF válido.'
+    return
+  }
+
+  if (registeredDocuments.value.some((document) => document.type === documentForm.type)) {
+    documentFormError.value = 'Este tipo de documento já foi adicionado.'
+    return
+  }
+
+  const documentId = crypto.randomUUID()
+  registeredDocuments.value.push({
+    id: documentId,
+    type: documentForm.type,
+    number: documentForm.number.trim(),
+    images: [],
+  })
+  documentNumberVisibility[documentId] = false
+
+  const nextDocumentType = documentDefinitions.find((definition) =>
+    !registeredDocuments.value.some((document) => document.type === definition.value))
+  if (nextDocumentType) documentForm.type = nextDocumentType.value
+  documentForm.number = ''
+  documentUploadError.value = ''
+}
+
+function documentTitle(type: DocumentType): string {
+  return documentDefinitions.find((document) => document.value === type)?.title ?? type
+}
+
+function displayDocumentNumber(document: UserDocumentDraft): string {
+  return document.type === 'cpf' ? formatCpf(document.number) : document.number
+}
+
+function maskDocumentNumber(document: UserDocumentDraft): string {
+  const formattedNumber = displayDocumentNumber(document)
+  const visibleCharacterCount = 2
+  const alphanumericCount = [...formattedNumber].filter((character) => /[A-Za-z0-9]/.test(character)).length
+  let charactersToMask = Math.max(0, alphanumericCount - visibleCharacterCount)
+
+  return [...formattedNumber].map((character) => {
+    if (!/[A-Za-z0-9]/.test(character) || charactersToMask === 0) return character
+    charactersToMask -= 1
+    return '*'
+  }).join('')
+}
+
+function visibleDocumentNumber(document: UserDocumentDraft): string {
+  return documentNumberVisibility[document.id]
+    ? displayDocumentNumber(document)
+    : maskDocumentNumber(document)
+}
+
+function hideDocumentNumber(documentId: string): void {
+  documentNumberVisibility[documentId] = false
+  const timer = documentVisibilityTimers.get(documentId)
+  if (timer) clearTimeout(timer)
+  documentVisibilityTimers.delete(documentId)
+}
+
+function toggleDocumentNumberVisibility(documentId: string): void {
+  if (documentNumberVisibility[documentId]) {
+    hideDocumentNumber(documentId)
+    return
+  }
+
+  documentNumberVisibility[documentId] = true
+  const currentTimer = documentVisibilityTimers.get(documentId)
+  if (currentTimer) clearTimeout(currentTimer)
+
+  const timer = setTimeout(() => hideDocumentNumber(documentId), 15000)
+  documentVisibilityTimers.set(documentId, timer)
+}
+
+function openImageViewer(documentId: string, imageIndex = 0): void {
+  const document = registeredDocuments.value.find((item) => item.id === documentId)
+  if (!document) return
+
+  imageViewerDocumentId.value = documentId
+  imageViewerIndex.value = document.images.length
+    ? Math.min(Math.max(imageIndex, 0), document.images.length - 1)
+    : 0
+  documentUploadError.value = ''
+}
+
+function closeImageViewer(): void {
+  imageViewerDocumentId.value = null
+  imageViewerIndex.value = 0
+}
+
+function showPreviousDocumentImage(): void {
+  const imageCount = imageViewerDocument.value?.images.length ?? 0
+  if (imageCount < 2) return
+  imageViewerIndex.value = (imageViewerIndex.value - 1 + imageCount) % imageCount
+}
+
+function showNextDocumentImage(): void {
+  const imageCount = imageViewerDocument.value?.images.length ?? 0
+  if (imageCount < 2) return
+  imageViewerIndex.value = (imageViewerIndex.value + 1) % imageCount
+}
+
+function removeViewedDocumentImage(): void {
+  const document = imageViewerDocument.value
+  const image = imageViewerImage.value
+  if (!document || !image) return
+
+  const imageIndex = document.images.findIndex((item) => item.id === image.id)
+  if (imageIndex < 0) return
+
+  document.images.splice(imageIndex, 1)
+  URL.revokeObjectURL(image.previewUrl)
+
+  if (document.images.length === 0) {
+    imageViewerIndex.value = 0
+    return
+  }
+
+  imageViewerIndex.value = Math.min(imageViewerIndex.value, document.images.length - 1)
+}
+
+function removeAllDocumentImages(): void {
+  const document = imageViewerDocument.value
+  if (!document) return
+
+  document.images.forEach((image) => URL.revokeObjectURL(image.previewUrl))
+  document.images.splice(0)
+  imageViewerIndex.value = 0
+  documentUploadError.value = ''
+}
+
+function openReplacementImagePicker(): void {
+  documentUploadError.value = ''
+  replacementImageInput.value?.click()
+}
+
+function handleReplacementImageSelection(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const document = imageViewerDocument.value
+  const currentImage = imageViewerImage.value
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!document || !currentImage || !file) return
+
+  const replacementImages: DocumentImageDraft[] = []
+  addDocumentImages([file], replacementImages)
+  const replacementImage = replacementImages[0]
+  if (!replacementImage) return
+
+  const currentIndex = document.images.findIndex((image) => image.id === currentImage.id)
+  if (currentIndex < 0) {
+    URL.revokeObjectURL(replacementImage.previewUrl)
+    return
+  }
+
+  document.images.splice(currentIndex, 1, replacementImage)
+  URL.revokeObjectURL(currentImage.previewUrl)
+}
+
+onBeforeUnmount(() => {
+  documentVisibilityTimers.forEach((timer) => clearTimeout(timer))
+  documentVisibilityTimers.clear()
+  registeredDocuments.value.forEach((document) => {
+    document.images.forEach((image) => URL.revokeObjectURL(image.previewUrl))
+  })
+})
 </script>
 
 <template>
@@ -282,6 +595,16 @@ function showPendingIntegration(): void {
         </header>
 
         <div class="profile-page">
+          <v-btn
+            class="profile-back"
+            variant="text"
+            :prepend-icon="mdiArrowLeft"
+            :to="{ name: 'home' }"
+            :ripple="false"
+          >
+            Voltar
+          </v-btn>
+
           <header class="profile-heading">
             <div class="profile-heading__title">
               <span class="profile-heading__icon">
@@ -303,9 +626,13 @@ function showPendingIntegration(): void {
               >
                 <strong>{{ overallCompletion }}%</strong>
               </v-progress-circular>
-              <div>
-                <h2>Cadastro {{ overallCompletion }}% completo</h2>
+              <div class="completion-summary__content">
+                <h2>Cadastro completo</h2>
                 <p>Complete seus dados para aproveitar todos os recursos da sua conta.</p>
+                <div class="completion-summary__privacy">
+                  <v-icon :icon="mdiShieldCheckOutline" size="19" />
+                  <span>Seus dados são protegidos e usados apenas para manter sua conta atualizada.</span>
+                </div>
               </div>
               <v-btn variant="text" class="completion-summary__action" @click="showPendingIntegration">
                 Ver pendências
@@ -412,24 +739,135 @@ function showPendingIntegration(): void {
               </template>
 
               <template v-else-if="activeSection === 'documents'">
-                <h2>Documentos</h2>
-                <div class="form-grid">
-                  <v-text-field
-                    v-model="profile.cpf"
-                    label="CPF"
-                    placeholder="000.000.000-00"
-                    :prepend-inner-icon="mdiFileDocumentOutline"
-                    variant="outlined"
-                    hide-details
-                  />
-                  <v-text-field
-                    v-model="profile.rg"
-                    label="RG"
-                    :prepend-inner-icon="mdiFileDocumentOutline"
-                    variant="outlined"
-                    hide-details
-                  />
+                <div class="documents-heading">
+                  <div>
+                    <h2>Documentos</h2>
+                    <p>Adicione cada documento com seu tipo, número e imagens.</p>
+                  </div>
+                  <span class="documents-heading__count">
+                    {{ registeredDocuments.length }} documento(s)
+                  </span>
                 </div>
+
+                <div class="document-fields">
+                  <v-select
+                    v-model="documentForm.type"
+                    class="document-fields__type"
+                    label="Tipo de documento"
+                    :items="availableDocumentDefinitions"
+                    item-title="title"
+                    item-value="value"
+                    :prepend-inner-icon="mdiFileDocumentOutline"
+                    variant="outlined"
+                    hide-details
+                    :disabled="availableDocumentDefinitions.length === 0"
+                    @update:model-value="documentFormError = ''"
+                  />
+                  <CpfField
+                    v-if="documentForm.type === 'cpf'"
+                    v-model="documentForm.number"
+                    label="Número do CPF"
+                    :prepend-inner-icon="mdiCardAccountDetailsOutline"
+                    variant="outlined"
+                    hide-details="auto"
+                    validate-on="blur"
+                    :disabled="availableDocumentDefinitions.length === 0"
+                    @update:model-value="documentFormError = ''"
+                  />
+                  <v-text-field
+                    v-else
+                    v-model="documentForm.number"
+                    :label="selectedDocumentDefinition.numberLabel"
+                    :placeholder="selectedDocumentDefinition.placeholder"
+                    :prepend-inner-icon="mdiCardAccountDetailsOutline"
+                    variant="outlined"
+                    hide-details
+                    :disabled="availableDocumentDefinitions.length === 0"
+                    @update:model-value="documentFormError = ''"
+                  />
+                  <v-btn
+                    class="document-add-inline"
+                    :prepend-icon="mdiPlus"
+                    color="#17543f"
+                    variant="flat"
+                    rounded="pill"
+                    :disabled="availableDocumentDefinitions.length === 0"
+                    @click="addDocument"
+                  >
+                    Adicionar documento
+                  </v-btn>
+                </div>
+
+                <p v-if="documentFormError" class="document-form-error" role="alert">
+                  {{ documentFormError }}
+                </p>
+
+                <section v-if="registeredDocuments.length" class="registered-documents" aria-labelledby="registered-documents-title">
+                  <div class="registered-documents__heading">
+                    <h3 id="registered-documents-title">Documentos adicionados</h3>
+                    <span>{{ registeredDocuments.length }}</span>
+                  </div>
+
+                  <article
+                    v-for="document in registeredDocuments"
+                    :key="document.id"
+                    class="registered-document-card"
+                  >
+                    <span class="registered-document-card__icon">
+                      <v-icon :icon="mdiFileDocumentOutline" size="25" />
+                    </span>
+                    <div class="registered-document-card__identity">
+                      <strong>{{ documentTitle(document.type) }}</strong>
+                      <div class="registered-document-card__number">
+                        <span>{{ visibleDocumentNumber(document) }}</span>
+                        <v-tooltip
+                          :text="documentNumberVisibility[document.id] ? 'Ocultar número do documento' : 'Mostrar número do documento'"
+                          location="top"
+                        >
+                          <template #activator="{ props: tooltipProps }">
+                            <v-btn
+                              v-bind="tooltipProps"
+                              :icon="documentNumberVisibility[document.id] ? mdiEyeOffOutline : mdiEyeOutline"
+                              size="x-small"
+                              variant="text"
+                              color="#315f50"
+                              :aria-label="documentNumberVisibility[document.id] ? 'Ocultar número do documento' : 'Mostrar número do documento'"
+                              :aria-pressed="documentNumberVisibility[document.id] === true"
+                              @click="toggleDocumentNumberVisibility(document.id)"
+                            />
+                          </template>
+                        </v-tooltip>
+                      </div>
+                    </div>
+                    <div class="registered-document-card__images">
+                      <v-tooltip
+                        text="Adicionar Imagem"
+                        location="top"
+                      >
+                        <template #activator="{ props: tooltipProps }">
+                          <v-btn
+                            v-bind="tooltipProps"
+                            class="document-image-trigger"
+                            icon
+                            variant="flat"
+                            color="#21644d"
+                            aria-label="Adicionar Imagem"
+                            @click="openImageViewer(document.id)"
+                          >
+                            <span class="cloud-image-icon" aria-hidden="true">
+                              <v-icon :icon="mdiCloudUploadOutline" size="23" />
+                              <v-icon class="cloud-image-icon__image" :icon="mdiImageOutline" size="10" />
+                            </span>
+                            <span v-if="document.images.length" class="document-image-trigger__count">
+                              {{ document.images.length }}
+                            </span>
+                          </v-btn>
+                        </template>
+                      </v-tooltip>
+                    </div>
+                  </article>
+
+                </section>
               </template>
 
               <template v-else>
@@ -445,20 +883,197 @@ function showPendingIntegration(): void {
                 </div>
               </template>
 
-              <div class="privacy-note">
-                <v-icon :icon="mdiShieldCheckOutline" size="23" />
-                <span>Seus dados são protegidos e usados apenas para manter sua conta atualizada.</span>
-              </div>
-
               <div class="form-actions">
                 <v-btn variant="outlined" size="large" @click="showPendingIntegration">Cancelar</v-btn>
-                <v-btn type="submit" size="large" color="#17543f">Salvar alterações</v-btn>
+                <v-btn
+                  type="submit"
+                  size="large"
+                  color="#17543f"
+                  :disabled="activeSection === 'documents' && registeredDocuments.length === 0"
+                >
+                  Salvar alterações
+                </v-btn>
               </div>
             </v-form>
           </div>
         </div>
       </section>
     </div>
+
+    <v-dialog v-model="isImageViewerOpen" max-width="960" scrollable>
+      <v-card v-if="imageViewerDocument" class="document-viewer">
+        <header class="document-viewer__header">
+          <div>
+            <strong>{{ documentTitle(imageViewerDocument.type) }} - Imagens</strong>
+            <span>{{ visibleDocumentNumber(imageViewerDocument) }}</span>
+          </div>
+          <div class="document-viewer__header-actions">
+            <v-btn
+              class="document-viewer__back"
+              :prepend-icon="mdiArrowLeft"
+              variant="text"
+              :ripple="false"
+              @click="closeImageViewer"
+            >
+              Voltar
+            </v-btn>
+          </div>
+        </header>
+
+        <div
+          v-if="imageViewerImage"
+          class="document-viewer__stage"
+          @dragover.prevent
+          @drop.prevent="handleDocumentImageDrop"
+        >
+          <v-btn
+            class="document-viewer__arrow document-viewer__arrow--previous"
+            :icon="mdiChevronLeft"
+            color="#ffffff"
+            variant="tonal"
+            :disabled="imageViewerDocument.images.length <= 1"
+            aria-label="Imagem anterior"
+            @click="showPreviousDocumentImage"
+          />
+
+          <img
+            :src="imageViewerImage.previewUrl"
+            :alt="`Imagem ${imageViewerIndex + 1} de ${documentTitle(imageViewerDocument.type)}`"
+          >
+
+          <v-btn
+            class="document-viewer__arrow document-viewer__arrow--next"
+            :icon="mdiChevronRight"
+            color="#ffffff"
+            variant="tonal"
+            :disabled="imageViewerDocument.images.length <= 1"
+            aria-label="Próxima imagem"
+            @click="showNextDocumentImage"
+          />
+        </div>
+
+        <button
+          v-else
+          type="button"
+          class="document-viewer__empty"
+          @click="openDocumentImagePicker"
+          @dragover.prevent
+          @drop.prevent="handleDocumentImageDrop"
+        >
+          <span class="document-viewer__empty-icon">
+            <span class="cloud-image-icon cloud-image-icon--empty" aria-hidden="true">
+              <v-icon :icon="mdiCloudUploadOutline" size="44" />
+              <v-icon class="cloud-image-icon__image" :icon="mdiImageOutline" size="16" />
+            </span>
+          </span>
+          <strong>Este documento ainda não possui imagens</strong>
+          <small>Adicione JPEG, PNG ou WebP de até 5 MB.</small>
+        </button>
+
+        <input
+          ref="documentImageInput"
+          class="document-image-input"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          multiple
+          @change="handleDocumentImageSelection"
+        >
+
+        <input
+          ref="replacementImageInput"
+          class="document-image-input"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          @change="handleReplacementImageSelection"
+        >
+
+        <p v-if="documentUploadError" class="document-viewer__error" role="alert">
+          {{ documentUploadError }}
+        </p>
+
+        <nav
+          v-if="imageViewerDocument.images.length > 1"
+          class="document-viewer__navigation"
+          aria-label="Navegação entre imagens do documento"
+        >
+          <button
+            v-for="(image, index) in imageViewerDocument.images"
+            :key="image.id"
+            type="button"
+            :class="{ 'document-viewer__navigation-item--active': imageViewerIndex === index }"
+            :aria-label="`Visualizar imagem ${index + 1}`"
+            :aria-current="imageViewerIndex === index ? 'true' : undefined"
+            @click="imageViewerIndex = index"
+          >
+            <img :src="image.previewUrl" alt="">
+            <span>{{ index + 1 }}</span>
+          </button>
+        </nav>
+
+        <footer v-if="imageViewerImage" class="document-viewer__footer">
+          <div class="document-viewer__file-details">
+            <strong>{{ imageViewerImage.file.name }}</strong>
+            <span>
+              {{ imageViewerIndex + 1 }} de {{ imageViewerDocument.images.length }}
+              · {{ (imageViewerImage.file.size / 1024 / 1024).toFixed(2) }} MB
+            </span>
+          </div>
+          <v-btn
+            v-if="imageViewerDocument.images.length < MAX_DOCUMENT_IMAGES"
+            class="document-viewer__add-more"
+            rounded="pill"
+            color="#1c644b"
+            variant="flat"
+            @click="openDocumentImagePicker"
+          >
+            <template #prepend>
+              <span class="cloud-image-icon" aria-hidden="true">
+                <v-icon :icon="mdiCloudUploadOutline" size="22" />
+                <v-icon class="cloud-image-icon__image" :icon="mdiImageOutline" size="9" />
+              </span>
+            </template>
+            Adicionar mais imagens
+          </v-btn>
+          <div class="document-viewer__image-actions">
+            <v-tooltip text="Alterar imagem" location="top">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  :icon="mdiPencilOutline"
+                  variant="text"
+                  aria-label="Alterar imagem"
+                  @click="openReplacementImagePicker"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Remover imagem" location="top">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  :icon="mdiDeleteOutline"
+                  variant="text"
+                  color="#a13f3f"
+                  aria-label="Remover imagem"
+                  @click="removeViewedDocumentImage"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Remover todas as imagens" location="top">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  :icon="mdiDeleteSweepOutline"
+                  variant="text"
+                  color="#a13f3f"
+                  aria-label="Remover todas as imagens"
+                  @click="removeAllDocumentImages"
+                />
+              </template>
+            </v-tooltip>
+          </div>
+        </footer>
+      </v-card>
+    </v-dialog>
 
     <v-snackbar v-model="showLayoutNotice" color="#315f50" timeout="5000">
       O layout está pronto. A persistência desta seção ainda não foi conectada ao back-end.
@@ -681,6 +1296,13 @@ function showPendingIntegration(): void {
   box-sizing: border-box;
 }
 
+.profile-back {
+  margin: -8px 0 18px -14px;
+  color: #3e564f;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .profile-heading {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) minmax(470px, 620px);
@@ -741,6 +1363,24 @@ function showPendingIntegration(): void {
 
 .completion-summary p {
   font-size: 0.84rem;
+}
+
+.completion-summary__content {
+  min-width: 0;
+}
+
+.completion-summary__privacy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+  color: #315f50;
+  font-size: 0.77rem;
+  line-height: 1.4;
+}
+
+.completion-summary__privacy :deep(.v-icon) {
+  flex: 0 0 auto;
 }
 
 .completion-summary__action {
@@ -855,6 +1495,429 @@ function showPendingIntegration(): void {
   letter-spacing: -0.025em;
 }
 
+.documents-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+
+.documents-heading h2 {
+  margin-bottom: 5px;
+}
+
+.documents-heading p {
+  margin: 0;
+  color: #6b7973;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.documents-heading__count {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: #225f4a;
+  background: #edf4f0;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.document-fields {
+  display: grid;
+  grid-template-columns: 230px minmax(260px, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+}
+
+.document-fields__type {
+  width: 230px;
+  max-width: 100%;
+}
+
+.document-image-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.document-form-error,
+.document-viewer__error {
+  margin: 12px 0 0;
+  color: #a13f3f;
+  font-size: 0.82rem;
+}
+
+.document-add-inline {
+  min-width: 188px;
+  height: 48px;
+  align-self: start;
+  margin-top: 4px;
+  padding-inline: 20px;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 4px 10px rgba(20, 73, 54, 0.16);
+}
+
+.registered-documents {
+  display: grid;
+  gap: 11px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e4e8e5;
+}
+
+.registered-documents__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.registered-documents__heading h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.registered-documents__heading span {
+  min-width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #1e5d47;
+  background: #e9f1ed;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.registered-document-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid #dfe5e1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.registered-document-card__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #21644d;
+  background: #edf4f0;
+}
+
+.registered-document-card__identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.registered-document-card__identity strong {
+  font-size: 0.94rem;
+}
+
+.registered-document-card__identity span {
+  color: #66766f;
+  font-size: 0.82rem;
+}
+
+.registered-document-card__number {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.registered-document-card__number > span {
+  min-width: 112px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.025em;
+}
+
+.registered-document-card__number :deep(.v-btn) {
+  flex: 0 0 auto;
+}
+
+.registered-document-card__images :deep(.v-btn) {
+  display: inline-flex;
+  gap: 7px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.registered-document-card__images :deep(.document-image-trigger) {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  padding: 0;
+  border-radius: 20px !important;
+  color: #155a43 !important;
+  background: #e3eee8 !important;
+}
+
+.document-image-trigger__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding-inline: 5px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  color: #fff;
+  background: #1c644b;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.cloud-image-icon {
+  position: relative;
+  width: 25px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.cloud-image-icon__image {
+  position: absolute !important;
+  right: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: #21644d;
+  color: #fff;
+}
+
+.cloud-image-icon--large {
+  width: 30px;
+  height: 28px;
+}
+
+.cloud-image-icon--empty {
+  width: 48px;
+  height: 45px;
+}
+
+.document-viewer {
+  overflow: hidden;
+  border-radius: 18px !important;
+  background: #fff;
+}
+
+.document-viewer__header,
+.document-viewer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+}
+
+.document-viewer__header {
+  border-bottom: 1px solid #e2e7e4;
+}
+
+.document-viewer__header > div:first-child,
+.document-viewer__footer > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.document-viewer__header strong {
+  display: block;
+  color: #173d32 !important;
+  opacity: 1 !important;
+  font-size: 1.05rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.document-viewer__header span,
+.document-viewer__footer span {
+  color: #6a7972;
+  font-size: 0.8rem;
+}
+
+.document-viewer__header-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  align-items: center;
+}
+
+.document-viewer__back {
+  color: #3e564f;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.document-viewer__stage {
+  position: relative;
+  min-height: min(62vh, 600px);
+  display: grid;
+  place-items: center;
+  padding: 24px 76px;
+  background: #17221e;
+}
+
+.document-viewer__stage img {
+  width: 100%;
+  height: min(58vh, 560px);
+  display: block;
+  object-fit: contain;
+}
+
+.document-viewer__arrow {
+  position: absolute !important;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.document-viewer__arrow--previous {
+  left: 18px;
+}
+
+.document-viewer__arrow--next {
+  right: 18px;
+}
+
+.document-viewer__empty {
+  min-height: 330px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 24px;
+  padding: 32px;
+  border: 1px dashed #8eaaa0;
+  border-radius: 16px;
+  color: #265e4a;
+  background: #f5f9f7;
+  font: inherit;
+  cursor: pointer;
+}
+
+.document-viewer__empty-icon {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 5px;
+  border-radius: 22px;
+  background: #e3eee8;
+}
+
+.document-viewer__empty small {
+  color: #6a7972;
+}
+
+.document-viewer__error {
+  padding-inline: 20px;
+}
+
+.document-viewer__navigation {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  overflow-x: auto;
+  padding: 12px 18px;
+  border-top: 1px solid #e2e7e4;
+  background: #f7f9f8;
+  scrollbar-width: thin;
+}
+
+.document-viewer__navigation button {
+  position: relative;
+  width: 64px;
+  height: 52px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: #e3e8e5;
+  cursor: pointer;
+}
+
+.document-viewer__navigation button:hover,
+.document-viewer__navigation button:focus-visible,
+.document-viewer__navigation-item--active {
+  border-color: #257257 !important;
+}
+
+.document-viewer__navigation img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.document-viewer__navigation span {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #fff;
+  background: rgba(15, 48, 37, 0.82);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.document-viewer__footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  border-top: 1px solid #e2e7e4;
+}
+
+.document-viewer__file-details {
+  justify-self: start;
+}
+
+.document-viewer__add-more {
+  min-width: 220px;
+  justify-self: center;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 5px 12px rgba(20, 73, 54, 0.22);
+}
+
+.document-viewer__add-more .cloud-image-icon__image {
+  background: #fff;
+  color: #1c644b;
+}
+
+.document-viewer__image-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-self: end;
+  gap: 2px !important;
+}
+
+.document-viewer__arrow:disabled {
+  opacity: 0.5 !important;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -871,19 +1934,6 @@ function showPendingIntegration(): void {
 
 .form-grid__wide {
   grid-column: span 2;
-}
-
-.privacy-note {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  margin-top: 28px;
-  padding: 12px 17px;
-  border-radius: 13px;
-  color: #315f50;
-  background: #edf4f0;
-  font-size: 0.84rem;
 }
 
 .form-actions {
@@ -1024,6 +2074,32 @@ function showPendingIntegration(): void {
   .form-grid__full {
     grid-column: auto;
   }
+
+  .document-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .document-fields__type {
+    width: 100%;
+  }
+
+  .document-add-inline {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .registered-document-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .registered-document-card__images {
+    grid-column: 1 / -1;
+  }
+
+  .document-viewer__stage {
+    min-height: 50vh;
+    padding-inline: 58px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -1076,6 +2152,80 @@ function showPendingIntegration(): void {
   .data-panel {
     min-height: 0;
     padding: 24px 18px;
+  }
+
+  .documents-heading {
+    display: grid;
+    gap: 12px;
+  }
+
+  .documents-heading__count {
+    justify-self: start;
+  }
+
+  .registered-document-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .registered-document-card__images {
+    grid-column: 1 / -1;
+  }
+
+  .registered-document-card__images :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .document-viewer__header,
+  .document-viewer__footer {
+    align-items: flex-start;
+    padding: 13px 14px;
+  }
+
+  .document-viewer__header-actions :deep(.v-btn:first-child) {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .document-viewer__stage {
+    min-height: 48vh;
+    padding: 14px 46px;
+  }
+
+  .document-viewer__stage img {
+    height: 46vh;
+  }
+
+  .document-viewer__arrow--previous {
+    left: 6px;
+  }
+
+  .document-viewer__arrow--next {
+    right: 6px;
+  }
+
+  .document-viewer__empty {
+    min-height: 280px;
+    margin: 14px;
+    padding: 24px 16px;
+    text-align: center;
+  }
+
+  .document-viewer__footer {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .document-viewer__add-more {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: min(100%, 280px);
+  }
+
+  .document-viewer__image-actions {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .form-actions {
