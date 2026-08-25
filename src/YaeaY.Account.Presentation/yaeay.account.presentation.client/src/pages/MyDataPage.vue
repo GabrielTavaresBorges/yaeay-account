@@ -17,7 +17,6 @@ import {
   mdiCogOutline,
   mdiDeleteOutline,
   mdiDeleteSweepOutline,
-  mdiEmailOutline,
   mdiEyeOffOutline,
   mdiEyeOutline,
   mdiFileDocumentOutline,
@@ -31,12 +30,16 @@ import {
   mdiPencilOutline,
   mdiPlus,
   mdiShieldCheckOutline,
+  mdiStar,
+  mdiStarOutline,
   mdiViewGridOutline,
 } from '@mdi/js'
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
-import { CpfField } from '@/components/inputs'
+import { CpfField, UserPhonesField } from '@/components/inputs'
 import { useSidebarState } from '@/composables/use-sidebar-state'
 import { formatCpf, isValidCpf } from '@/validators/fields/cpf'
+import type { PhoneModel } from '@/models/phone-model'
+import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
 import {
   getCachedCurrentSession,
   getCurrentSession,
@@ -60,8 +63,15 @@ interface UserDocumentDraft {
   images: DocumentImageDraft[]
 }
 
+interface UserPhoneDraft {
+  id: string
+  phone: PhoneModel
+  isPrimary: boolean
+}
+
 const MAX_DOCUMENT_IMAGES = 5
 const MAX_DOCUMENT_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_USER_PHONES = 10
 const ACCEPTED_DOCUMENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 const documentDefinitions: Array<{
@@ -96,14 +106,14 @@ const documentUploadError = ref('')
 const documentFormError = ref('')
 const imageViewerDocumentId = ref<string | null>(null)
 const imageViewerIndex = ref(0)
+const phoneFormError = ref('')
+const newPhoneIsPrimary = ref(false)
 
 const profile = reactive({
   fullName: session.value?.fullName ?? '',
   birthDate: '',
   gender: '',
   socialName: '',
-  emailAddress: '',
-  phoneNumber: '',
   postalCode: '',
   street: '',
   number: '',
@@ -112,6 +122,11 @@ const profile = reactive({
   city: '',
   state: '',
 })
+
+const phoneForm = ref<PhoneModel>(createDefaultPhone())
+const registeredPhones = ref<UserPhoneDraft[]>([])
+const phoneNumberVisibility = reactive<Record<string, boolean>>({})
+const phoneVisibilityTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 const documentForm = reactive<Pick<UserDocumentDraft, 'type' | 'number'>>({
   type: 'cpf',
@@ -154,7 +169,7 @@ const sectionDefinitions = [
     id: 'contact' as const,
     label: 'Contato',
     icon: mdiPhoneOutline,
-    fields: ['emailAddress', 'phoneNumber'] as const,
+    fields: [] as const,
   },
   {
     id: 'documents' as const,
@@ -179,6 +194,10 @@ const activeSection = computed<ProfileSection>(() => {
 })
 
 function completionFor(fields: readonly (keyof typeof profile)[], sectionId: ProfileSection): number {
+  if (sectionId === 'contact') {
+    return registeredPhones.value.length > 0 ? 100 : 0
+  }
+
   if (sectionId === 'documents') {
     return registeredDocuments.value.length > 0 ? 100 : 0
   }
@@ -238,6 +257,126 @@ async function handleLogout(): Promise<void> {
 
 function showPendingIntegration(): void {
   showLayoutNotice.value = true
+}
+
+function createDefaultPhone(): PhoneModel {
+  return {
+    callingCode: '+55',
+    country: 'BR',
+    phoneType: 'Mobile',
+    areaCode: '11',
+    number: '',
+  }
+}
+
+function isValidPhone(phone: PhoneModel): boolean {
+  const rawNumber = phone.number.replace(/\D/g, '')
+  const rawAreaCode = phone.areaCode.replace(/\D/g, '')
+  const digitsRange = getPhoneDigitsRange(phone.callingCode, phone.country, phone.phoneType)
+
+  return /^\+\d{1,3}$/.test(phone.callingCode.trim())
+    && /^[A-Z]{2}$/.test(phone.country.trim().toUpperCase())
+    && (phone.phoneType === 'Mobile' || phone.phoneType === 'Landline')
+    && (phone.country === 'BR' ? rawAreaCode.length === 2 : rawAreaCode.length > 0)
+    && rawNumber.length >= digitsRange.minDigits
+    && rawNumber.length <= digitsRange.maxDigits
+}
+
+function phoneIdentity(phone: PhoneModel): string {
+  return [phone.callingCode, phone.areaCode, phone.number.replace(/\D/g, '')].join('|')
+}
+
+function displayPhoneNumber(phone: PhoneModel): string {
+  return `${phone.callingCode} (${phone.areaCode}) ${phone.number}`
+}
+
+function maskPhoneNumber(phone: PhoneModel): string {
+  const maskedAreaCode = [...phone.areaCode]
+    .map((character) => (/\d/.test(character) ? '*' : character))
+    .join('')
+  const visibleDigitCount = 2
+  const digitCount = [...phone.number].filter((character) => /\d/.test(character)).length
+  let digitsToMask = Math.max(0, digitCount - visibleDigitCount)
+
+  const maskedLocalNumber = [...phone.number].map((character) => {
+    if (!/\d/.test(character) || digitsToMask === 0) return character
+    digitsToMask -= 1
+    return '*'
+  }).join('')
+
+  return `${phone.callingCode} (${maskedAreaCode}) ${maskedLocalNumber}`
+}
+
+function visiblePhoneNumber(phoneItem: UserPhoneDraft): string {
+  return phoneNumberVisibility[phoneItem.id]
+    ? displayPhoneNumber(phoneItem.phone)
+    : maskPhoneNumber(phoneItem.phone)
+}
+
+function hidePhoneNumber(phoneId: string): void {
+  phoneNumberVisibility[phoneId] = false
+  const timer = phoneVisibilityTimers.get(phoneId)
+  if (timer) clearTimeout(timer)
+  phoneVisibilityTimers.delete(phoneId)
+}
+
+function togglePhoneNumberVisibility(phoneId: string): void {
+  if (phoneNumberVisibility[phoneId]) {
+    hidePhoneNumber(phoneId)
+    return
+  }
+
+  phoneNumberVisibility[phoneId] = true
+  const currentTimer = phoneVisibilityTimers.get(phoneId)
+  if (currentTimer) clearTimeout(currentTimer)
+
+  const timer = setTimeout(() => hidePhoneNumber(phoneId), 15000)
+  phoneVisibilityTimers.set(phoneId, timer)
+}
+
+function phoneTypeLabel(phone: PhoneModel): string {
+  return phone.phoneType === 'Landline' ? 'Fixo' : 'Celular'
+}
+
+function addPhone(): void {
+  phoneFormError.value = ''
+
+  if (registeredPhones.value.length >= MAX_USER_PHONES) {
+    phoneFormError.value = `Você pode adicionar no máximo ${MAX_USER_PHONES} telefones.`
+    return
+  }
+
+  if (!isValidPhone(phoneForm.value)) {
+    phoneFormError.value = 'Informe um telefone válido antes de adicionar.'
+    return
+  }
+
+  if (registeredPhones.value.some((item) => phoneIdentity(item.phone) === phoneIdentity(phoneForm.value))) {
+    phoneFormError.value = 'Este telefone já foi adicionado.'
+    return
+  }
+
+  const willBePrimary = registeredPhones.value.length === 0 || newPhoneIsPrimary.value
+  if (willBePrimary) {
+    registeredPhones.value.forEach((item) => { item.isPrimary = false })
+  }
+
+  const phoneId = crypto.randomUUID()
+  registeredPhones.value.push({
+    id: phoneId,
+    phone: { ...phoneForm.value },
+    isPrimary: willBePrimary,
+  })
+  phoneNumberVisibility[phoneId] = false
+
+  phoneForm.value = createDefaultPhone()
+  newPhoneIsPrimary.value = false
+}
+
+function makePhonePrimary(phoneId: string): void {
+  registeredPhones.value.forEach((item) => {
+    item.isPrimary = item.id === phoneId
+  })
 }
 
 function openDocumentImagePicker(): void {
@@ -463,6 +602,8 @@ function handleReplacementImageSelection(event: Event): void {
 }
 
 onBeforeUnmount(() => {
+  phoneVisibilityTimers.forEach((timer) => clearTimeout(timer))
+  phoneVisibilityTimers.clear()
   documentVisibilityTimers.forEach((timer) => clearTimeout(timer))
   documentVisibilityTimers.clear()
   registeredDocuments.value.forEach((document) => {
@@ -713,29 +854,110 @@ onBeforeUnmount(() => {
               </template>
 
               <template v-else-if="activeSection === 'contact'">
-                <h2>Contato</h2>
-                <div class="form-grid">
-                  <v-text-field
-                    v-model="profile.emailAddress"
-                    class="form-grid__full"
-                    label="Endereço de e-mail"
-                    placeholder="nome@exemplo.com"
-                    :prepend-inner-icon="mdiEmailOutline"
-                    type="email"
-                    variant="outlined"
-                    hide-details
-                  />
-                  <v-text-field
-                    v-model="profile.phoneNumber"
-                    class="form-grid__full"
-                    label="Telefone"
-                    placeholder="(00) 00000-0000"
-                    :prepend-inner-icon="mdiPhoneOutline"
-                    type="tel"
-                    variant="outlined"
-                    hide-details
-                  />
+                <div class="contact-heading">
+                  <div>
+                    <h2>Telefones</h2>
+                    <p>Adicione seus telefones e escolha qual será o contato principal.</p>
+                  </div>
+                  <span class="contact-heading__count">
+                    {{ registeredPhones.length }}/{{ MAX_USER_PHONES }} telefones
+                  </span>
                 </div>
+
+                <section class="phone-editor" aria-labelledby="phone-editor-title">
+                  <h3 id="phone-editor-title" class="sr-only">Adicionar telefone</h3>
+                  <UserPhonesField
+                    v-model="phoneForm"
+                    @update:model-value="phoneFormError = ''"
+                  />
+
+                  <div class="phone-editor__actions">
+                    <div class="phone-editor__primary-option">
+                      <v-switch
+                        v-if="registeredPhones.length"
+                        v-model="newPhoneIsPrimary"
+                        color="#1c644b"
+                        density="compact"
+                        hide-details
+                        label="Definir como principal"
+                      />
+                      <span v-else>O primeiro telefone será definido como principal.</span>
+                    </div>
+                    <v-btn
+                      :prepend-icon="mdiPlus"
+                      rounded="pill"
+                      color="#17543f"
+                      variant="flat"
+                      :disabled="registeredPhones.length >= MAX_USER_PHONES"
+                      @click="addPhone"
+                    >
+                      Adicionar telefone
+                    </v-btn>
+                  </div>
+
+                  <p v-if="phoneFormError" class="phone-form-error" role="alert">
+                    {{ phoneFormError }}
+                  </p>
+                </section>
+
+                <section v-if="registeredPhones.length" class="registered-phones" aria-labelledby="registered-phones-title">
+                  <div class="registered-phones__heading">
+                    <h3 id="registered-phones-title">Telefones adicionados</h3>
+                    <span>{{ registeredPhones.length }}</span>
+                  </div>
+
+                  <article
+                    v-for="phoneItem in registeredPhones"
+                    :key="phoneItem.id"
+                    class="registered-phone-card"
+                  >
+                    <span class="registered-phone-card__icon">
+                      <v-icon :icon="mdiPhoneOutline" size="24" />
+                    </span>
+                    <div class="registered-phone-card__identity">
+                      <div class="registered-phone-card__number">
+                        <strong>{{ visiblePhoneNumber(phoneItem) }}</strong>
+                        <v-tooltip
+                          :text="phoneNumberVisibility[phoneItem.id] ? 'Ocultar número do telefone' : 'Mostrar número do telefone'"
+                          location="top"
+                        >
+                          <template #activator="{ props: tooltipProps }">
+                            <v-btn
+                              v-bind="tooltipProps"
+                              :icon="phoneNumberVisibility[phoneItem.id] ? mdiEyeOffOutline : mdiEyeOutline"
+                              variant="text"
+                              color="#315f50"
+                              density="comfortable"
+                              :aria-label="phoneNumberVisibility[phoneItem.id] ? 'Ocultar número do telefone' : 'Mostrar número do telefone'"
+                              :aria-pressed="phoneNumberVisibility[phoneItem.id] === true"
+                              @click="togglePhoneNumberVisibility(phoneItem.id)"
+                            />
+                          </template>
+                        </v-tooltip>
+                      </div>
+                      <span>{{ phoneTypeLabel(phoneItem.phone) }} · {{ phoneItem.phone.country }}</span>
+                    </div>
+                    <v-chip
+                      v-if="phoneItem.isPrimary"
+                      :prepend-icon="mdiStar"
+                      color="#1c644b"
+                      variant="tonal"
+                      size="small"
+                    >
+                      Principal
+                    </v-chip>
+                    <v-btn
+                      v-else
+                      :prepend-icon="mdiStarOutline"
+                      rounded="pill"
+                      variant="text"
+                      color="#315f50"
+                      @click="makePhonePrimary(phoneItem.id)"
+                    >
+                      Tornar principal
+                    </v-btn>
+                  </article>
+                </section>
               </template>
 
               <template v-else-if="activeSection === 'documents'">
@@ -889,7 +1111,8 @@ onBeforeUnmount(() => {
                   type="submit"
                   size="large"
                   color="#17543f"
-                  :disabled="activeSection === 'documents' && registeredDocuments.length === 0"
+                  :disabled="(activeSection === 'documents' && registeredDocuments.length === 0)
+                    || (activeSection === 'contact' && registeredPhones.length === 0)"
                 >
                   Salvar alterações
                 </v-btn>
@@ -1495,6 +1718,184 @@ onBeforeUnmount(() => {
   letter-spacing: -0.025em;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.contact-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.contact-heading h2 {
+  margin-bottom: 5px;
+}
+
+.contact-heading p {
+  margin: 0;
+  color: #6b7973;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.contact-heading__count {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: #225f4a;
+  background: #edf4f0;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.phone-editor {
+  padding: 4px 18px 18px;
+  border: 1px solid #e0e7e3;
+  border-radius: 16px;
+  background: #fbfdfc;
+}
+
+.phone-editor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.phone-editor__primary-option {
+  min-width: 0;
+  color: #687870;
+  font-size: 0.82rem;
+}
+
+.phone-editor__primary-option :deep(.v-label) {
+  color: #315f50;
+  opacity: 1;
+}
+
+.phone-editor__actions :deep(.v-btn) {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding-inline: 20px;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 4px 10px rgba(20, 73, 54, 0.16);
+}
+
+.phone-form-error {
+  margin: 12px 0 0;
+  color: #a13f3f;
+  font-size: 0.82rem;
+}
+
+.registered-phones {
+  display: grid;
+  gap: 11px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e4e8e5;
+}
+
+.registered-phones__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.registered-phones__heading h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.registered-phones__heading span {
+  min-width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #1e5d47;
+  background: #e9f1ed;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.registered-phone-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid #dfe5e1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.registered-phone-card__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #21644d;
+  background: #edf4f0;
+}
+
+.registered-phone-card__identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.registered-phone-card__identity strong,
+.registered-phone-card__identity span {
+  overflow-wrap: anywhere;
+}
+
+.registered-phone-card__identity strong {
+  color: #173f31;
+  font-size: 0.96rem;
+}
+
+.registered-phone-card__number {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.registered-phone-card__number strong {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.025em;
+}
+
+.registered-phone-card__number :deep(.v-btn) {
+  flex: 0 0 auto;
+}
+
+.registered-phone-card__identity span {
+  color: #748078;
+  font-size: 0.8rem;
+}
+
+.registered-phone-card :deep(.v-btn) {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .documents-heading {
   display: flex;
   align-items: flex-start;
@@ -2079,6 +2480,15 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 
+  .phone-editor__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .phone-editor__actions :deep(.v-btn) {
+    width: 100%;
+  }
+
   .document-fields__type {
     width: 100%;
   }
@@ -2152,6 +2562,35 @@ onBeforeUnmount(() => {
   .data-panel {
     min-height: 0;
     padding: 24px 18px;
+  }
+
+  .contact-heading {
+    display: grid;
+    gap: 12px;
+  }
+
+  .contact-heading__count {
+    justify-self: start;
+  }
+
+  .phone-editor {
+    padding-inline: 12px;
+  }
+
+  .registered-phone-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .registered-phone-card > :deep(.v-chip),
+  .registered-phone-card > :deep(.v-btn) {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .registered-phone-card > :deep(.v-btn) {
+    width: 100%;
   }
 
   .documents-heading {
