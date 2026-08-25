@@ -442,9 +442,10 @@
                                             :model-value="birthLabel"
                                             label="Data de nascimento"
                                             class="access-field"
-                                            readonly
-                                            variant="outlined"
-                                            density="comfortable"
+                                             readonly
+                                             variant="outlined"
+                                             rounded="lg"
+                                             density="comfortable"
                                             clearable
                                             :rules="birthDateFieldRules"
                                             :prepend-inner-icon="mdiCalendar" />
@@ -799,6 +800,7 @@
 
   :deep(.access-field .v-field) {
     box-shadow: none;
+    background-color: #ffffff;
   }
 
   :deep(.access-field .v-label) {
@@ -897,6 +899,10 @@
   .birth-activator {
     cursor: pointer;
     min-height: 56px;
+  }
+
+  :deep(.access-field .v-field__outline) {
+    color: rgba(24, 55, 41, 0.42);
   }
 
   /* ===== PASSWORD DIALOG ===== */

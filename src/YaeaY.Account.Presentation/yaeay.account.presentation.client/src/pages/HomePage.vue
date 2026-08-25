@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   mdiAccountOutline,
   mdiBallotOutline,
@@ -12,6 +13,7 @@ import {
   mdiDotsVertical,
   mdiHeartPulse,
   mdiHomeVariant,
+  mdiLogoutVariant,
   mdiMagnify,
   mdiPiggyBankOutline,
   mdiSchoolOutline,
@@ -21,10 +23,14 @@ import {
 import {
   getCachedCurrentSession,
   getCurrentSession,
+  logout,
   type CurrentSessionResponse,
 } from '@/services/authentication-service'
 
+const router = useRouter()
 const session = ref<CurrentSessionResponse | null>(getCachedCurrentSession())
+const isLoggingOut = ref(false)
+const showLogoutError = ref(false)
 
 const navigationItems = [
   { label: 'Início', icon: mdiHomeVariant, active: true },
@@ -97,6 +103,22 @@ const fullDate = `Hoje, ${new Intl.DateTimeFormat('pt-BR', {
 onMounted(async () => {
   session.value ??= await getCurrentSession()
 })
+
+async function handleLogout() {
+  if (isLoggingOut.value) return
+
+  isLoggingOut.value = true
+  showLogoutError.value = false
+
+  try {
+    await logout()
+    await router.replace({ name: 'login' })
+  } catch {
+    showLogoutError.value = true
+  } finally {
+    isLoggingOut.value = false
+  }
+}
 </script>
 
 <template>
@@ -141,8 +163,47 @@ onMounted(async () => {
               <v-icon :icon="mdiBellOutline" size="25" />
               <span class="notification__badge">3</span>
             </div>
-            <span class="topbar__name">{{ firstName }}</span>
-            <v-icon :icon="mdiChevronDown" size="21" />
+
+            <v-menu location="bottom end" :close-on-content-click="!isLoggingOut">
+              <template #activator="{ props }">
+                <button
+                  v-bind="props"
+                  type="button"
+                  class="topbar__user-button"
+                  aria-label="Abrir menu do usuário"
+                >
+                  <span class="topbar__name">{{ firstName }}</span>
+                  <v-icon :icon="mdiChevronDown" size="21" />
+                </button>
+              </template>
+
+              <v-list
+                class="account-menu"
+                density="compact"
+                min-width="190"
+                bg-color="#ffffff"
+              >
+                <v-list-item
+                  class="account-menu__logout"
+                  :disabled="isLoggingOut"
+                  :ripple="false"
+                  base-color="#173d32"
+                  color="#173d32"
+                  title="Sair"
+                  @click="handleLogout"
+                >
+                  <template #prepend>
+                    <v-progress-circular
+                      v-if="isLoggingOut"
+                      indeterminate
+                      size="20"
+                      width="2"
+                    />
+                    <v-icon v-else :icon="mdiLogoutVariant" size="21" />
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-menu>
           </div>
         </header>
 
@@ -245,6 +306,10 @@ onMounted(async () => {
         </div>
       </section>
     </div>
+
+    <v-snackbar v-model="showLogoutError" color="error" timeout="5000">
+      Não foi possível sair da conta. Tente novamente.
+    </v-snackbar>
   </v-main>
 </template>
 
@@ -359,6 +424,43 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 11px;
+}
+
+.topbar__user-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 0 4px 0 10px;
+  border: 0;
+  border-radius: 10px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.topbar__user-button:hover,
+.topbar__user-button:focus-visible {
+  background: #f1f5f2;
+}
+
+.topbar__user-button:focus-visible {
+  outline: 2px solid #1f6b55;
+  outline-offset: 2px;
+}
+
+.account-menu {
+  color: #173d32;
+  background: #fff;
+}
+
+:deep(.account-menu__logout .v-list-item__overlay) {
+  background-color: #183729 !important;
+}
+
+:deep(.account-menu__logout:hover .v-list-item__overlay),
+:deep(.account-menu__logout:focus-visible .v-list-item__overlay) {
+  opacity: 0.08;
 }
 
 .notification {

@@ -62,7 +62,7 @@
 
 <style scoped>
   :deep(.v-field) {
-    background-color: #e2e2e2;
+    background-color: #ffffff;
   }
 
   :deep(.v-field__overlay) {
@@ -71,6 +71,19 @@
 
   :deep(.v-field__input) {
     color: #183729;
+  }
+
+  :deep(.v-field__outline) {
+    color: rgba(24, 55, 41, 0.42);
+  }
+
+  :deep(.v-label) {
+    color: #424844;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 1;
   }
 
   :deep(.v-field__prepend-inner),
@@ -83,7 +96,7 @@
   :deep(input:-webkit-autofill:hover),
   :deep(input:-webkit-autofill:focus),
   :deep(input:-webkit-autofill:active) {
-    -webkit-box-shadow: 0 0 0 1000px #e2e2e2 inset;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
     -webkit-text-fill-color: #183729;
     caret-color: #183729;
     transition: background-color 9999s ease-in-out 0s;
