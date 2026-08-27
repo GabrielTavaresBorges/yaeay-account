@@ -1,6 +1,5 @@
-using YaeaY.Account.Domain.Abstraction.Errors;
-using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.Errors.Cpf;
 
 namespace YaeaY.Account.Domain.ValueObjects.Documents;
 
@@ -33,40 +32,24 @@ public sealed partial record Cpf
     {
         if (string.IsNullOrWhiteSpace(number))
         {
-            return Result<string>.Failure(new Error(
-             Code: "CPF_NUMBER_NULL_EMPTY_WHITE_SPACE",
-             Message: "CPF number cannot be null, empty or white space.",
-             Category: ErrorCategory.Validation,
-             Rule: ErrorRule.Required));
+            return Result<string>.Failure(CpfErrors.NumberRequired);
         }
 
         var onlyNumbers = ExtractNumbers(number);
 
         if (!HasValidLength(onlyNumbers))
         {
-            return Result<string>.Failure(new Error(
-               Code: "CPF_NUMBER_INVALID_LENGTH",
-               Message: "CPF number must be 11 digits long and contain only numbers.",
-               Category: ErrorCategory.Validation,
-               Rule: ErrorRule.InvalidFormat));
+            return Result<string>.Failure(CpfErrors.NumberInvalidLength);
         }
 
         if (IsAllSameDigits(onlyNumbers))
         {
-            return Result<string>.Failure(new Error(
-                Code: "CPF_NUMBER_CHECKSUM_INVALID",
-                Message: "CPF failed validation.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidValue));
+            return Result<string>.Failure(CpfErrors.NumberChecksumInvalid);
         }
 
         if (!IsValidCpf(onlyNumbers))
         {
-            return Result<string>.Failure(new Error(
-                Code: "CPF_NUMBER_CHECKSUM_INVALID",
-                Message: "CPF failed validation.",
-                Category: ErrorCategory.Validation,
-                Rule: ErrorRule.InvalidValue));
+            return Result<string>.Failure(CpfErrors.NumberChecksumInvalid);
         }
 
         return Result<string>.Success(onlyNumbers);

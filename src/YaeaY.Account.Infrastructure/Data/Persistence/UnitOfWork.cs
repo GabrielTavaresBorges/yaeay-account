@@ -6,6 +6,7 @@ using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
 using YaeaY.Account.Domain.Errors.Users;
+using YaeaY.Account.Domain.Errors.UserDocuments;
 using YaeaY.Account.Infrastructure.Data.Context;
 
 namespace YaeaY.Account.Infrastructure.Data.Persistence;
@@ -54,6 +55,16 @@ public sealed class UnitOfWork : IUnitOfWork
         {
             Detach(outboxMessages);
             throw new DomainException(UserErrors.EmailAlreadyInUse, ex);
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation,
+                ConstraintName: "UX_UserDocumentImages_StorageObjectKey"
+            })
+        {
+            Detach(outboxMessages);
+            throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists, ex);
         }
         catch
         {
