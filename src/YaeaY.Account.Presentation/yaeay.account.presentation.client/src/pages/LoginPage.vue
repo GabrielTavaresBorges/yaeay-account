@@ -124,7 +124,7 @@
                   <v-form ref="formRef" class="form-panel__form" @submit.prevent="submitLogin">
                     <EmailField v-model="email"
                                 :rules="rules.email"
-                                label="Email"
+                                label="Endereço de e-mail"
                                 placeholder="nome@exemplo.com"
                                 autocomplete="username"
                                 density="comfortable" />
@@ -218,14 +218,18 @@
   ========================================================= */
 
   .login-page {
-    min-height: 100dvh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
     background: #ebebeb;
   }
 
   .login-shell {
-    min-height: 100dvh;
+    height: calc(100dvh - 65px);
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .login-content {
@@ -555,7 +559,7 @@
   }
 
   /* Em notebooks e monitores, todo o login cabe na área visível. */
-  @media (min-width: 961px) and (orientation: landscape) {
+  @media (min-width: 961px) {
     .login-page,
     .login-shell {
       height: 100dvh;
@@ -619,10 +623,11 @@
      Aqui vira coluna única igual ao UserCreatePage
   ========================================================= */
 
-  @media (max-width: 960px), (orientation: portrait) {
+  @media (max-width: 960px) {
     .login-content {
-      padding-top: 24px;
-      padding-bottom: 32px;
+      min-height: 0;
+      padding-top: 16px;
+      padding-bottom: 16px;
     }
 
     .login-column {
@@ -633,7 +638,7 @@
       display: grid;
       grid-template-columns: 1fr;
       justify-items: center;
-      gap: 32px;
+      gap: 16px;
     }
 
     .hero-panel {
@@ -660,6 +665,9 @@
     .hero-slogan {
       border-left: none;
       padding-left: 0;
+      margin-top: 12px;
+      font-size: 1rem;
+      line-height: 1.3;
     }
 
     .form-panel-wrapper {
@@ -675,11 +683,32 @@
       width: 100%;
       max-width: 720px;
       margin-inline: auto;
+      padding: 22px;
+    }
+
+    .form-panel__title {
+      margin-bottom: 16px;
+      font-size: 1.6rem;
+    }
+
+    .form-panel__form {
+      gap: 12px;
+    }
+
+    .mobile-cta {
+      margin-top: 16px;
+      padding-top: 14px;
+    }
+
+    .mobile-cta__text {
+      margin-bottom: 12px;
+      line-height: 1.4;
     }
 
     .tech-stripe {
       justify-content: center;
       padding-left: 0;
+      margin-top: 10px;
     }
 
     .desktop-only {
@@ -690,10 +719,10 @@
       display: block;
     }
 
-    .footer-bar__content {
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
+    :deep(.app-footer__content) {
+      padding-top: 10px;
+      padding-bottom: 10px;
+      gap: 8px;
     }
 
     .footer-bar__links {
@@ -710,17 +739,98 @@
   ========================================================= */
 
   @media (max-width: 600px) {
-    .form-panel {
-      padding: 24px;
+    .login-shell {
+      height: calc(100dvh - 96px);
     }
 
-    .form-panel__options {
-      flex-direction: column;
-      align-items: flex-start;
+    .login-content {
+      padding: 10px 12px;
+    }
+
+    .login-grid {
+      gap: 10px;
+    }
+
+    .hero-title__strong {
+      display: inline;
+      font-size: 2.5rem;
+    }
+
+    .hero-title__light {
+      display: inline;
+      margin: 0 0 0 8px;
+      font-size: 1.7rem;
     }
 
     .hero-slogan {
-      margin-top: 24px;
+      display: none;
+    }
+
+    .form-panel {
+      padding: 18px;
+    }
+
+    .form-panel__options {
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+
+    .forgot-link {
+      font-size: 0.78rem;
+      padding-inline: 4px;
+    }
+
+    :deep(.remember-checkbox .v-label) {
+      font-size: 0.82rem;
+    }
+
+    :deep(.app-footer__content) {
+      padding: 8px 12px;
+    }
+
+    :deep(.app-footer__links) {
+      gap: 2px;
+    }
+
+    :deep(.app-footer__link) {
+      font-size: 0.68rem;
+      padding-inline: 4px;
+    }
+  }
+
+  @media (max-height: 700px) {
+    .login-content {
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .hero-cta__text,
+    .mobile-cta__text {
+      display: none;
+    }
+
+    .hero-cta,
+    .mobile-cta {
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+
+    .form-panel {
+      padding-top: 16px;
+      padding-bottom: 16px;
+    }
+
+    .form-panel__title {
+      margin-bottom: 12px;
+    }
+
+    .form-panel__form {
+      gap: 8px;
+    }
+
+    :deep(.app-footer__content) {
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
   }
 </style>

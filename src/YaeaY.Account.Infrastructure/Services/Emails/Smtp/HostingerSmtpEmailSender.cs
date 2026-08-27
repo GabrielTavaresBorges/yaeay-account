@@ -1,7 +1,9 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using MimeKit.Utils;
 using YaeaY.Account.Application.Services.Emails.Interfaces;
 using YaeaY.Account.Application.Services.Emails.Models;
 
@@ -9,12 +11,21 @@ namespace YaeaY.Account.Infrastructure.Services.Emails.Smtp;
 
 public sealed class HostingerSmtpEmailSender : IEmailSender
 {
-    private readonly SmtpEmailOptions _options;
+    private const int MaximumProviderResponseLogLength = 512;
+    private static readonly EventId SmtpEmailAcceptedEvent = new(1001, "SmtpEmailAccepted");
 
-    public HostingerSmtpEmailSender(IOptions<SmtpEmailOptions> options)
+    private readonly SmtpEmailOptions _options;
+    private readonly ILogger<HostingerSmtpEmailSender> _logger;
+
+    public HostingerSmtpEmailSender(
+        IOptions<SmtpEmailOptions> options,
+        ILogger<HostingerSmtpEmailSender> logger)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task SendAsync(
@@ -39,6 +50,7 @@ public sealed class HostingerSmtpEmailSender : IEmailSender
         }
 
         var mimeMessage = CreateMimeMessage(message);
+        mimeMessage.MessageId ??= MimeUtils.GenerateMessageId();
 
         using var smtpClient = new SmtpClient
         {
@@ -56,7 +68,14 @@ public sealed class HostingerSmtpEmailSender : IEmailSender
             _options.Password,
             cancellationToken);
 
-        await smtpClient.SendAsync(mimeMessage, cancellationToken);
+        var providerResponse = await smtpClient.SendAsync(mimeMessage, cancellationToken);
+
+        _logger.LogInformation(
+            SmtpEmailAcceptedEvent,
+            "SMTP server accepted email {MessageId}. Provider response: {ProviderResponse}",
+            mimeMessage.MessageId,
+            NormalizeProviderResponse(providerResponse));
+
         await smtpClient.DisconnectAsync(quit: true, cancellationToken);
     }
 
@@ -85,4 +104,16 @@ public sealed class HostingerSmtpEmailSender : IEmailSender
             _ => throw new InvalidOperationException(
                 $"Unsupported SMTP security mode '{securityMode}'.")
         };
+
+    private static string NormalizeProviderResponse(string providerResponse)
+    {
+        var normalized = providerResponse
+            .Replace('\r', ' ')
+            .Replace('\n', ' ')
+            .Trim();
+
+        return normalized.Length <= MaximumProviderResponseLogLength
+            ? normalized
+            : normalized[..MaximumProviderResponseLogLength];
+    }
 }

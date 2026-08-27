@@ -31,6 +31,17 @@ public sealed class UserRepository : IUserRepository
         return await _context.DomainUsers.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
+    public Task<User?> GetByIdWithDocumentsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return _context.DomainUsers
+            .Include(user => user.Documents)
+                .ThenInclude(document => document.Cpf)
+            .Include(user => user.Documents)
+                .ThenInclude(document => document.Images)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+    }
+
     public Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken)
     {
         return _context.DomainUsers.FirstOrDefaultAsync(

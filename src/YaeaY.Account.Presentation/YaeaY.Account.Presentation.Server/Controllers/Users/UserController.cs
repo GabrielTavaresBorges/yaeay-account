@@ -1,7 +1,10 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using YaeaY.Account.Domain.Abstraction.Errors;
 using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Presentation.Server.Contracts.Users;
 using CreateUser = YaeaY.Account.Application.UseCases.Users.Commands.Create;
 using UpdateUser = YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
@@ -37,21 +40,40 @@ public class UserController : ControllerBase
         );
     }
 
-    [HttpPut("{id:guid}")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUser.Command command, CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        // garante que o Id vem do route (evita cliente mandar id diferente no body)
-        command = command with { Id = id };
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var command = new UpdateUser.Command(
+            userId,
+            request.FullName,
+            request.BirthDate,
+            request.Gender,
+            request.CpfDocumentsToAdd?.Select(document => new UpdateUser.CpfDocumentInput(
+                document.Number,
+                document.Images?.Select(image => new UpdateUser.DocumentImageInput(
+                    image.Position,
+                    image.StorageObjectKey,
+                    image.OriginalFileName,
+                    image.ContentType,
+                    image.FileSizeBytes,
+                    image.Sha256Hash)).ToArray())).ToArray());
 
         var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsFailure)
             return ToErrorResponse(result.Error);
 
-        // Pode ser Ok(result.Value) (200 com body) ou NoContent() (204 sem body).
         return Ok(result.Value);
     }
 

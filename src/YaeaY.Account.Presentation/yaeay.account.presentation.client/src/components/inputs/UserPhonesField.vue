@@ -70,21 +70,6 @@
     },
   })
 
-  const number = computed<PhoneModel['number']>({
-    get: () => model.value.number,
-    set: (value) => {
-      model.value = {
-        ...model.value,
-        number: formatPhoneNumber({
-          callingCode: model.value.callingCode,
-          country: model.value.country,
-          phoneType: model.value.phoneType,
-          value,
-        }),
-      }
-    },
-  })
-
   const isBrazil = computed(() => model.value.country === 'BR')
 
   const selectedCountryItem = computed(() =>
@@ -108,6 +93,17 @@
       model.value.phoneType,
     ),
   )
+
+  function onPhoneNumberChange(value: string | number | null) {
+    const formattedNumber = formatPhoneNumber({
+      callingCode: model.value.callingCode,
+      country: model.value.country,
+      phoneType: model.value.phoneType,
+      value: String(value ?? ''),
+    })
+
+    model.value.number = formattedNumber
+  }
 
   let syncing = false
 
@@ -163,98 +159,83 @@
 <template>
   <div class="user-phones-field">
     <div class="phone-grid">
-      <!-- DDI -->
-      <label class="phone-field">
-        <span>DDI</span>
+      <v-select v-model="callingCode"
+                :items="callingCodeItems"
+                item-title="title"
+                item-value="value"
+                label="DDI"
+                variant="outlined"
+                rounded="lg"
+                density="comfortable"
+                hide-details
+                class="phone-field phone-field--wide" />
 
-        <div class="phone-select-wrapper">
-          <select v-model="callingCode">
-            <option v-for="item in callingCodeItems"
-                    :key="item.value"
-                    :value="item.value">
-              {{ item.title }}
-            </option>
-          </select>
-        </div>
-      </label>
+      <v-select v-model="country"
+                :items="countryItems"
+                item-title="title"
+                item-value="value"
+                label="País"
+                variant="outlined"
+                rounded="lg"
+                density="comfortable"
+                hide-details
+                class="phone-field phone-field--country">
+        <template #selection>
+          <div class="country-selection country-selection--flag-only">
+            <v-img v-if="selectedCountryItem"
+                   :src="selectedCountryItem.flagSrc"
+                   :alt="selectedCountryItem.alt"
+                   width="24"
+                   height="16"
+                   cover />
+          </div>
+        </template>
+      </v-select>
 
-      <!-- País -->
-      <!-- País -->
-      <div class="phone-field phone-field--country">
-        <span>País</span>
+      <v-select v-model="phoneType"
+                :items="phoneTypeItems"
+                item-title="title"
+                item-value="value"
+                label="Tipo"
+                variant="outlined"
+                rounded="lg"
+                density="comfortable"
+                hide-details
+                class="phone-field phone-field--wide" />
 
-        <v-select v-model="country"
-                  :items="countryItems"
-                  item-title="title"
-                  item-value="value"
-                  variant="outlined"
-                  rounded="lg"
-                  density="comfortable"
-                  hide-details
-                  class="phone-country-select">
-          <template #selection>
-            <div class="country-selection country-selection--flag-only">
-              <v-img v-if="selectedCountryItem"
-                     :src="selectedCountryItem.flagSrc"
-                     :alt="selectedCountryItem.alt"
-                     width="24"
-                     height="16"
-                     cover />
-            </div>
-          </template>
-        </v-select>
-      </div>
+      <v-select v-if="isBrazil"
+                v-model="areaCode"
+                :items="brazilAreaCodes"
+                label="DDD"
+                placeholder="Selecione"
+                variant="outlined"
+                rounded="lg"
+                density="comfortable"
+                hide-details
+                class="phone-field" />
 
+      <v-text-field v-else
+                    v-model="areaCode"
+                    label="Área"
+                    placeholder="Área"
+                    variant="outlined"
+                    rounded="lg"
+                    density="comfortable"
+                    hide-details
+                    class="phone-field" />
 
-      <!-- Tipo -->
-      <label class="phone-field">
-        <span>Tipo</span>
-
-        <div class="phone-select-wrapper">
-          <select v-model="phoneType">
-            <option v-for="item in phoneTypeItems"
-                    :key="item.value"
-                    :value="item.value">
-              {{ item.title }}
-            </option>
-          </select>
-        </div>
-      </label>
-
-      <!-- DDD / Área -->
-      <label class="phone-field">
-        <span>{{ isBrazil ? 'DDD' : 'Área' }}</span>
-
-        <div v-if="isBrazil" class="phone-select-wrapper">
-          <select v-model="areaCode">
-            <option value="">
-              Selecione
-            </option>
-
-            <option v-for="item in brazilAreaCodes"
-                    :key="item"
-                    :value="item">
-              {{ item }}
-            </option>
-          </select>
-        </div>
-
-        <input v-else
-               v-model="areaCode"
-               type="text"
-               placeholder="Área" />
-      </label>
-
-      <!-- Número -->
-      <label class="phone-field phone-field--number">
-        <span>Número</span>
-
-        <input v-model="number"
-               class="phone-number-input"
-               type="text"
-               :maxlength="numberMaxLength"
-               :placeholder="numberPlaceholder" />
-      </label>
+      <v-text-field :model-value="model.number"
+                    label="Número"
+                    :maxlength="numberMaxLength"
+                    :placeholder="numberPlaceholder"
+                    inputmode="numeric"
+                    autocomplete="tel-national"
+                    variant="outlined"
+                    rounded="lg"
+                    density="comfortable"
+                    hide-details
+                    class="phone-field phone-field--number"
+                    @update:model-value="onPhoneNumberChange" />
     </div>
   </div>
 </template>
@@ -267,99 +248,41 @@
 
   .phone-grid {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 16px;
+    grid-template-columns:
+      minmax(105px, 1.15fr)
+      minmax(96px, 0.9fr)
+      minmax(115px, 1.25fr)
+      minmax(78px, 0.85fr)
+      minmax(150px, 1.8fr);
+    gap: 12px;
   }
 
   .phone-field {
-    grid-column: span 2;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    min-width: 0;
+    color: #183729;
   }
 
   .phone-field--number {
-    grid-column: span 4;
+    min-width: 0;
   }
 
-  .phone-field > span {
-    color: #424844;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .phone-field input {
-    width: 100%;
+  :deep(.phone-field .v-field) {
     min-height: 56px;
-    padding: 0 16px;
-    border: 1px solid rgba(24, 55, 41, 0.42);
     border-radius: 12px;
     background-color: #ffffff;
     color: #183729;
-    outline: none;
-    font-size: 1rem;
   }
 
-  .phone-select-wrapper {
-    width: 100%;
-    min-height: 56px;
-    border: 1px solid rgba(24, 55, 41, 0.42);
-    border-radius: 12px;
-    background-color: #ffffff;
-    overflow: hidden;
-  }
-
-    .phone-select-wrapper select {
-      width: 100%;
-      min-height: 56px;
-      padding: 0 40px 0 16px;
-      border: none;
-      background-color: #ffffff;
-      color: #183729;
-      outline: none;
-      font-size: 1rem;
-      cursor: pointer;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-    }
-
-      .phone-select-wrapper select option {
-        background-color: #ffffff;
-        color: #183729;
-      }
-
-  .phone-field input:focus {
-    border-color: #183729;
-  }
-
-  .phone-select-wrapper:focus-within {
-    border-color: #183729;
-  }
-
-  .phone-country-select {
-    width: 100%;
-  }
-
-  :deep(.phone-country-select .v-field) {
-    min-height: 56px;
-    background-color: #ffffff;
-    color: #183729;
-    border-radius: 12px;
-  }
-
-  :deep(.phone-country-select .v-field__input) {
+  :deep(.phone-field .v-field__input) {
     min-height: 56px;
     color: #183729;
   }
 
-  :deep(.phone-country-select .v-field__outline) {
+  :deep(.phone-field .v-field__outline) {
     color: rgba(24, 55, 41, 0.42);
   }
 
-  :deep(.phone-country-select .v-label) {
+  :deep(.phone-field .v-label) {
     color: #424844;
     font-size: 0.72rem;
     font-weight: 700;
@@ -384,21 +307,23 @@
       text-transform: none;
     }
 
-  .phone-number-input {
-    background-color: #ffffff !important;
-  }
-
   @media (max-width: 960px) {
-    .phone-field,
+    .phone-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .phone-field--number {
-      grid-column: span 6;
+      grid-column: span 2;
     }
   }
 
   @media (max-width: 600px) {
-    .phone-field,
+    .phone-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .phone-field--number {
-      grid-column: span 12;
+      grid-column: auto;
     }
   }
 </style>

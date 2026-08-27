@@ -117,7 +117,7 @@
         color: #183729;
       }
 
-    @media (max-width: 960px), (orientation: portrait) {
+    @media (max-width: 960px) {
       .app-footer__content {
         flex-direction: column;
         align-items: center;
@@ -132,7 +132,7 @@
       }
     }
 
-    @media (max-width: 600px), (orientation: portrait) {
+    @media (max-width: 600px) {
       .app-footer__content {
         padding-left: 16px;
         padding-right: 16px;

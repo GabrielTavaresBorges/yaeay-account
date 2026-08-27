@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using YaeaY.Account.Application.Services.Emails.Models;
 using YaeaY.Account.Infrastructure.Services.Emails.Smtp;
@@ -70,7 +71,9 @@ public sealed class HostingerSmtpEmailSenderSendAsyncTests
     }
 
     private static HostingerSmtpEmailSender CreateSender(SmtpEmailOptions options)
-        => new(Options.Create(options));
+        => new(
+            Options.Create(options),
+            NullLogger<HostingerSmtpEmailSender>.Instance);
 
     private static SmtpEmailOptions CreateOptions(bool isActive, string password)
         => new()

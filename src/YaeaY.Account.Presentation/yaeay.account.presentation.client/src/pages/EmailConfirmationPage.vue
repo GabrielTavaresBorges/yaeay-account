@@ -12,6 +12,7 @@ import {
   confirmEmail,
   getEmailConfirmationPreview,
 } from '@/services/email-confirmation-service'
+import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
 
 type ConfirmationState =
   | 'loading'
@@ -129,6 +130,8 @@ function closePage() {
           <span class="brand__strong">YaeaY</span>
           <span class="brand__light">Account</span>
         </div>
+
+        <StageEnvironmentBanner class="confirmation-header__stage-banner" />
       </header>
 
       <main class="confirmation-content">
@@ -241,12 +244,19 @@ function closePage() {
 }
 
 .confirmation-header {
+  position: relative;
   min-height: 68px;
   display: flex;
   align-items: center;
   padding: 0 32px;
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid rgba(24, 55, 41, 0.08);
+}
+
+.confirmation-header__stage-banner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .brand {
@@ -469,8 +479,17 @@ function closePage() {
 
 @media (max-width: 600px) {
   .confirmation-header {
-    min-height: 60px;
-    padding: 0 20px;
+    min-height: 112px;
+    display: grid;
+    grid-template-rows: 48px 56px;
+    padding: 0 20px 8px;
+  }
+
+  .confirmation-header__stage-banner {
+    position: static;
+    grid-row: 2;
+    justify-self: center;
+    transform: none;
   }
 
   .confirmation-content {

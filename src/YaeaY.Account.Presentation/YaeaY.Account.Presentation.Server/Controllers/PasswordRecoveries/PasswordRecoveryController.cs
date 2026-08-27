@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text;
 using MediatR;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
@@ -62,7 +61,7 @@ public sealed class PasswordRecoveryController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Path = "/api/password-recoveries",
+            Path = "/",
             MaxAge = policy.ResetAuthorizationLifetime,
             IsEssential = true
         });
@@ -88,7 +87,7 @@ public sealed class PasswordRecoveryController(
         {
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Path = "/api/password-recoveries"
+            Path = "/"
         });
 
         return Ok(result.Value);
@@ -102,7 +101,7 @@ public sealed class PasswordRecoveryController(
 
         try
         {
-            var value = Encoding.UTF8.GetString(_protector.Unprotect(Convert.FromBase64String(protectedValue), out _));
+            var value = _protector.Unprotect(protectedValue, out _);
             return Guid.TryParseExact(value, "N", out challengeId);
         }
         catch (CryptographicException)
@@ -128,7 +127,7 @@ public sealed class PasswordRecoveryController(
     private static object GenericInvalidAuthorizationResponse() => new
     {
         code = "password-recovery.invalid-or-expired",
-        message = "O código ou a autorização de recuperação é inválido ou expirou.",
+        message = "A autorização para alterar a senha expirou ou não foi encontrada. Solicite um novo código.",
         category = ErrorCategory.BusinessRule.ToString(),
         rule = ErrorRule.InvariantViolation.ToString()
     };

@@ -7,6 +7,7 @@ import { EmailField, PasswordField } from '@/components/inputs'
 import { PasswordRequirements } from '@/components/feedback'
 import { rules } from '@/validators'
 import { requestPasswordRecovery, resetPassword, verifyPasswordRecoveryCode } from '@/services/password-recovery-service'
+import type { ApiError } from '@/services/http/api-error'
 
 type Step = 'email' | 'code' | 'password' | 'success'
 type VForm = { validate: () => Promise<{ valid: boolean }> }
@@ -22,7 +23,7 @@ type RecoveryAttemptState = {
 const CODE_LIFETIME_SECONDS = 2 * 60
 const MAXIMUM_RECOVERY_ATTEMPTS = 5
 const RECOVERY_ATTEMPT_WINDOW_MS = 60 * 60 * 1000
-const RECOVERY_ATTEMPT_STORAGE_KEY = 'yaeay.password-recovery.attempt-state'
+const RECOVERY_ATTEMPT_STORAGE_KEY = 'yaeay.password-recovery.attempt-state.v2'
 
 const step = ref<Step>('email')
 const emailFormRef = ref<VForm | null>(null)
@@ -225,6 +226,40 @@ function attemptLimitMessage(state: RecoveryAttemptState): string {
   return `O limite de ${MAXIMUM_RECOVERY_ATTEMPTS} tentativas foi atingido. Aguarde ${waitMinutes} minuto${waitMinutes === 1 ? '' : 's'} para solicitar um novo código.`
 }
 
+function isApiError(error: unknown): error is ApiError {
+  return typeof error === 'object' && error !== null && 'statusCode' in error
+}
+
+function recoveryErrorMessage(error: unknown): string {
+  const fallback = 'Não foi possível concluir esta etapa. Tente novamente ou solicite um novo código.'
+  if (!isApiError(error)) return fallback
+
+  switch (error.identifier) {
+    case 'password-recovery.invalid-or-expired':
+      return 'A autorização para alterar a senha expirou ou não foi encontrada. Solicite um novo código.'
+    case 'password-recovery.password-confirmation.does-not-match':
+      return 'A confirmação da senha não corresponde à nova senha.'
+    case 'account.password-text.required':
+      return 'Informe a nova senha.'
+    case 'account.password-text.too-short':
+      return 'A nova senha deve ter no mínimo 8 caracteres.'
+    case 'account.password-text.too-long':
+      return 'A nova senha excede o tamanho máximo permitido.'
+    case 'account.password-text.missing-uppercase':
+      return 'A nova senha deve conter ao menos uma letra maiúscula.'
+    case 'account.password-text.missing-lowercase':
+      return 'A nova senha deve conter ao menos uma letra minúscula.'
+    case 'account.password-text.missing-digit':
+      return 'A nova senha deve conter ao menos um número.'
+    case 'account.password-text.missing-special-character':
+      return 'A nova senha deve conter ao menos um caractere especial.'
+    case 'identity.password.reset-failed':
+      return 'A senha não pôde ser alterada pela conta. Escolha outra senha e tente novamente.'
+    default:
+      return error.message || fallback
+  }
+}
+
 function returnToEmail(): void {
   feedback.value = ''
   activeCodeNotice.value = false
@@ -331,8 +366,8 @@ async function run(action: () => Promise<void>, clearFeedback = true): Promise<v
   if (clearFeedback) feedback.value = ''
   try {
     await action()
-  } catch {
-    feedback.value = 'Não foi possível concluir esta etapa. Verifique os dados ou solicite um novo código.'
+  } catch (error: unknown) {
+    feedback.value = recoveryErrorMessage(error)
   } finally {
     loading.value = false
   }

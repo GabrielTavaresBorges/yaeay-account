@@ -7,6 +7,12 @@ namespace YaeaY.Account.Domain.Errors.Users;
 
 public static class UserErrors
 {
+    public static readonly Error IdRequired = new(
+        Code: "user.id.required",
+        Message: "The user identifier is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
     public static readonly Error EmailConfirmationDateRequired = new(
         Code: "user.email-confirmation.date.required",
         Message: "The email confirmation date is required.",

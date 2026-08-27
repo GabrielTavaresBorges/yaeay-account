@@ -12,6 +12,7 @@ using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
 
+#if false // Legacy draft retained temporarily for source history; replaced by UpdateUserHandler.cs.
 namespace YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
 public sealed class Handler : IRequestHandler<Command, Result<Response>>
@@ -132,3 +133,4 @@ public sealed class Handler : IRequestHandler<Command, Result<Response>>
         }
     }
 }
+#endif

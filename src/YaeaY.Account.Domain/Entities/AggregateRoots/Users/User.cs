@@ -5,9 +5,11 @@ using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.Errors.Users;
+using YaeaY.Account.Domain.Errors.UserDocuments;
 using YaeaY.Account.Domain.Events.Users;
 using YaeaY.Account.Domain.ValueObjects.Accounts;
 using YaeaY.Account.Domain.ValueObjects.Dates;
+using YaeaY.Account.Domain.ValueObjects.Documents;
 using YaeaY.Account.Domain.ValueObjects.Emails;
 using YaeaY.Account.Domain.ValueObjects.Names;
 using YaeaY.Account.Domain.ValueObjects.Telephones;
@@ -132,6 +134,25 @@ public class User : Entity, IAggregateRoot
         }
 
         _phones.Add(UserPhone.Create(phoneNumber, isPrimary));
+    }
+
+    public UserDocument AddCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images = null)
+    {
+        if (cpf is null)
+            throw new DomainException(UserDocumentErrors.CpfRequired);
+
+        var documentImages = images?.ToArray() ?? [];
+        var existingStorageKeys = _documents
+            .SelectMany(document => document.Images)
+            .Select(image => image.StorageObjectKey)
+            .ToHashSet(StringComparer.Ordinal);
+
+        if (documentImages.Any(image => image is not null && existingStorageKeys.Contains(image.StorageObjectKey)))
+            throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists);
+
+        var document = UserDocument.CreateFromCpf(cpf, documentImages);
+        _documents.Add(document);
+        return document;
     }
 
     public void ConfirmEmail(DateTimeOffset confirmedAtUtc)

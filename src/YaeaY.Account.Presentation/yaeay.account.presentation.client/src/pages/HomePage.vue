@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
 import {
   mdiAccountOutline,
   mdiBallotOutline,
@@ -12,7 +14,10 @@ import {
   mdiDotsVertical,
   mdiHeartPulse,
   mdiHomeVariant,
+  mdiLogoutVariant,
   mdiMagnify,
+  mdiMenu,
+  mdiMenuOpen,
   mdiPiggyBankOutline,
   mdiSchoolOutline,
   mdiShieldCheckOutline,
@@ -21,16 +26,28 @@ import {
 import {
   getCachedCurrentSession,
   getCurrentSession,
+  logout,
   type CurrentSessionResponse,
 } from '@/services/authentication-service'
+import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
+import { useSidebarState } from '@/composables/use-sidebar-state'
 
+const router = useRouter()
+const {
+  isSidebarCollapsed,
+  isMobileSidebarOpen,
+  toggleSidebar,
+  closeSidebar,
+} = useSidebarState()
 const session = ref<CurrentSessionResponse | null>(getCachedCurrentSession())
+const isLoggingOut = ref(false)
+const showLogoutError = ref(false)
 
 const navigationItems = [
-  { label: 'Início', icon: mdiHomeVariant, active: true },
-  { label: 'Meus dados', icon: mdiAccountOutline, active: false },
-  { label: 'Apps', icon: mdiViewGridOutline, active: false },
-  { label: 'Agenda', icon: mdiCalendarMonthOutline, active: false },
+  { label: 'Home', icon: mdiHomeVariant, active: true, to: { name: 'home' } },
+  { label: 'Meus dados', icon: mdiAccountOutline, active: false, to: { name: 'my-data-section', params: { section: 'basic' } } },
+  { label: 'Apps', icon: mdiViewGridOutline, active: false, to: null },
+  { label: 'Calendário', icon: mdiCalendarMonthOutline, active: false, to: null },
 ]
 
 const futureApps = [
@@ -94,14 +111,40 @@ const fullDate = `Hoje, ${new Intl.DateTimeFormat('pt-BR', {
   month: 'long',
 }).format(today)}`
 
+async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
+  if (!to) return
+
+  closeSidebar()
+  await router.push(to)
+}
+
 onMounted(async () => {
   session.value ??= await getCurrentSession()
 })
+
+async function handleLogout() {
+  if (isLoggingOut.value) return
+
+  isLoggingOut.value = true
+  showLogoutError.value = false
+
+  try {
+    await logout()
+    await router.replace({ name: 'login' })
+  } catch {
+    showLogoutError.value = true
+  } finally {
+    isLoggingOut.value = false
+  }
+}
 </script>
 
 <template>
   <v-main class="home-page">
-    <div class="home-shell">
+    <div
+      class="home-shell"
+      :class="{ 'home-shell--collapsed': isSidebarCollapsed }"
+    >
       <aside class="sidebar">
         <div class="brand" aria-label="YaeaY Account">
           <span class="brand__primary">YaeaY</span>
@@ -109,16 +152,32 @@ onMounted(async () => {
         </div>
 
         <nav class="sidebar__navigation" aria-label="Navegação principal">
-          <div
+          <v-tooltip
             v-for="item in navigationItems"
             :key="item.label"
-            class="navigation-item"
-            :class="{ 'navigation-item--active': item.active }"
-            :aria-current="item.active ? 'page' : undefined"
+            :text="item.label"
+            :disabled="!isSidebarCollapsed"
+            location="right"
           >
-            <v-icon :icon="item.icon" size="22" />
-            <span>{{ item.label }}</span>
-          </div>
+            <template #activator="{ props: tooltipProps }">
+              <button
+                v-bind="tooltipProps"
+                type="button"
+                class="navigation-item"
+                :class="{
+                  'navigation-item--active': item.active,
+                  'navigation-item--disabled': !item.to,
+                }"
+                :aria-current="item.active ? 'page' : undefined"
+                :aria-label="item.label"
+                :aria-disabled="!item.to"
+                @click="navigateTo(item.to)"
+              >
+                <v-icon :icon="item.icon" size="22" />
+                <span>{{ item.label }}</span>
+              </button>
+            </template>
+          </v-tooltip>
         </nav>
 
         <div class="sidebar__footer">
@@ -129,20 +188,88 @@ onMounted(async () => {
         </div>
       </aside>
 
+      <button
+        v-if="isMobileSidebarOpen"
+        type="button"
+        class="sidebar-backdrop"
+        aria-label="Fechar menu lateral"
+        @click="closeSidebar"
+      />
+
       <section class="workspace">
         <header class="topbar">
-          <div class="search-box" aria-label="Pesquisa indisponível nesta etapa">
-            <v-icon :icon="mdiMagnify" size="24" />
-            <span>Pesquisar</span>
+          <div class="topbar__start">
+            <v-tooltip
+              :text="isSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'"
+              location="bottom"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  class="sidebar-toggle"
+                  :icon="isSidebarCollapsed ? mdiMenu : mdiMenuOpen"
+                  variant="text"
+                  :aria-label="isSidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'"
+                  :aria-expanded="!isSidebarCollapsed"
+                  @click="toggleSidebar"
+                />
+              </template>
+            </v-tooltip>
+
+            <div class="search-box" aria-label="Pesquisa indisponível nesta etapa">
+              <v-icon :icon="mdiMagnify" size="24" />
+              <span>Pesquisar</span>
+            </div>
           </div>
+
+          <StageEnvironmentBanner class="topbar__stage-banner" />
 
           <div class="topbar__account">
             <div class="notification" aria-label="Notificações">
               <v-icon :icon="mdiBellOutline" size="25" />
               <span class="notification__badge">3</span>
             </div>
-            <span class="topbar__name">{{ firstName }}</span>
-            <v-icon :icon="mdiChevronDown" size="21" />
+
+            <v-menu location="bottom end" :close-on-content-click="!isLoggingOut">
+              <template #activator="{ props }">
+                <button
+                  v-bind="props"
+                  type="button"
+                  class="topbar__user-button"
+                  aria-label="Abrir menu do usuário"
+                >
+                  <span class="topbar__name">{{ firstName }}</span>
+                  <v-icon :icon="mdiChevronDown" size="21" />
+                </button>
+              </template>
+
+              <v-list
+                class="account-menu"
+                density="compact"
+                min-width="190"
+                bg-color="#ffffff"
+              >
+                <v-list-item
+                  class="account-menu__logout"
+                  :disabled="isLoggingOut"
+                  :ripple="false"
+                  base-color="#173d32"
+                  color="#173d32"
+                  title="Sair"
+                  @click="handleLogout"
+                >
+                  <template #prepend>
+                    <v-progress-circular
+                      v-if="isLoggingOut"
+                      indeterminate
+                      size="20"
+                      width="2"
+                    />
+                    <v-icon v-else :icon="mdiLogoutVariant" size="21" />
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-menu>
           </div>
         </header>
 
@@ -245,6 +372,10 @@ onMounted(async () => {
         </div>
       </section>
     </div>
+
+    <v-snackbar v-model="showLogoutError" color="error" timeout="5000">
+      Não foi possível sair da conta. Tente novamente.
+    </v-snackbar>
   </v-main>
 </template>
 
@@ -259,6 +390,29 @@ onMounted(async () => {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr);
+}
+
+.home-shell--collapsed {
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+
+.home-shell--collapsed .brand {
+  justify-content: center;
+  padding-inline: 5px;
+}
+
+.home-shell--collapsed .brand__secondary,
+.home-shell--collapsed .navigation-item span {
+  display: none;
+}
+
+.home-shell--collapsed .navigation-item {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 .sidebar {
@@ -309,6 +463,16 @@ onMounted(async () => {
   color: #4c5753;
   font-size: 1rem;
   user-select: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.navigation-item--disabled {
+  cursor: default;
 }
 
 .navigation-item--active {
@@ -333,17 +497,36 @@ onMounted(async () => {
 
 .topbar {
   min-height: 90px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto minmax(150px, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   padding: 0 34px 0 42px;
   background: #fff;
   border-bottom: 1px solid #e5e8e5;
 }
 
+.topbar__start {
+  grid-column: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-toggle {
+  flex: 0 0 auto;
+  color: #334d44;
+}
+
+.topbar__stage-banner {
+  grid-column: 2;
+  justify-self: center;
+}
+
 .search-box {
-  width: min(480px, 46vw);
+  width: min(480px, 100%);
   height: 52px;
   display: flex;
   align-items: center;
@@ -356,9 +539,48 @@ onMounted(async () => {
 }
 
 .topbar__account {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 11px;
+}
+
+.topbar__user-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 0 4px 0 10px;
+  border: 0;
+  border-radius: 10px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.topbar__user-button:hover,
+.topbar__user-button:focus-visible {
+  background: #f1f5f2;
+}
+
+.topbar__user-button:focus-visible {
+  outline: 2px solid #1f6b55;
+  outline-offset: 2px;
+}
+
+.account-menu {
+  color: #173d32;
+  background: #fff;
+}
+
+:deep(.account-menu__logout .v-list-item__overlay) {
+  background-color: #183729 !important;
+}
+
+:deep(.account-menu__logout:hover .v-list-item__overlay),
+:deep(.account-menu__logout:focus-visible .v-list-item__overlay) {
+  opacity: 0.08;
 }
 
 .notification {
@@ -793,25 +1015,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 1200px) {
-  .home-shell {
-    grid-template-columns: 92px minmax(0, 1fr);
-  }
-
-  .brand {
-    padding-inline: 5px;
-    justify-content: center;
-  }
-
-  .brand__secondary,
-  .navigation-item span {
-    display: none;
-  }
-
-  .navigation-item {
-    justify-content: center;
-    padding: 0;
-  }
-
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -827,36 +1030,65 @@ onMounted(async () => {
   }
 
   .sidebar {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    padding: 12px 18px;
-    border-right: 0;
-    border-bottom: 1px solid #e5e8e5;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1202;
+    width: min(280px, 86vw);
+    height: 100dvh;
+    padding: 28px 10px 20px;
+    border-right: 1px solid #e5e8e5;
+    border-bottom: 0;
+    box-shadow: 18px 0 44px rgba(18, 56, 43, 0.16);
+    transform: translateX(0);
+    transition: transform 180ms ease;
+  }
+
+  .home-shell--collapsed .sidebar {
+    transform: translateX(-105%);
   }
 
   .brand {
-    padding: 0;
+    justify-content: flex-start;
+    padding: 0 20px 38px;
   }
 
   .sidebar__navigation {
-    flex-direction: row;
-    margin-left: auto;
+    flex-direction: column;
+    margin-left: 0;
   }
 
   .sidebar__footer {
-    display: none;
+    display: block;
   }
 
   .navigation-item {
-    width: 44px;
-    min-height: 44px;
+    width: 100%;
+    min-height: 54px;
+    justify-content: flex-start;
+    padding: 0 22px;
+  }
+
+  .navigation-item span {
+    display: inline;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1201;
+    display: block;
+    border: 0;
+    background: rgba(15, 40, 31, 0.32);
+    backdrop-filter: blur(2px);
   }
 
   .topbar {
     min-height: 72px;
     padding-inline: 20px;
+  }
+
+  .topbar__stage-banner {
+    grid-column: 2;
   }
 
   .search-box {
@@ -880,15 +1112,45 @@ onMounted(async () => {
   }
 }
 
+@media (max-width: 760px) {
+  .search-box {
+    display: none;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 620px) {
-  .sidebar__navigation .navigation-item:nth-child(n+3),
   .search-box,
   .notification {
     display: none;
   }
 
   .topbar {
-    justify-content: flex-end;
+    min-height: 112px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 48px 56px;
+    padding: 0 16px 8px;
+  }
+
+  .topbar__start {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+  }
+
+  .topbar__stage-banner {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+  }
+
+  .topbar__account {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .status-card__illustration {
