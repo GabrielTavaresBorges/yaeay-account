@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using YaeaY.Account.Infrastructure.ReadModels;
+using YaeaY.Account.Infrastructure.ReadModels.Administration;
 
 namespace YaeaY.Account.EventProcessing.Worker;
 
@@ -13,15 +14,32 @@ public sealed class ReadModelRebuildHostedService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.RebuildMyDataOnStartup)
-            return;
+        var rebuildMyData = options.Value.RebuildMyDataOnStartup;
+        var rebuildAdministration = options.Value.RebuildAdministrationOnStartup;
 
-        logger.LogWarning("Reconstrução explícita de UserMyData iniciada.");
+        if (!rebuildMyData && !rebuildAdministration)
+        {
+            logger.LogInformation("Reconstrução de read models desabilitada nesta inicialização.");
+            return;
+        }
 
         using var scope = scopeFactory.CreateScope();
-        var rebuilder = scope.ServiceProvider.GetRequiredService<UserMyDataRebuilder>();
-        var total = await rebuilder.RebuildAllAsync(stoppingToken);
+        var total = 0;
 
-        logger.LogWarning("Reconstrução explícita de UserMyData concluída para {TotalUsers} usuários.", total);
+        if (rebuildMyData)
+        {
+            logger.LogWarning("Reconstrução explícita de UserMyData iniciada.");
+            var rebuilder = scope.ServiceProvider.GetRequiredService<UserMyDataRebuilder>();
+            total = await rebuilder.RebuildAllAsync(stoppingToken);
+        }
+
+        if (rebuildAdministration)
+        {
+            logger.LogWarning("Reconstrução explícita das projeções administrativas iniciada.");
+            var administrationRebuilder = scope.ServiceProvider.GetRequiredService<AdministrationReadModelRebuilder>();
+            await administrationRebuilder.RebuildAsync(stoppingToken);
+        }
+
+        logger.LogWarning("Reconstrução explícita dos read models concluída para {TotalUsers} usuários.", total);
     }
 }

@@ -280,7 +280,7 @@
               </div>
 
               <p class="registration-success__eyebrow">Cadastro concluído</p>
-              <h1>Seu Account foi criado com sucesso.</h1>
+              <h1 class="registration-success__title">Seu Account foi criado com sucesso.</h1>
               <p class="registration-success__greeting">
                 Olá, {{ registeredFullName }}.
               </p>
@@ -570,15 +570,15 @@
     text-transform: uppercase;
   }
 
-  .registration-success h1 {
+  .registration-success__title {
     max-width: 590px;
     margin: 0 auto;
     color: #173f32;
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: inherit;
     font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 700;
-    line-height: 1.16;
-    letter-spacing: -0.035em;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
   }
 
   .registration-success__greeting {

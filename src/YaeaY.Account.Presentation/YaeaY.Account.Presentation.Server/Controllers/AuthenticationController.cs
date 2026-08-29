@@ -51,7 +51,7 @@ public sealed class AuthenticationController(IMediator mediator, IAntiforgery an
             return Unauthorized();
 
         var result = await mediator.Send(
-            new GetCurrentSession.Query(userId),
+            new GetCurrentSession.Query(userId, User.IsInRole("Admin")),
             cancellationToken);
 
         return result.IsSuccess ? Ok(result.Value) : Unauthorized();

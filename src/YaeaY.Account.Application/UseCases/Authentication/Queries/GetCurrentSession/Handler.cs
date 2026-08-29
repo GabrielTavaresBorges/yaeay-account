@@ -20,6 +20,7 @@ public sealed class Handler(IUserRepository userRepository)
         return Result<Response>.Success(new Response(
             UserId: user.Id,
             FullName: user.FullName.Name,
-            LastLoginAt: user.LastLoginAt));
+            LastLoginAt: user.LastLoginAt,
+            CanManageAccount: query.CanManageAccount));
     }
 }

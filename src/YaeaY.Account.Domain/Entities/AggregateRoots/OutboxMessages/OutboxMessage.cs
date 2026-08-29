@@ -15,6 +15,11 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
     private DateTimeOffset _nextAttemptOnUtc;
     private int _attemptCount;
     private string? _lastError;
+    private DateTimeOffset? _publishedOnUtc;
+    private DateTimeOffset? _lastPublishAttemptOnUtc;
+    private DateTimeOffset _nextPublishAttemptOnUtc;
+    private int _publishAttemptCount;
+    private string? _lastPublishError;
 
     public SerializedDomainEvent Content => _content;
     public DateTimeOffset OccurredOnUtc => _occurredOnUtc;
@@ -24,6 +29,12 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
     public int AttemptCount => _attemptCount;
     public string? LastError => _lastError;
     public bool IsProcessed => _processedOnUtc.HasValue;
+    public DateTimeOffset? PublishedOnUtc => _publishedOnUtc;
+    public DateTimeOffset? LastPublishAttemptOnUtc => _lastPublishAttemptOnUtc;
+    public DateTimeOffset NextPublishAttemptOnUtc => _nextPublishAttemptOnUtc;
+    public int PublishAttemptCount => _publishAttemptCount;
+    public string? LastPublishError => _lastPublishError;
+    public bool IsPublished => _publishedOnUtc.HasValue;
 
     private OutboxMessage() { }
 
@@ -36,6 +47,7 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         _content = content;
         _occurredOnUtc = occurredOnUtc;
         _nextAttemptOnUtc = occurredOnUtc;
+        _nextPublishAttemptOnUtc = occurredOnUtc;
     }
 
     public static OutboxMessage Create(Guid id, SerializedDomainEvent content, DateTimeOffset occurredOnUtc)
@@ -87,6 +99,52 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         _lastAttemptOnUtc = attemptedOnUtc;
         _nextAttemptOnUtc = nextAttemptOnUtc;
         _lastError = failure.Trim();
+    }
+
+    public bool CanBePublished(DateTimeOffset nowUtc) =>
+        IsProcessed && !IsPublished && nowUtc >= _nextPublishAttemptOnUtc;
+
+    public void MarkAsPublished(DateTimeOffset publishedOnUtc)
+    {
+        if (!IsProcessed)
+            throw new DomainException(OutboxMessageErrors.MustBeProcessedBeforePublication);
+
+        if (IsPublished)
+            throw new DomainException(OutboxMessageErrors.AlreadyPublished);
+
+        if (publishedOnUtc == default)
+            throw new DomainException(OutboxMessageErrors.PublishedOnUtcRequired);
+
+        if (publishedOnUtc < _occurredOnUtc)
+            throw new DomainException(OutboxMessageErrors.PublishedBeforeOccurrence);
+
+        _publishAttemptCount++;
+        _lastPublishAttemptOnUtc = publishedOnUtc;
+        _publishedOnUtc = publishedOnUtc;
+        _lastPublishError = null;
+    }
+
+    public void RegisterPublishFailure(string failure, DateTimeOffset attemptedOnUtc, DateTimeOffset nextAttemptOnUtc)
+    {
+        if (!IsProcessed)
+            throw new DomainException(OutboxMessageErrors.MustBeProcessedBeforePublication);
+
+        if (IsPublished)
+            throw new DomainException(OutboxMessageErrors.AlreadyPublished);
+
+        if (string.IsNullOrWhiteSpace(failure))
+            throw new DomainException(OutboxMessageErrors.FailureRequired);
+
+        if (attemptedOnUtc == default)
+            throw new DomainException(OutboxMessageErrors.AttemptedOnUtcRequired);
+
+        if (nextAttemptOnUtc <= attemptedOnUtc)
+            throw new DomainException(OutboxMessageErrors.NextAttemptNotAfterAttempt);
+
+        _publishAttemptCount++;
+        _lastPublishAttemptOnUtc = attemptedOnUtc;
+        _nextPublishAttemptOnUtc = nextAttemptOnUtc;
+        _lastPublishError = failure.Trim();
     }
 
     private static void ValidateCreation(Guid id, SerializedDomainEvent content, DateTimeOffset occurredOnUtc)

@@ -16,7 +16,18 @@ repositório.
   broker fornecidas por secret do ambiente.
 - `ReadModels__Rebuild__RebuildMyDataOnStartup=true`: executa uma única reconstrução
   de `UserMyData` ao iniciar o host. Desabilitar novamente após a conclusão.
+- `ReadModels__Rebuild__RebuildAdministrationOnStartup=true`: reconstrói as projeções
+  administrativas somente quando as tabelas administrativas de escrita e leitura já
+  estiverem aplicadas.
 
 O Worker declara a fila principal e a DLQ somente quando RabbitMQ está habilitado.
 Uma falha de projeção é direcionada para `account.read-model.dead-letter` e requer
 análise antes de qualquer reprocessamento.
+
+## Garantia de entrega
+
+O processamento local da Outbox (por exemplo, o envio do e-mail de confirmação) e a
+publicação no RabbitMQ possuem confirmações separadas. Uma indisponibilidade do broker
+não reenvia e-mails já processados: a publicação fica pendente em `OutboxMessages` até
+receber confirmação do RabbitMQ. Eventos processados antes da ativação do broker também
+ficam elegíveis para uma publicação única depois da evolução do schema da Outbox.

@@ -43,6 +43,7 @@ import { formatCpf } from '@/validators/fields/cpf'
 import type { PhoneModel } from '@/models/phone-model'
 import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
 import { getMyData } from '@/services/users/users-service'
+import { genderItems } from '@/constants/gender'
 import {
   getCachedCurrentSession,
   getCurrentSession,
@@ -202,10 +203,9 @@ const phoneFormError = ref('')
 const newPhoneIsPrimary = ref(false)
 
 const profile = reactive({
-  fullName: session.value?.fullName ?? '',
+  fullName: '',
   birthDate: '',
   gender: '',
-  socialName: '',
   postalCode: '',
   street: '',
   number: '',
@@ -292,7 +292,7 @@ const sectionDefinitions = [
     id: 'basic' as const,
     label: 'Dados básicos',
     icon: mdiCardAccountDetailsOutline,
-    fields: ['fullName', 'birthDate', 'gender', 'socialName'] as const,
+    fields: ['fullName', 'birthDate', 'gender'] as const,
   },
   {
     id: 'contact' as const,
@@ -365,8 +365,8 @@ async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
 
 onMounted(async () => {
   session.value ??= await getCurrentSession()
-  profile.fullName ||= session.value.fullName
 
+  // A tela autenticada é preenchida exclusivamente pela projeção account_read.
   const myData = await getMyData()
   profile.fullName = myData.fullName
   profile.birthDate = myData.birthDate
@@ -967,16 +967,9 @@ onBeforeUnmount(() => {
                     v-model="profile.gender"
                     label="Gênero"
                     :prepend-inner-icon="mdiAccountOutline"
-                    :items="['Feminino', 'Masculino', 'Não binário', 'Prefiro não informar']"
-                    variant="outlined"
-                    hide-details
-                  />
-                  <v-text-field
-                    v-model="profile.socialName"
-                    class="form-grid__full"
-                    label="Nome social"
-                    placeholder="Como prefere ser chamado?"
-                    :prepend-inner-icon="mdiAccountOutline"
+                    :items="genderItems"
+                    item-title="title"
+                    item-value="value"
                     variant="outlined"
                     hide-details
                   />

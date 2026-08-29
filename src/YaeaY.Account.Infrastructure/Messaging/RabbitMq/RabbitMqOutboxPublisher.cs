@@ -13,7 +13,8 @@ public sealed class RabbitMqOutboxPublisher(IOptions<RabbitMqOptions> options) :
 
     public async Task PublishAsync(OutboxMessage message, CancellationToken cancellationToken)
     {
-        if (!IsEnabled) return;
+        if (!IsEnabled)
+            throw new InvalidOperationException("RabbitMQ está desabilitado; a publicação da Outbox permanece pendente.");
 
         var factory = new ConnectionFactory
         {

@@ -6,4 +6,5 @@ public sealed class ReadModelRebuildOptions
 
     // Deve ser habilitado explicitamente e removido após a reconstrução inicial.
     public bool RebuildMyDataOnStartup { get; init; }
+    public bool RebuildAdministrationOnStartup { get; init; }
 }

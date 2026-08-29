@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Application.Services.ReadModels.Interfaces;
+using YaeaY.Account.Application.Services.Administration.Interfaces;
 using YaeaY.Account.Application.Services.Emails.Interfaces;
 using YaeaY.Account.Application.Services.Scheduling.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
@@ -17,6 +18,7 @@ using YaeaY.Account.Domain.Policies.EmailConfirmations;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Domain.Repositories.Users;
+using YaeaY.Account.Domain.Repositories.Administration;
 using YaeaY.Account.Domain.Repositories.PasswordRecoveryChallenges;
 using YaeaY.Account.Domain.Repositories.PasswordRecoveryTemplates;
 using YaeaY.Account.Domain.Policies.PasswordRecoveries;
@@ -25,6 +27,7 @@ using YaeaY.Account.Infrastructure.Data.Persistence;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Infrastructure.Data.Repositories.Users;
+using YaeaY.Account.Infrastructure.Data.Repositories.Administration;
 using YaeaY.Account.Infrastructure.Data.Repositories.PasswordRecoveryChallenges;
 using YaeaY.Account.Infrastructure.Data.Repositories.PasswordRecoveryTemplates;
 using YaeaY.Account.Infrastructure.Events.Dispatchers;
@@ -36,6 +39,7 @@ using YaeaY.Account.Infrastructure.Identity.Services;
 using YaeaY.Account.Infrastructure.Messaging.Outbox;
 using YaeaY.Account.Infrastructure.Messaging.RabbitMq;
 using YaeaY.Account.Infrastructure.ReadModels;
+using YaeaY.Account.Infrastructure.ReadModels.Administration;
 using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 using YaeaY.Account.Infrastructure.Services.Emails;
@@ -64,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<IOutboxMessageProcessor, OutboxMessageProcessor>();
         services.AddSingleton<ReadModelConnectionFactory>();
         services.AddScoped<IMyDataReader, DapperMyDataReader>();
+        services.AddScoped<IAdministrationReader, DapperAdministrationReader>();
         services.AddScoped<UserMyDataProjector>();
         services.AddOptions<RabbitMqOptions>()
             .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
@@ -80,6 +85,7 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IAdministrationAuditRepository, AdministrationAuditRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
         services.AddScoped<IEmailConfirmationTemplateRepository, EmailConfirmationTemplateRepository>();
         services.AddScoped<IPasswordRecoveryChallengeRepository, PasswordRecoveryChallengeRepository>();
@@ -249,6 +255,9 @@ public static class DependencyInjection
 
             quartz.AddJob<ProcessOutboxMessagesJob>(job =>
                 job.WithIdentity(jobKey).StoreDurably());
+
+            quartz.AddJob<PublishOutboxMessagesJob>(job =>
+                job.WithIdentity(QuartzJobKeys.PublishOutboxMessages, QuartzJobKeys.Group).StoreDurably());
         });
 
         services.AddQuartzHostedService(options =>
@@ -267,6 +276,7 @@ public static class DependencyInjection
         services.AddSingleton<ReadModelConnectionFactory>();
         services.AddScoped<UserMyDataProjector>();
         services.AddScoped<UserMyDataRebuilder>();
+        services.AddScoped<AdministrationReadModelRebuilder>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddOptions<ReadModelRebuildOptions>()
             .Bind(configuration.GetSection(ReadModelRebuildOptions.SectionName));

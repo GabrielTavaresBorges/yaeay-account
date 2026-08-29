@@ -7,6 +7,7 @@ using YaeaY.Account.Domain.Entities.AggregateRoots.OutboxMessages;
 using YaeaY.Account.Domain.Entities.AggregateRoots.PasswordRecoveryChallenges;
 using YaeaY.Account.Domain.Entities.AggregateRoots.PasswordRecoveryTemplates;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
+using YaeaY.Account.Domain.Entities.AggregateRoots.Administration;
 using YaeaY.Account.Infrastructure.Identity.Models;
 
 namespace YaeaY.Account.Infrastructure.Data.Context;
@@ -20,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<PasswordRecoveryChallenge> PasswordRecoveryChallenges => Set<PasswordRecoveryChallenge>();
     public DbSet<PasswordRecoveryTemplate> PasswordRecoveryTemplates => Set<PasswordRecoveryTemplate>();
+    public DbSet<AdministrationAuditEntry> AdministrationAuditEntries => Set<AdministrationAuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
