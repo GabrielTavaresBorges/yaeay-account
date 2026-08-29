@@ -1,6 +1,6 @@
 // src/services/users/users-service.ts
 
-import type { CreateUserRequest, CreateUserResponse, UpdateUserRequest, UpdateUserResponse, UserId } from './users-types'
+import type { CreateUserRequest, CreateUserResponse, MyDataResponse, UpdateUserRequest, UpdateUserResponse, UserId } from './users-types'
 import { throwApiError } from '@/services/http/http-error'
 
 export async function createUser(payload: CreateUserRequest): Promise<CreateUserResponse> {
@@ -24,4 +24,10 @@ export async function updateUser(id: UserId, payload: UpdateUserRequest): Promis
 
   if (res.ok) return (await res.json()) as UpdateUserResponse
   return throwApiError(res)
+}
+
+export async function getMyData(): Promise<MyDataResponse> {
+  const response = await fetch('/api/users/me', { credentials: 'same-origin' })
+  if (response.ok) return (await response.json()) as MyDataResponse
+  return throwApiError(response)
 }

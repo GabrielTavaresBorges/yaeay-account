@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
-using YaeaY.Account.Domain.Enumerators;
 using YaeaY.Account.Domain.ValueObjects.Accounts;
 
 namespace YaeaY.Account.Infrastructure.Data.Mappings.Users;
@@ -85,11 +84,13 @@ public sealed class UserMap : IEntityTypeConfiguration<User>
         {
             si.Property(nameof(SuspensionInfo.Reason))
             .HasColumnName("SuspensionReason")
-            .HasConversion<int>();
+            .HasConversion<string>()
+            .HasMaxLength(100);
 
             si.Property(nameof(SuspensionInfo.SuspensionBy))
             .HasColumnName("SuspensionBy")
-            .HasConversion<int>();
+            .HasConversion<string>()
+            .HasMaxLength(100);
 
             si.Property(nameof(SuspensionInfo.SuspendedAt))
             .HasColumnName("SuspendedAt");

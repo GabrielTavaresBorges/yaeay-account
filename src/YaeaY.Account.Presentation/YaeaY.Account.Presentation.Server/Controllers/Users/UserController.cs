@@ -7,6 +7,7 @@ using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
 using YaeaY.Account.Presentation.Server.Contracts.Users;
 using CreateUser = YaeaY.Account.Application.UseCases.Users.Commands.Create;
 using UpdateUser = YaeaY.Account.Application.UseCases.Users.Commands.Update;
+using GetMyData = YaeaY.Account.Application.UseCases.Users.Queries.GetMyData;
 
 namespace YaeaY.Account.Presentation.Server.Controllers.Users;
 
@@ -81,6 +82,21 @@ public class UserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) => Ok();
+
+    [Authorize]
+    [HttpGet("me")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyData(CancellationToken cancellationToken)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var result = await _mediator.Send(new GetMyData.Query(userId), cancellationToken);
+        return result.IsFailure ? ToErrorResponse(result.Error) : Ok(result.Value);
+    }
 
     private IActionResult ToErrorResponse(Error error)
     {

@@ -15,12 +15,14 @@ import {
   mdiChevronRight,
   mdiCloudUploadOutline,
   mdiCogOutline,
+  mdiClose,
   mdiDeleteOutline,
   mdiDeleteSweepOutline,
   mdiEyeOffOutline,
   mdiEyeOutline,
   mdiFileDocumentOutline,
   mdiHomeVariant,
+  mdiHistory,
   mdiImageOutline,
   mdiLogoutVariant,
   mdiMapMarkerOutline,
@@ -37,9 +39,10 @@ import {
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
 import { CpfField, UserPhonesField } from '@/components/inputs'
 import { useSidebarState } from '@/composables/use-sidebar-state'
-import { formatCpf, isValidCpf } from '@/validators/fields/cpf'
+import { formatCpf } from '@/validators/fields/cpf'
 import type { PhoneModel } from '@/models/phone-model'
 import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
+import { getMyData } from '@/services/users/users-service'
 import {
   getCachedCurrentSession,
   getCurrentSession,
@@ -48,7 +51,15 @@ import {
 } from '@/services/authentication-service'
 
 type ProfileSection = 'basic' | 'contact' | 'documents' | 'address'
-type DocumentType = 'cpf' | 'rg' | 'driverLicense' | 'passport' | 'voterRegistration' | 'workCard'
+type DocumentType = 'cpf' | 'rg' | 'cnh' | 'passport'
+
+interface DocumentFieldDefinition {
+  key: string
+  label: string
+  placeholder?: string
+  type?: 'text' | 'date'
+  fixed?: boolean
+}
 
 interface DocumentImageDraft {
   id: string
@@ -60,7 +71,17 @@ interface UserDocumentDraft {
   id: string
   type: DocumentType
   number: string
+  details: Record<string, string>
   images: DocumentImageDraft[]
+  history: UserDocumentHistoryDraft[]
+}
+
+interface UserDocumentHistoryDraft {
+  id: string
+  number: string
+  details: Record<string, string>
+  images: DocumentImageDraft[]
+  registeredAt: string
 }
 
 interface UserPhoneDraft {
@@ -79,13 +100,83 @@ const documentDefinitions: Array<{
   title: string
   numberLabel: string
   placeholder: string
+  description: string
+  available: boolean
+  numberIsFixed: boolean
+  fields: DocumentFieldDefinition[]
 }> = [
-  { value: 'cpf', title: 'CPF', numberLabel: 'Número do CPF', placeholder: '000.000.000-00' },
-  { value: 'rg', title: 'RG', numberLabel: 'Número do RG', placeholder: 'Informe o número do RG' },
-  { value: 'driverLicense', title: 'Carteira de Habilitação', numberLabel: 'Número de registro', placeholder: 'Informe o número da CNH' },
-  { value: 'passport', title: 'Passaporte', numberLabel: 'Número do passaporte', placeholder: 'Informe o número do passaporte' },
-  { value: 'voterRegistration', title: 'Título de Eleitor', numberLabel: 'Número do título', placeholder: 'Informe o número do título' },
-  { value: 'workCard', title: 'Carteira de Trabalho', numberLabel: 'Número do documento', placeholder: 'Informe o número da carteira' },
+  {
+    value: 'cpf',
+    title: 'CPF',
+    numberLabel: 'Número do CPF',
+    placeholder: '000.000.000-00',
+    description: 'Cadastro de Pessoa Física',
+    available: true,
+    numberIsFixed: true,
+    fields: [],
+  },
+  {
+    value: 'rg',
+    title: 'RG',
+    numberLabel: 'Número do RG',
+    placeholder: 'Informe o número do RG',
+    description: 'Registro Geral',
+    available: false,
+    numberIsFixed: true,
+    fields: [
+      { key: 'holderName', label: 'Nome no documento', placeholder: 'Nome conforme impresso no RG' },
+      { key: 'birthDate', label: 'Data de nascimento', type: 'date' },
+      { key: 'birthPlace', label: 'Naturalidade', placeholder: 'Cidade e estado' },
+      { key: 'parentageOne', label: 'Filiação 1', placeholder: 'Nome conforme impresso' },
+      { key: 'parentageTwo', label: 'Filiação 2', placeholder: 'Nome conforme impresso' },
+      { key: 'issueDate', label: 'Data de emissão', type: 'date' },
+      { key: 'expirationDate', label: 'Data de validade', type: 'date' },
+      { key: 'issuingAuthority', label: 'Órgão expedidor', placeholder: 'Ex.: SSP' },
+      { key: 'issuingState', label: 'Estado expedidor', placeholder: 'Ex.: SP' },
+    ],
+  },
+  {
+    value: 'cnh',
+    title: 'CNH',
+    numberLabel: 'Número de registro',
+    placeholder: 'Informe o número da CNH',
+    description: 'Carteira Nacional de Habilitação',
+    available: false,
+    numberIsFixed: true,
+    fields: [
+      { key: 'holderName', label: 'Nome no documento', placeholder: 'Nome conforme impresso na CNH' },
+      { key: 'cpfNumber', label: 'CPF apresentado na CNH', placeholder: '000.000.000-00' },
+      { key: 'identityDocument', label: 'Documento de identidade', placeholder: 'Número e órgão emissor' },
+      { key: 'birthDate', label: 'Data de nascimento', type: 'date' },
+      { key: 'category', label: 'Categoria', placeholder: 'Ex.: AB' },
+      { key: 'firstLicenseDate', label: 'Primeira habilitação', type: 'date', fixed: true },
+      { key: 'issueDate', label: 'Data de emissão', type: 'date' },
+      { key: 'expirationDate', label: 'Data de validade', type: 'date' },
+      { key: 'issuingState', label: 'Estado expedidor', placeholder: 'Ex.: SP' },
+      { key: 'renach', label: 'RENACH', placeholder: 'Informe o RENACH' },
+      { key: 'observations', label: 'Observações', placeholder: 'Restrições e observações impressas' },
+    ],
+  },
+  {
+    value: 'passport',
+    title: 'Passaporte',
+    numberLabel: 'Número do passaporte',
+    placeholder: 'Informe o número do passaporte',
+    description: 'Documento de viagem',
+    available: false,
+    numberIsFixed: false,
+    fields: [
+      { key: 'holderName', label: 'Nome no documento', placeholder: 'Nome conforme impresso no passaporte' },
+      { key: 'birthDate', label: 'Data de nascimento', type: 'date' },
+      { key: 'birthPlace', label: 'Local de nascimento', placeholder: 'Cidade e país' },
+      { key: 'sex', label: 'Sexo', placeholder: 'Conforme impresso' },
+      { key: 'nationality', label: 'Nacionalidade', placeholder: 'Ex.: Brasileira' },
+      { key: 'issuingCountry', label: 'País emissor', placeholder: 'Ex.: Brasil' },
+      { key: 'issuingAuthority', label: 'Autoridade emissora', placeholder: 'Ex.: Polícia Federal' },
+      { key: 'issueDate', label: 'Data de emissão', type: 'date' },
+      { key: 'expirationDate', label: 'Data de validade', type: 'date' },
+    ],
+  },
 ]
 
 const route = useRoute()
@@ -103,9 +194,10 @@ const showLayoutNotice = ref(false)
 const documentImageInput = ref<HTMLInputElement | null>(null)
 const replacementImageInput = ref<HTMLInputElement | null>(null)
 const documentUploadError = ref('')
-const documentFormError = ref('')
 const imageViewerDocumentId = ref<string | null>(null)
 const imageViewerIndex = ref(0)
+const historyDocumentType = ref<DocumentType | null>(null)
+const openedDocumentCards = ref<DocumentType | null>(null)
 const phoneFormError = ref('')
 const newPhoneIsPrimary = ref(false)
 
@@ -128,22 +220,49 @@ const registeredPhones = ref<UserPhoneDraft[]>([])
 const phoneNumberVisibility = reactive<Record<string, boolean>>({})
 const phoneVisibilityTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-const documentForm = reactive<Pick<UserDocumentDraft, 'type' | 'number'>>({
-  type: 'cpf',
+const registeredDocuments = ref<UserDocumentDraft[]>(documentDefinitions.map((definition) => ({
+  id: definition.value,
+  type: definition.value,
   number: '',
-})
-
-const registeredDocuments = ref<UserDocumentDraft[]>([])
+  details: Object.fromEntries(definition.fields.map((field) => [field.key, ''])),
+  images: [],
+  history: [],
+})))
 const documentNumberVisibility = reactive<Record<string, boolean>>({})
 const documentVisibilityTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-const availableDocumentDefinitions = computed(() =>
-  documentDefinitions.filter((definition) =>
-    !registeredDocuments.value.some((document) => document.type === definition.value)))
+const completedDocumentCount = computed(() =>
+  registeredDocuments.value.filter((document) =>
+    document.number.trim().length > 0 || document.history.length > 0).length)
 
-const selectedDocumentDefinition = computed(() =>
-  documentDefinitions.find((document) => document.value === documentForm.type)
-    ?? documentDefinitions[0]!)
+const cpfDocument = computed(() =>
+  registeredDocuments.value.find((document) => document.type === 'cpf')!)
+
+function documentDefinition(type: DocumentType) {
+  return documentDefinitions.find((definition) => definition.value === type)
+    ?? documentDefinitions[0]!
+}
+
+function isDocumentNumberLocked(document: UserDocumentDraft): boolean {
+  return document.history.length > 0 && documentDefinition(document.type).numberIsFixed
+}
+
+function openDocumentHistory(type: DocumentType): void {
+  historyDocumentType.value = type
+}
+
+function formatHistoryDate(value: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+function filledHistoryDetails(document: UserDocumentDraft, history: UserDocumentHistoryDraft) {
+  return documentDefinition(document.type).fields
+    .map((field) => ({ ...field, value: history.details[field.key] ?? '' }))
+    .filter((field) => field.value.trim().length > 0)
+}
 
 const imageViewerDocument = computed(() =>
   registeredDocuments.value.find((document) => document.id === imageViewerDocumentId.value) ?? null)
@@ -155,6 +274,16 @@ const isImageViewerOpen = computed({
   get: () => imageViewerDocument.value !== null,
   set: (value: boolean) => {
     if (!value) closeImageViewer()
+  },
+})
+
+const historyDocument = computed(() =>
+  registeredDocuments.value.find((document) => document.type === historyDocumentType.value) ?? null)
+
+const isHistoryDialogOpen = computed({
+  get: () => historyDocument.value !== null,
+  set: (value: boolean) => {
+    if (!value) historyDocumentType.value = null
   },
 })
 
@@ -199,7 +328,7 @@ function completionFor(fields: readonly (keyof typeof profile)[], sectionId: Pro
   }
 
   if (sectionId === 'documents') {
-    return registeredDocuments.value.length > 0 ? 100 : 0
+    return completedDocumentCount.value > 0 ? 100 : 0
   }
 
   const completed = fields.filter((field) => profile[field].trim().length > 0).length
@@ -237,6 +366,37 @@ async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
 onMounted(async () => {
   session.value ??= await getCurrentSession()
   profile.fullName ||= session.value.fullName
+
+  const myData = await getMyData()
+  profile.fullName = myData.fullName
+  profile.birthDate = myData.birthDate
+  profile.gender = myData.gender
+  registeredPhones.value = myData.phones.map((phone) => ({
+    id: phone.id,
+    phone: {
+      callingCode: phone.callingCode,
+      country: phone.country,
+      areaCode: phone.areaCode,
+      phoneType: phone.phoneType,
+      number: phone.number,
+    } as PhoneModel,
+    isPrimary: phone.isPrimary,
+  }))
+
+  for (const document of myData.documents) {
+    const type = document.type.toLowerCase() as DocumentType
+    const draft = registeredDocuments.value.find((item) => item.type === type)
+    if (!draft || !document.number) continue
+
+    draft.number = document.number
+    draft.history = [{
+      id: document.id,
+      number: document.number,
+      details: {},
+      images: [],
+      registeredAt: document.createdAt,
+    }]
+  }
 })
 
 async function handleLogout(): Promise<void> {
@@ -433,49 +593,15 @@ function handleDocumentImageDrop(event: DragEvent): void {
   if (document) addDocumentImages(Array.from(event.dataTransfer?.files ?? []), document.images)
 }
 
-function addDocument(): void {
-  documentFormError.value = ''
-
-  if (!documentForm.number.trim()) {
-    documentFormError.value = 'Informe o número do documento.'
-    return
-  }
-
-  if (documentForm.type === 'cpf' && !isValidCpf(documentForm.number)) {
-    documentFormError.value = 'Informe um CPF válido.'
-    return
-  }
-
-  if (registeredDocuments.value.some((document) => document.type === documentForm.type)) {
-    documentFormError.value = 'Este tipo de documento já foi adicionado.'
-    return
-  }
-
-  const documentId = crypto.randomUUID()
-  registeredDocuments.value.push({
-    id: documentId,
-    type: documentForm.type,
-    number: documentForm.number.trim(),
-    images: [],
-  })
-  documentNumberVisibility[documentId] = false
-
-  const nextDocumentType = documentDefinitions.find((definition) =>
-    !registeredDocuments.value.some((document) => document.type === definition.value))
-  if (nextDocumentType) documentForm.type = nextDocumentType.value
-  documentForm.number = ''
-  documentUploadError.value = ''
-}
-
 function documentTitle(type: DocumentType): string {
   return documentDefinitions.find((document) => document.value === type)?.title ?? type
 }
 
-function displayDocumentNumber(document: UserDocumentDraft): string {
+function displayDocumentNumber(document: Pick<UserDocumentDraft, 'type' | 'number'>): string {
   return document.type === 'cpf' ? formatCpf(document.number) : document.number
 }
 
-function maskDocumentNumber(document: UserDocumentDraft): string {
+function maskDocumentNumber(document: Pick<UserDocumentDraft, 'type' | 'number'>): string {
   const formattedNumber = displayDocumentNumber(document)
   const visibleCharacterCount = 2
   const alphanumericCount = [...formattedNumber].filter((character) => /[A-Za-z0-9]/.test(character)).length
@@ -606,9 +732,13 @@ onBeforeUnmount(() => {
   phoneVisibilityTimers.clear()
   documentVisibilityTimers.forEach((timer) => clearTimeout(timer))
   documentVisibilityTimers.clear()
+  const previewUrls = new Set<string>()
   registeredDocuments.value.forEach((document) => {
-    document.images.forEach((image) => URL.revokeObjectURL(image.previewUrl))
+    document.images.forEach((image) => previewUrls.add(image.previewUrl))
+    document.history.forEach((history) =>
+      history.images.forEach((image) => previewUrls.add(image.previewUrl)))
   })
+  previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
 })
 </script>
 
@@ -962,134 +1092,91 @@ onBeforeUnmount(() => {
 
               <template v-else-if="activeSection === 'documents'">
                 <div class="documents-heading">
-                  <div>
-                    <h2>Documentos</h2>
-                    <p>Adicione cada documento com seu tipo, número e imagens.</p>
-                  </div>
-                  <span class="documents-heading__count">
-                    {{ registeredDocuments.length }} documento(s)
-                  </span>
+                  <h2>Documentos</h2>
                 </div>
 
-                <div class="document-fields">
-                  <v-select
-                    v-model="documentForm.type"
-                    class="document-fields__type"
-                    label="Tipo de documento"
-                    :items="availableDocumentDefinitions"
-                    item-title="title"
-                    item-value="value"
-                    :prepend-inner-icon="mdiFileDocumentOutline"
-                    variant="outlined"
-                    hide-details
-                    :disabled="availableDocumentDefinitions.length === 0"
-                    @update:model-value="documentFormError = ''"
-                  />
-                  <CpfField
-                    v-if="documentForm.type === 'cpf'"
-                    v-model="documentForm.number"
-                    label="Número do CPF"
-                    :prepend-inner-icon="mdiCardAccountDetailsOutline"
-                    variant="outlined"
-                    hide-details="auto"
-                    validate-on="blur"
-                    :disabled="availableDocumentDefinitions.length === 0"
-                    @update:model-value="documentFormError = ''"
-                  />
-                  <v-text-field
-                    v-else
-                    v-model="documentForm.number"
-                    :label="selectedDocumentDefinition.numberLabel"
-                    :placeholder="selectedDocumentDefinition.placeholder"
-                    :prepend-inner-icon="mdiCardAccountDetailsOutline"
-                    variant="outlined"
-                    hide-details
-                    :disabled="availableDocumentDefinitions.length === 0"
-                    @update:model-value="documentFormError = ''"
-                  />
-                  <v-btn
-                    class="document-add-inline"
-                    :prepend-icon="mdiPlus"
-                    color="#17543f"
-                    variant="flat"
-                    rounded="pill"
-                    :disabled="availableDocumentDefinitions.length === 0"
-                    @click="addDocument"
+                <v-expansion-panels
+                  v-model="openedDocumentCards"
+                  class="document-type-cards"
+                  aria-label="Tipos de documentos disponíveis"
+                >
+                  <v-expansion-panel
+                    :value="cpfDocument.type"
+                    class="document-type-card"
+                    elevation="0"
                   >
-                    Adicionar documento
-                  </v-btn>
-                </div>
+                    <v-expansion-panel-title class="document-type-card__header">
+                      <span class="document-type-card__icon">
+                        <v-icon :icon="mdiFileDocumentOutline" size="25" />
+                      </span>
+                      <span class="document-type-card__heading">
+                        <strong>CPF</strong>
+                      </span>
+                    </v-expansion-panel-title>
 
-                <p v-if="documentFormError" class="document-form-error" role="alert">
-                  {{ documentFormError }}
-                </p>
-
-                <section v-if="registeredDocuments.length" class="registered-documents" aria-labelledby="registered-documents-title">
-                  <div class="registered-documents__heading">
-                    <h3 id="registered-documents-title">Documentos adicionados</h3>
-                    <span>{{ registeredDocuments.length }}</span>
-                  </div>
-
-                  <article
-                    v-for="document in registeredDocuments"
-                    :key="document.id"
-                    class="registered-document-card"
-                  >
-                    <span class="registered-document-card__icon">
-                      <v-icon :icon="mdiFileDocumentOutline" size="25" />
-                    </span>
-                    <div class="registered-document-card__identity">
-                      <strong>{{ documentTitle(document.type) }}</strong>
-                      <div class="registered-document-card__number">
-                        <span>{{ visibleDocumentNumber(document) }}</span>
+                    <v-expansion-panel-text class="document-type-card__content">
+                      <div class="cpf-document-fields">
+                        <v-text-field
+                          model-value="CPF"
+                          label="Tipo de documento"
+                          :prepend-inner-icon="mdiFileDocumentOutline"
+                          variant="outlined"
+                          readonly
+                          hide-details
+                        />
+                        <CpfField
+                          v-model="cpfDocument.number"
+                          label="Número do CPF"
+                          :prepend-inner-icon="mdiCardAccountDetailsOutline"
+                          variant="outlined"
+                          hide-details="auto"
+                          validate-on="blur"
+                          :readonly="isDocumentNumberLocked(cpfDocument)"
+                        />
                         <v-tooltip
-                          :text="documentNumberVisibility[document.id] ? 'Ocultar número do documento' : 'Mostrar número do documento'"
+                          :text="cpfDocument.images.length ? 'Visualizar imagens' : 'Adicionar imagens'"
                           location="top"
                         >
                           <template #activator="{ props: tooltipProps }">
                             <v-btn
                               v-bind="tooltipProps"
-                              :icon="documentNumberVisibility[document.id] ? mdiEyeOffOutline : mdiEyeOutline"
-                              size="x-small"
-                              variant="text"
-                              color="#315f50"
-                              :aria-label="documentNumberVisibility[document.id] ? 'Ocultar número do documento' : 'Mostrar número do documento'"
-                              :aria-pressed="documentNumberVisibility[document.id] === true"
-                              @click="toggleDocumentNumberVisibility(document.id)"
-                            />
+                              class="document-image-trigger cpf-document-fields__images"
+                              icon
+                              variant="flat"
+                              color="#21644d"
+                              :aria-label="cpfDocument.images.length ? 'Visualizar imagens' : 'Adicionar imagens'"
+                              @click="openImageViewer(cpfDocument.id)"
+                            >
+                              <span class="cloud-image-icon" aria-hidden="true">
+                                <v-icon :icon="mdiCloudUploadOutline" size="23" />
+                                <v-icon class="cloud-image-icon__image" :icon="mdiImageOutline" size="10" />
+                              </span>
+                              <span v-if="cpfDocument.images.length" class="document-image-trigger__count">
+                                {{ cpfDocument.images.length }}
+                              </span>
+                            </v-btn>
                           </template>
                         </v-tooltip>
                       </div>
-                    </div>
-                    <div class="registered-document-card__images">
-                      <v-tooltip
-                        text="Adicionar Imagem"
-                        location="top"
-                      >
-                        <template #activator="{ props: tooltipProps }">
-                          <v-btn
-                            v-bind="tooltipProps"
-                            class="document-image-trigger"
-                            icon
-                            variant="flat"
-                            color="#21644d"
-                            aria-label="Adicionar Imagem"
-                            @click="openImageViewer(document.id)"
-                          >
-                            <span class="cloud-image-icon" aria-hidden="true">
-                              <v-icon :icon="mdiCloudUploadOutline" size="23" />
-                              <v-icon class="cloud-image-icon__image" :icon="mdiImageOutline" size="10" />
-                            </span>
-                            <span v-if="document.images.length" class="document-image-trigger__count">
-                              {{ document.images.length }}
-                            </span>
-                          </v-btn>
-                        </template>
-                      </v-tooltip>
-                    </div>
-                  </article>
 
-                </section>
+                      <div class="cpf-document-history">
+                        <v-tooltip text="Visualizar histórico do CPF" location="top">
+                          <template #activator="{ props: tooltipProps }">
+                            <v-btn
+                              v-bind="tooltipProps"
+                              :icon="mdiEyeOutline"
+                              variant="text"
+                              color="#315f50"
+                              aria-label="Visualizar histórico do CPF"
+                              @click="openDocumentHistory('cpf')"
+                            />
+                          </template>
+                        </v-tooltip>
+                        <span v-if="cpfDocument.history.length">{{ cpfDocument.history.length }}</span>
+                      </div>
+                    </v-expansion-panel-text>
+                  </v-expansion-panel>
+                </v-expansion-panels>
               </template>
 
               <template v-else>
@@ -1111,7 +1198,7 @@ onBeforeUnmount(() => {
                   type="submit"
                   size="large"
                   color="#17543f"
-                  :disabled="(activeSection === 'documents' && registeredDocuments.length === 0)
+                  :disabled="(activeSection === 'documents' && completedDocumentCount === 0)
                     || (activeSection === 'contact' && registeredPhones.length === 0)"
                 >
                   Salvar alterações
@@ -1122,6 +1209,75 @@ onBeforeUnmount(() => {
         </div>
       </section>
     </div>
+
+    <v-dialog v-model="isHistoryDialogOpen" max-width="980" scrollable>
+      <v-card v-if="historyDocument" class="document-history-dialog">
+        <header class="document-history-dialog__header">
+          <span class="document-history-dialog__icon">
+            <v-icon :icon="mdiHistory" size="25" />
+          </span>
+          <div>
+            <strong>Histórico de {{ documentTitle(historyDocument.type) }}</strong>
+            <span>Cada registro preserva os dados e as imagens daquela emissão.</span>
+          </div>
+          <v-btn
+            :icon="mdiClose"
+            variant="text"
+            aria-label="Fechar histórico"
+            @click="isHistoryDialogOpen = false"
+          />
+        </header>
+
+        <div class="document-history-dialog__body">
+          <div v-if="historyDocument.history.length" class="document-history-list">
+            <article
+              v-for="(history, index) in historyDocument.history"
+              :key="history.id"
+              class="document-history-entry"
+            >
+              <header class="document-history-entry__header">
+                <div>
+                  <span class="document-history-entry__sequence">
+                    Emissão {{ historyDocument.history.length - index }}
+                  </span>
+                  <strong>{{ maskDocumentNumber({ type: historyDocument.type, number: history.number }) }}</strong>
+                </div>
+                <time :datetime="history.registeredAt">Registrada em {{ formatHistoryDate(history.registeredAt) }}</time>
+              </header>
+
+              <dl v-if="filledHistoryDetails(historyDocument, history).length" class="document-history-entry__details">
+                <div v-for="field in filledHistoryDetails(historyDocument, history)" :key="field.key">
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ field.value }}</dd>
+                </div>
+              </dl>
+
+              <section class="document-history-entry__images">
+                <div>
+                  <strong>Imagens preservadas</strong>
+                  <span>{{ history.images.length }} de {{ MAX_DOCUMENT_IMAGES }}</span>
+                </div>
+                <div v-if="history.images.length" class="document-history-entry__thumbnails">
+                  <img
+                    v-for="image in history.images"
+                    :key="image.id"
+                    :src="image.previewUrl"
+                    :alt="`Imagem histórica de ${documentTitle(historyDocument.type)}`"
+                  >
+                </div>
+                <p v-else>Nenhuma imagem foi vinculada a esta emissão.</p>
+              </section>
+            </article>
+          </div>
+
+          <div v-else class="document-history-empty">
+            <span><v-icon :icon="mdiHistory" size="30" /></span>
+            <strong>Nenhuma emissão registrada</strong>
+            <p>Preencha os dados atuais e selecione “Registrar emissão” para montar o histórico visual.</p>
+          </div>
+        </div>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="isImageViewerOpen" max-width="960" scrollable>
       <v-card v-if="imageViewerDocument" class="document-viewer">
@@ -1925,6 +2081,258 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
+.document-type-cards {
+  display: grid;
+  gap: 18px;
+}
+
+.document-type-card {
+  overflow: hidden;
+  border: 1px solid #dfe5e1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(31, 75, 59, 0.06);
+}
+
+.document-type-card::before,
+.document-type-card::after {
+  display: none;
+}
+
+:deep(.document-type-card__header) {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #f7faf8 0%, #eef5f1 100%);
+}
+
+:deep(.document-type-card__header:hover) {
+  background: #eef5f1;
+}
+
+.document-type-card__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #21644d;
+  background: #dfece6;
+}
+
+.document-type-card__heading {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.document-type-card__heading strong {
+  color: #173f32;
+  font-size: 1rem;
+}
+
+.document-type-card__heading small {
+  color: #6d7c75;
+  font-size: 0.8rem;
+}
+
+.document-type-card__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.document-type-card__history-count {
+  color: #547067;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.document-type-card__status {
+  padding: 6px 10px;
+  border: 1px solid #ded9c7;
+  border-radius: 999px;
+  color: #796d42;
+  background: #fbf8eb;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.document-type-card__status--available {
+  border-color: #c9e1d6;
+  color: #1f684e;
+  background: #e8f4ee;
+}
+
+:deep(.document-type-card__content .v-expansion-panel-text__wrapper) {
+  padding: 0;
+}
+
+.document-data-group {
+  padding: 20px 18px 4px;
+  border-top: 1px solid #e7ebe8;
+}
+
+.document-data-group--versioned {
+  margin-top: 12px;
+  padding-top: 18px;
+  background: #fcfdfc;
+}
+
+.document-data-group__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 15px;
+  color: #477061;
+}
+
+.document-data-group__heading h3 {
+  margin: 0;
+  color: #284b3e;
+  font-size: 0.9rem;
+}
+
+.document-data-group__heading p,
+.document-data-group__empty {
+  margin: 4px 0 0;
+  color: #74827c;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.document-data-group__empty {
+  padding: 2px 0 18px;
+}
+
+.document-type-card__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 0 18px;
+}
+
+.document-type-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 18px;
+  border-top: 1px solid #edf0ee;
+  background: #fbfcfb;
+}
+
+.document-type-card__image-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.document-type-card__footer strong {
+  color: #345347;
+  font-size: 0.82rem;
+}
+
+.document-type-card__footer span {
+  color: #79857f;
+  font-size: 0.75rem;
+}
+
+.document-type-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.document-type-card__actions :deep(.v-btn) {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.document-history-button__count {
+  min-width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  margin-left: 7px;
+  padding-inline: 5px;
+  border-radius: 10px;
+  color: #fff !important;
+  background: #315f50;
+  font-size: 0.66rem !important;
+  font-weight: 800;
+}
+
+.document-type-card__footer :deep(.document-image-trigger) {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 18px !important;
+  color: #155a43 !important;
+  background: #e3eee8 !important;
+}
+
+.document-type-card :deep(.v-expansion-panel-title) {
+  height: 78px;
+  min-height: 78px;
+}
+
+:deep(.document-type-card__content .v-expansion-panel-text__wrapper) {
+  min-height: 150px;
+  padding: 20px 18px 14px;
+  border-top: 1px solid #e7ebe8;
+}
+
+.cpf-document-fields {
+  display: grid;
+  grid-template-columns: 190px minmax(260px, 1fr) 56px;
+  align-items: start;
+  gap: 14px;
+}
+
+.cpf-document-fields :deep(.v-field) {
+  min-height: 56px;
+}
+
+.cpf-document-fields :deep(.cpf-document-fields__images) {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 16px !important;
+  color: #155a43 !important;
+  background: #e3eee8 !important;
+}
+
+.cpf-document-history {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid #edf0ee;
+}
+
+.cpf-document-history > span {
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  background: #315f50;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
 .document-fields {
   display: grid;
   grid-template-columns: 230px minmax(260px, 1fr) auto;
@@ -2110,6 +2518,203 @@ onBeforeUnmount(() => {
 .cloud-image-icon--empty {
   width: 48px;
   height: 45px;
+}
+
+.document-history-dialog {
+  overflow: hidden;
+  border-radius: 20px !important;
+}
+
+.document-history-dialog__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 17px 20px;
+  border-bottom: 1px solid #e3e8e5;
+  background: #f6f9f7;
+}
+
+.document-history-dialog__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #1d634a;
+  background: #e2eee8;
+}
+
+.document-history-dialog__header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.document-history-dialog__header strong {
+  color: #173f32;
+  font-size: 1rem;
+}
+
+.document-history-dialog__header span {
+  color: #6c7b74;
+  font-size: 0.8rem;
+}
+
+.document-history-dialog__body {
+  max-height: 72vh;
+  overflow-y: auto;
+  padding: 18px;
+  background: #f7f9f8;
+}
+
+.document-history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.document-history-entry {
+  overflow: hidden;
+  border: 1px solid #dde4e0;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.document-history-entry__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #edf0ee;
+}
+
+.document-history-entry__header > div {
+  display: grid;
+  gap: 3px;
+}
+
+.document-history-entry__sequence {
+  color: #237156;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.document-history-entry__header strong {
+  color: #314f43;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.document-history-entry__header time {
+  color: #74827c;
+  font-size: 0.75rem;
+}
+
+.document-history-entry__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 15px 16px;
+}
+
+.document-history-entry__details div {
+  min-width: 0;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: #f6f8f7;
+}
+
+.document-history-entry__details dt {
+  color: #77847e;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.document-history-entry__details dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: #345347;
+  font-size: 0.8rem;
+}
+
+.document-history-entry__images {
+  padding: 13px 16px 16px;
+  border-top: 1px solid #edf0ee;
+}
+
+.document-history-entry__images > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.document-history-entry__images strong {
+  color: #365448;
+  font-size: 0.78rem;
+}
+
+.document-history-entry__images span,
+.document-history-entry__images p {
+  color: #7a8781;
+  font-size: 0.72rem;
+}
+
+.document-history-entry__images p {
+  margin: 9px 0 0;
+}
+
+.document-history-entry__thumbnails {
+  display: flex !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.document-history-entry__thumbnails img {
+  width: 84px;
+  height: 62px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border: 1px solid #dce3df;
+  border-radius: 9px;
+}
+
+.document-history-empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 30px;
+  text-align: center;
+}
+
+.document-history-empty > span {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #28654f;
+  background: #e5f0ea;
+}
+
+.document-history-empty strong {
+  color: #264a3c;
+}
+
+.document-history-empty p {
+  max-width: 440px;
+  margin: 0;
+  color: #718079;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .document-viewer {
@@ -2480,6 +3085,14 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 
+  .document-type-card__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .cpf-document-fields {
+    grid-template-columns: 1fr 1fr 56px;
+  }
+
   .phone-editor__actions {
     align-items: stretch;
     flex-direction: column;
@@ -2600,6 +3213,44 @@ onBeforeUnmount(() => {
 
   .documents-heading__count {
     justify-self: start;
+  }
+
+  .cpf-document-fields {
+    grid-template-columns: 1fr 56px;
+  }
+
+  .cpf-document-fields > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  :deep(.document-type-card__header) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .document-type-card__summary {
+    width: 100%;
+    padding-left: 57px;
+  }
+
+  .document-type-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .document-type-card__actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .document-history-entry__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .document-history-entry__details {
+    grid-template-columns: 1fr;
   }
 
   .registered-document-card {

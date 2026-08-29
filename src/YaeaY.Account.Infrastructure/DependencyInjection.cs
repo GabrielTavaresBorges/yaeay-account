@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
+using YaeaY.Account.Application.Services.ReadModels.Interfaces;
 using YaeaY.Account.Application.Services.Emails.Interfaces;
 using YaeaY.Account.Application.Services.Scheduling.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
@@ -33,6 +34,8 @@ using YaeaY.Account.Infrastructure.Identity.Configurations;
 using YaeaY.Account.Infrastructure.Identity.Models;
 using YaeaY.Account.Infrastructure.Identity.Services;
 using YaeaY.Account.Infrastructure.Messaging.Outbox;
+using YaeaY.Account.Infrastructure.Messaging.RabbitMq;
+using YaeaY.Account.Infrastructure.ReadModels;
 using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 using YaeaY.Account.Infrastructure.Services.Emails;
@@ -59,6 +62,21 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IDomainEventSerializer, JsonDomainEventSerializer>();
         services.AddScoped<IOutboxMessageProcessor, OutboxMessageProcessor>();
+        services.AddSingleton<ReadModelConnectionFactory>();
+        services.AddScoped<IMyDataReader, DapperMyDataReader>();
+        services.AddScoped<UserMyDataProjector>();
+        services.AddOptions<RabbitMqOptions>()
+            .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.HostName),
+                "Messaging:RabbitMq:HostName is required when RabbitMQ is enabled.")
+            .Validate(options => !options.Enabled || options.Port is > 0 and <= 65535,
+                "Messaging:RabbitMq:Port must be between 1 and 65535 when RabbitMQ is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.UserName),
+                "Messaging:RabbitMq:UserName is required when RabbitMQ is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Password),
+                "Messaging:RabbitMq:Password is required when RabbitMQ is enabled.")
+            .ValidateOnStart();
+        services.AddSingleton<IRabbitMqOutboxPublisher, RabbitMqOutboxPublisher>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -239,6 +257,30 @@ public static class DependencyInjection
         services.AddSingleton<IJobScheduler, QuartzJobScheduler>();
         services.AddHostedService<QuartzSchedulingHostedService>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddReadModelWorkerInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddSingleton<ReadModelConnectionFactory>();
+        services.AddScoped<UserMyDataProjector>();
+        services.AddScoped<UserMyDataRebuilder>();
+        services.AddSingleton<TimeProvider>(TimeProvider.System);
+        services.AddOptions<ReadModelRebuildOptions>()
+            .Bind(configuration.GetSection(ReadModelRebuildOptions.SectionName));
+        services.AddOptions<RabbitMqOptions>()
+            .Bind(configuration.GetRequiredSection(RabbitMqOptions.SectionName))
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.HostName),
+                "Messaging:RabbitMq:HostName is required when RabbitMQ is enabled.")
+            .Validate(options => !options.Enabled || options.Port is > 0 and <= 65535,
+                "Messaging:RabbitMq:Port must be between 1 and 65535 when RabbitMQ is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.UserName),
+                "Messaging:RabbitMq:UserName is required when RabbitMQ is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Password),
+                "Messaging:RabbitMq:Password is required when RabbitMQ is enabled.")
+            .ValidateOnStart();
         return services;
     }
 }

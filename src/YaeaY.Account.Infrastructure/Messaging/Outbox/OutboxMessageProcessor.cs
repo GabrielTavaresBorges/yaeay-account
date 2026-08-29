@@ -8,6 +8,7 @@ using YaeaY.Account.Application.Services.OutboxMessages.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Events.Publishers;
+using YaeaY.Account.Infrastructure.Messaging.RabbitMq;
 using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 
 namespace YaeaY.Account.Infrastructure.Messaging.Outbox;
@@ -17,6 +18,7 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
     private readonly AppDbContext _context;
     private readonly IDomainEventSerializer _domainEventSerializer;
     private readonly MediatRDomainEventPublisher _domainEventPublisher;
+    private readonly IRabbitMqOutboxPublisher _rabbitMqOutboxPublisher;
     private readonly IServiceProviderIsService _serviceProviderIsService;
     private readonly TimeProvider _timeProvider;
     private readonly OutboxProcessingScheduleOptions _options;
@@ -26,6 +28,7 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
         AppDbContext context,
         IDomainEventSerializer domainEventSerializer,
         MediatRDomainEventPublisher domainEventPublisher,
+        IRabbitMqOutboxPublisher rabbitMqOutboxPublisher,
         IServiceProviderIsService serviceProviderIsService,
         TimeProvider timeProvider,
         IOptions<OutboxProcessingScheduleOptions> options,
@@ -34,6 +37,7 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
         _context = context;
         _domainEventSerializer = domainEventSerializer;
         _domainEventPublisher = domainEventPublisher;
+        _rabbitMqOutboxPublisher = rabbitMqOutboxPublisher;
         _serviceProviderIsService = serviceProviderIsService;
         _timeProvider = timeProvider;
         _options = options.Value;
@@ -69,9 +73,18 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
                 .SingleAsync(item => item.Id == messageId, cancellationToken);
 
             var domainEvent = _domainEventSerializer.Deserialize(message.Content);
-            EnsureHandlerIsRegistered(domainEvent);
+            if (HasRegisteredHandler(domainEvent))
+            {
+                await _domainEventPublisher.PublishAsync(domainEvent, cancellationToken);
+            }
+            else
+            {
+                _logger.LogDebug(
+                    "O evento de domínio {DomainEventType} não possui handler local; seguirá somente para os consumidores externos.",
+                    domainEvent.GetType().FullName);
+            }
 
-            await _domainEventPublisher.PublishAsync(domainEvent, cancellationToken);
+            await _rabbitMqOutboxPublisher.PublishAsync(message, cancellationToken);
 
             message.MarkAsProcessed(_timeProvider.GetUtcNow());
             await _context.SaveChangesAsync(cancellationToken);
@@ -109,16 +122,13 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
         }
     }
 
-    private void EnsureHandlerIsRegistered(IDomainEvent domainEvent)
+    private bool HasRegisteredHandler(IDomainEvent domainEvent)
     {
         var notificationType = typeof(DomainEventNotification<>)
             .MakeGenericType(domainEvent.GetType());
         var handlerType = typeof(INotificationHandler<>)
             .MakeGenericType(notificationType);
 
-        if (!_serviceProviderIsService.IsService(handlerType))        
-            throw new InvalidOperationException(
-                $"No application handler is registered for domain event '{domainEvent.GetType().FullName}'.");
-        
+        return _serviceProviderIsService.IsService(handlerType);
     }
 }
