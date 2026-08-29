@@ -3,4 +3,5 @@ namespace YaeaY.Account.Application.UseCases.Authentication.Queries.GetCurrentSe
 public sealed record Response(
     Guid UserId,
     string FullName,
-    DateTimeOffset? LastLoginAt);
+    DateTimeOffset? LastLoginAt,
+    bool CanManageAccount);

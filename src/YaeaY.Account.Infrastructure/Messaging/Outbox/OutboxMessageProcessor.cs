@@ -84,8 +84,6 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
                     domainEvent.GetType().FullName);
             }
 
-            await _rabbitMqOutboxPublisher.PublishAsync(message, cancellationToken);
-
             message.MarkAsProcessed(_timeProvider.GetUtcNow());
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -115,6 +113,68 @@ public sealed class OutboxMessageProcessor : IOutboxMessageProcessor
                 "Failed to process outbox message {OutboxMessageId}. Next attempt at {NextAttemptOnUtc}.",
                 messageId,
                 nextAttemptOnUtc);
+        }
+        finally
+        {
+            _context.ChangeTracker.Clear();
+        }
+    }
+
+    public async Task PublishPendingAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_rabbitMqOutboxPublisher.IsEnabled)
+            return;
+
+        var nowUtc = _timeProvider.GetUtcNow();
+        var messageIds = await _context.OutboxMessages
+            .AsNoTracking()
+            .Where(message =>
+                message.ProcessedOnUtc != null &&
+                message.PublishedOnUtc == null &&
+                message.NextPublishAttemptOnUtc <= nowUtc)
+            .OrderBy(message => message.NextPublishAttemptOnUtc)
+            .ThenBy(message => message.OccurredOnUtc)
+            .Select(message => message.Id)
+            .Take(_options.BatchSize)
+            .ToListAsync(cancellationToken);
+
+        foreach (var messageId in messageIds)
+            await PublishMessageAsync(messageId, cancellationToken);
+    }
+
+    private async Task PublishMessageAsync(Guid messageId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var message = await _context.OutboxMessages
+                .SingleAsync(item => item.Id == messageId, cancellationToken);
+
+            await _rabbitMqOutboxPublisher.PublishAsync(message, cancellationToken);
+            message.MarkAsPublished(_timeProvider.GetUtcNow());
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _context.ChangeTracker.Clear();
+            throw;
+        }
+        catch (Exception exception)
+        {
+            _context.ChangeTracker.Clear();
+
+            var message = await _context.OutboxMessages
+                .SingleAsync(item => item.Id == messageId, cancellationToken);
+            var attemptedOnUtc = _timeProvider.GetUtcNow();
+            message.RegisterPublishFailure(
+                exception.Message,
+                attemptedOnUtc,
+                attemptedOnUtc.AddSeconds(_options.RetryDelayInSeconds));
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogError(
+                exception,
+                "Falha ao publicar a mensagem da Outbox {OutboxMessageId}; a publicação será repetida.",
+                messageId);
         }
         finally
         {

@@ -70,4 +70,28 @@ public static class OutboxMessageErrors
         Message: "The next processing attempt must occur after the current attempt.",
         Category: ErrorCategory.BusinessRule,
         Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error MustBeProcessedBeforePublication = new(
+        Code: "outbox-message.must-be-processed-before-publication",
+        Message: "The outbox message must be processed locally before publication.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error AlreadyPublished = new(
+        Code: "outbox-message.already-published",
+        Message: "The outbox message has already been published.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error PublishedOnUtcRequired = new(
+        Code: "outbox-message.published-on-utc.required",
+        Message: "The publication date is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error PublishedBeforeOccurrence = new(
+        Code: "outbox-message.published-before-occurrence",
+        Message: "The outbox message cannot be published before the domain event occurred.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
 }

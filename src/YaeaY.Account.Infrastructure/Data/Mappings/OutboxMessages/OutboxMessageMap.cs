@@ -62,7 +62,30 @@ public sealed class OutboxMessageMap : IEntityTypeConfiguration<OutboxMessage>
             .HasField("_lastError")
             .HasColumnType("text");
 
+        builder.Property(message => message.PublishedOnUtc)
+            .HasField("_publishedOnUtc")
+            .HasColumnType("timestamp with time zone");
+
+        builder.Property(message => message.LastPublishAttemptOnUtc)
+            .HasField("_lastPublishAttemptOnUtc")
+            .HasColumnType("timestamp with time zone");
+
+        builder.Property(message => message.NextPublishAttemptOnUtc)
+            .HasField("_nextPublishAttemptOnUtc")
+            .HasColumnType("timestamp with time zone")
+            .IsRequired();
+
+        builder.Property(message => message.PublishAttemptCount)
+            .HasField("_publishAttemptCount")
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        builder.Property(message => message.LastPublishError)
+            .HasField("_lastPublishError")
+            .HasColumnType("text");
+
         builder.Ignore(message => message.IsProcessed);
+        builder.Ignore(message => message.IsPublished);
 
         builder.HasIndex(message => new
             {
@@ -71,5 +94,13 @@ public sealed class OutboxMessageMap : IEntityTypeConfiguration<OutboxMessage>
             })
             .HasDatabaseName("IX_OutboxMessages_Pending")
             .HasFilter("\"ProcessedOnUtc\" IS NULL");
+
+        builder.HasIndex(message => new
+            {
+                message.NextPublishAttemptOnUtc,
+                message.OccurredOnUtc
+            })
+            .HasDatabaseName("IX_OutboxMessages_PendingPublication")
+            .HasFilter("\"ProcessedOnUtc\" IS NOT NULL AND \"PublishedOnUtc\" IS NULL");
     }
 }

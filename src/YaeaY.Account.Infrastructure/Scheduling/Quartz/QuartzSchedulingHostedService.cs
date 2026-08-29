@@ -25,7 +25,16 @@ public sealed class QuartzSchedulingHostedService : IHostedService
             EndAt: null,
             IsActive: _options.IsActive);
 
-        return _jobScheduler.ScheduleAsync(schedule, cancellationToken);
+        var publishSchedule = new JobSchedule(
+            JobKey: QuartzJobKeys.PublishOutboxMessages,
+            Interval: TimeSpan.FromSeconds(_options.IntervalInSeconds),
+            StartAt: null,
+            EndAt: null,
+            IsActive: _options.IsActive);
+
+        return Task.WhenAll(
+            _jobScheduler.ScheduleAsync(schedule, cancellationToken),
+            _jobScheduler.ScheduleAsync(publishSchedule, cancellationToken));
     }
 
     public Task StopAsync(CancellationToken cancellationToken) =>

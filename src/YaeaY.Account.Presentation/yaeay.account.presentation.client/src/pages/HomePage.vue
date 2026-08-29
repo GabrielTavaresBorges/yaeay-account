@@ -31,6 +31,7 @@ import {
 } from '@/services/authentication-service'
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
 import { useSidebarState } from '@/composables/use-sidebar-state'
+import { getMyData } from '@/services/users/users-service'
 
 const router = useRouter()
 const {
@@ -42,13 +43,21 @@ const {
 const session = ref<CurrentSessionResponse | null>(getCachedCurrentSession())
 const isLoggingOut = ref(false)
 const showLogoutError = ref(false)
+const profileCompletion = ref(0)
 
-const navigationItems = [
+const baseNavigationItems = [
   { label: 'Home', icon: mdiHomeVariant, active: true, to: { name: 'home' } },
   { label: 'Meus dados', icon: mdiAccountOutline, active: false, to: { name: 'my-data-section', params: { section: 'basic' } } },
   { label: 'Apps', icon: mdiViewGridOutline, active: false, to: null },
   { label: 'Calendário', icon: mdiCalendarMonthOutline, active: false, to: null },
 ]
+
+const navigationItems = computed(() => [
+  ...baseNavigationItems,
+  ...(session.value?.canManageAccount
+    ? [{ label: 'Administração', icon: mdiShieldCheckOutline, active: false, to: { name: 'administration' } }]
+    : []),
+])
 
 const futureApps = [
   { title: 'Gerenciamento Financeiro', icon: mdiPiggyBankOutline },
@@ -111,6 +120,18 @@ const fullDate = `Hoje, ${new Intl.DateTimeFormat('pt-BR', {
   month: 'long',
 }).format(today)}`
 
+const completionMessage = computed(() => profileCompletion.value === 100
+  ? 'Cadastro completo'
+  : `${profileCompletion.value}% do cadastro concluído`)
+
+function calculateProfileCompletion(data: Awaited<ReturnType<typeof getMyData>>): number {
+  const basic = [data.fullName, data.birthDate, data.gender].filter(Boolean).length / 3
+  const contact = data.phones.length > 0 ? 1 : 0
+  const documents = data.documents.length > 0 ? 1 : 0
+  const address = 0
+  return Math.round(((basic + contact + documents + address) / 4) * 100)
+}
+
 async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
   if (!to) return
 
@@ -119,7 +140,12 @@ async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
 }
 
 onMounted(async () => {
-  session.value ??= await getCurrentSession()
+  session.value = await getCurrentSession(true)
+  try {
+    profileCompletion.value = calculateProfileCompletion(await getMyData())
+  } catch {
+    profileCompletion.value = 0
+  }
 })
 
 async function handleLogout() {
@@ -274,19 +300,20 @@ async function handleLogout() {
         </header>
 
         <div class="dashboard">
-          <h1>Olá, {{ firstName }}.</h1>
-
           <div class="dashboard-grid">
             <section class="primary-content">
               <div class="summary-row">
                 <article class="status-card">
                   <div class="status-card__content">
                     <span class="eyebrow eyebrow--light">Status da conta</span>
-                    <h2>Seu ambiente<br>está pronto.</h2>
+                    <h2>{{ completionMessage }}</h2>
+                    <p>Complete seus dados para aproveitar todos os recursos do Account.</p>
                   </div>
 
                   <div class="status-card__illustration" aria-hidden="true">
-                    <v-icon :icon="mdiShieldCheckOutline" size="116" />
+                    <v-progress-circular :model-value="profileCompletion" :size="116" :width="8" color="#d5eadf" bg-color="#3e7765">
+                      <strong>{{ profileCompletion }}%</strong>
+                    </v-progress-circular>
                     <span class="status-card__check">
                       <v-icon :icon="mdiCheck" size="32" />
                     </span>
@@ -615,16 +642,6 @@ async function handleLogout() {
   padding: 46px 42px 54px;
 }
 
-.dashboard > h1 {
-  margin: 0 0 30px;
-  color: #0f4838;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2.65rem, 4vw, 4.4rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.045em;
-}
-
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(600px, 1fr) minmax(320px, 390px);
@@ -680,6 +697,19 @@ async function handleLogout() {
   font-size: clamp(2rem, 3vw, 2.65rem);
   font-weight: 700;
   line-height: 1.12;
+}
+
+.status-card p {
+  max-width: 340px;
+  margin: 0;
+  color: #c9ddd4;
+  font-size: .94rem;
+  line-height: 1.5;
+}
+
+.status-card__illustration strong {
+  color: #fff;
+  font-size: 1.25rem;
 }
 
 .static-button {

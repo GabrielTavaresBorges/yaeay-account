@@ -103,6 +103,24 @@ public static class UserErrors
         Category: ErrorCategory.BusinessRule,
         Rule: ErrorRule.InvariantViolation);
 
+    public static readonly Error AdministrativeJustificationRequired = new(
+        Code: "user.administration.justification.required",
+        Message: "Administrative operations require a justification.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error DisabledAccountCannotBeSuspended = new(
+        Code: "user.administration.disabled-account-cannot-be-suspended",
+        Message: "A disabled account cannot be suspended.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
+    public static readonly Error UnconfirmedAccountCannotBeReactivated = new(
+        Code: "user.administration.unconfirmed-account-cannot-be-reactivated",
+        Message: "An unconfirmed account cannot be reactivated.",
+        Category: ErrorCategory.BusinessRule,
+        Rule: ErrorRule.InvariantViolation);
+
     public static readonly Error FullNameRequired = new(
         Code: "user.full-name.required",
         Message: "A user must have a full name.",

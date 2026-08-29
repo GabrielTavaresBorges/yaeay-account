@@ -16,6 +16,7 @@ export type CurrentSessionResponse = {
   userId: string
   fullName: string
   lastLoginAt: string | null
+  canManageAccount: boolean
 }
 
 type AntiforgeryTokenResponse = { token: string }
@@ -49,6 +50,7 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
       userId: loginResponse.userId,
       fullName: loginResponse.fullName,
       lastLoginAt: loginResponse.loggedInAt,
+      canManageAccount: false,
     }
 
     return loginResponse
@@ -61,8 +63,8 @@ export function getCachedCurrentSession(): CurrentSessionResponse | null {
   return currentSession
 }
 
-export async function getCurrentSession(): Promise<CurrentSessionResponse> {
-  if (currentSession) return currentSession
+export async function getCurrentSession(forceRefresh = false): Promise<CurrentSessionResponse> {
+  if (currentSession && !forceRefresh) return currentSession
 
   const response = await fetch('/api/authentication/session', {
     credentials: 'same-origin',

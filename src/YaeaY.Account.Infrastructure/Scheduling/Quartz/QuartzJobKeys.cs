@@ -4,4 +4,5 @@ public static class QuartzJobKeys
 {
     public const string Group = "YaeaY.Account";
     public const string ProcessOutboxMessages = "ProcessOutboxMessages";
+    public const string PublishOutboxMessages = "PublishOutboxMessages";
 }

@@ -218,6 +218,46 @@ public class User : Entity, IAggregateRoot
         AddDomainEvent(new UserLoginRegisteredDomainEvent(Id));
     }
 
+    public void Suspend(SuspensionReason reason, string justification, DateTimeOffset occurredAtUtc, DateTimeOffset? untilUtc = null)
+    {
+        if (string.IsNullOrWhiteSpace(justification))
+            throw new DomainException(UserErrors.AdministrativeJustificationRequired);
+
+        if (_status == AccountStatus.Disabled)
+            throw new DomainException(UserErrors.DisabledAccountCannotBeSuspended);
+
+        var suspension = SuspensionInfo.Create(reason, SuspensionBy.Admin, occurredAtUtc, untilUtc, justification);
+        if (suspension.IsFailure)
+            throw new DomainException(suspension.Error);
+
+        _suspension = suspension.Value;
+        _status = AccountStatus.Suspended;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+
+    public void Disable(string justification)
+    {
+        if (string.IsNullOrWhiteSpace(justification))
+            throw new DomainException(UserErrors.AdministrativeJustificationRequired);
+
+        _suspension = null;
+        _status = AccountStatus.Disabled;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+
+    public void Reactivate(string justification)
+    {
+        if (string.IsNullOrWhiteSpace(justification))
+            throw new DomainException(UserErrors.AdministrativeJustificationRequired);
+
+        if (!_emailConfirmedAt.HasValue)
+            throw new DomainException(UserErrors.UnconfirmedAccountCannotBeReactivated);
+
+        _suspension = null;
+        _status = AccountStatus.Active;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+
     public void ChangeFullName(FullName fullName)
     {
         if (fullName is null)
