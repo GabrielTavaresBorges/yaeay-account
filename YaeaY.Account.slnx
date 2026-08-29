@@ -9,6 +9,9 @@
     </Project>
     <Project Path="src/YaeaY.Account.Presentation/YaeaY.Account.Presentation.Server/YaeaY.Account.Presentation.Server.csproj" Id="c0cd471d-061b-4b49-b26d-57e62a52aa2d" />
   </Folder>
+  <Folder Name="/src/hosts/">
+    <Project Path="src/Hosts/YaeaY.Account.EventProcessing.Worker/YaeaY.Account.EventProcessing.Worker.csproj" Id="7aeac001-0003-4a11-8c03-000000000003" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/YaeaY.Account.Application.UnitTests/YaeaY.Account.Application.UnitTests.csproj" />
     <Project Path="tests/YaeaY.Account.Domain.UnitTests/YaeaY.Account.Domain.UnitTests.csproj" Id="d7717e91-dc57-473b-a909-fe84b2a3b78f" />

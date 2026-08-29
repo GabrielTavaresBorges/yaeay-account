@@ -46,3 +46,33 @@ export type UpdateUserResponse = {
   updatedFields: string[]
   message: string
 }
+
+export type MyDataPhoneResponse = {
+  id: string
+  callingCode: string
+  country: string
+  areaCode: string
+  number: string
+  phoneType: PhoneType
+  isPrimary: boolean
+  createdAt: string
+}
+
+export type MyDataDocumentResponse = {
+  id: string
+  type: string
+  number: string | null
+  createdAt: string
+}
+
+export type MyDataResponse = {
+  userId: string
+  email: string
+  fullName: string
+  birthDate: string
+  gender: Gender
+  status: string
+  phones: MyDataPhoneResponse[]
+  documents: MyDataDocumentResponse[]
+  projectedAtUtc: string
+}

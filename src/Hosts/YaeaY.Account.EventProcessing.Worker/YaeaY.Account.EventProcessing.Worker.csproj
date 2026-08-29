@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\YaeaY.Account.Application\YaeaY.Account.Application.csproj" />
+    <ProjectReference Include="..\..\YaeaY.Account.Infrastructure\YaeaY.Account.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

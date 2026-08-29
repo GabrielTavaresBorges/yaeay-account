@@ -134,6 +134,7 @@ public class User : Entity, IAggregateRoot
         }
 
         _phones.Add(UserPhone.Create(phoneNumber, isPrimary));
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 
     public UserDocument AddCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images = null)
@@ -152,6 +153,7 @@ public class User : Entity, IAggregateRoot
 
         var document = UserDocument.CreateFromCpf(cpf, documentImages);
         _documents.Add(document);
+        AddDomainEvent(new UserDocumentAddedDomainEvent(Id));
         return document;
     }
 
@@ -183,6 +185,7 @@ public class User : Entity, IAggregateRoot
         _emailConfirmedAt = confirmedAtUtc;
         _suspension = null;
         _status = AccountStatus.Active;
+        AddDomainEvent(new UserEmailConfirmedDomainEvent(Id));
     }
 
     public void ChangeEmail(Email email)
@@ -193,6 +196,7 @@ public class User : Entity, IAggregateRoot
                 code: "EMAIL_NULL");
 
         _email = email;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 
     public void RegisterSuccessfulLogin(DateTimeOffset occurredAtUtc)
@@ -211,6 +215,7 @@ public class User : Entity, IAggregateRoot
 
         _firstLoginAt ??= occurredAtUtc;
         _lastLoginAt = occurredAtUtc;
+        AddDomainEvent(new UserLoginRegisteredDomainEvent(Id));
     }
 
     public void ChangeFullName(FullName fullName)
@@ -221,6 +226,7 @@ public class User : Entity, IAggregateRoot
                 code: "FULL_NAME_NULL");
 
         _fullName = fullName;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 
     public void ChangeBirthDate(BirthDate birthDate)
@@ -231,6 +237,7 @@ public class User : Entity, IAggregateRoot
                 code: "BIRTH_DATE_NULL");
 
         _birthDate = birthDate;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 
     public void ChangeGender(Gender gender)
@@ -244,5 +251,6 @@ public class User : Entity, IAggregateRoot
             return;
 
         _gender = gender;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 }

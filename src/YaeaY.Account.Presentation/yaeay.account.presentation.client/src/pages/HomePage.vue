@@ -283,7 +283,6 @@ async function handleLogout() {
                   <div class="status-card__content">
                     <span class="eyebrow eyebrow--light">Status da conta</span>
                     <h2>Seu ambiente<br>está pronto.</h2>
-                    <span class="static-button static-button--light">Gerenciar perfil</span>
                   </div>
 
                   <div class="status-card__illustration" aria-hidden="true">
@@ -695,11 +694,6 @@ async function handleLogout() {
   letter-spacing: 0.035em;
   text-transform: uppercase;
   user-select: none;
-}
-
-.static-button--light {
-  background: #fff;
-  color: #173d32;
 }
 
 .static-button--green {

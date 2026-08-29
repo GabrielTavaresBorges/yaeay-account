@@ -63,7 +63,7 @@ public sealed class UserPhonesMap : IEntityTypeConfiguration<UserPhone>
         // ===== VerifiedAt =====
         builder.Property(p => p.VerifiedAt)
             .HasColumnName("VerifiedAt")
-            .HasColumnType("datetimeoffset");
+            .HasColumnType("timestamp with time zone");
 
         // ===== IsPrimary =====
         builder.Property(p => p.IsPrimary)
@@ -73,7 +73,7 @@ public sealed class UserPhonesMap : IEntityTypeConfiguration<UserPhone>
         // ===== CreatedAt =====
         builder.Property(p => p.CreatedAt)
             .HasColumnName("CreatedAt")
-            .HasColumnType("datetimeoffset")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         // Evita duplicar o mesmo número para o mesmo usuário
