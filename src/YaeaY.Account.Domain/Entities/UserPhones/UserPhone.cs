@@ -56,12 +56,17 @@ public sealed class UserPhone : Entity
         return userPhone;
     }
 
-    internal void Update(TelephoneNumber number)
+    internal bool Update(TelephoneNumber number)
     {
         Validate(number);
 
-        if (TelephoneNumber == number)
-            return;
+        if (_callingCode == number.CallingCode
+            && _regionCode == number.RegionCode
+            && _areaCode == number.AreaCode
+            && _phoneType == number.PhoneType
+            && _phoneNumber == number.NationalNumber
+            && _e164 == number.E164)
+            return false;
 
         _telephoneNumber = number;
         _callingCode = number.CallingCode;
@@ -72,6 +77,7 @@ public sealed class UserPhone : Entity
         _e164 = number.E164;
         _isVerified = false;
         _verifiedAt = null;
+        return true;
     }
 
     private static void Validate(TelephoneNumber telehpneNumber)
@@ -80,11 +86,12 @@ public sealed class UserPhone : Entity
             throw new DomainException(UserPhoneErrors.NumberRequired);
     }
 
-    internal void SetPrimary(bool isPrimary)
+    internal bool SetPrimary(bool isPrimary)
     {
         if (_isPrimary == isPrimary)
-            return;
+            return false;
 
         _isPrimary = isPrimary;
+        return true;
     }
 }

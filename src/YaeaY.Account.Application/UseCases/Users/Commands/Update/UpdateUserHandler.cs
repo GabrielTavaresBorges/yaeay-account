@@ -7,16 +7,21 @@ using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Errors.Users;
+using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
+using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Documents;
 using YaeaY.Account.Domain.ValueObjects.Names;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
 public sealed class Handler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
+    ITelephoneNumberService telephoneNumberService,
+    ITelephoneNumberFactory telephoneNumberFactory,
     ILogger<Handler> logger)
     : IRequestHandler<Command, Result<Response>>
 {
@@ -52,6 +57,42 @@ public sealed class Handler(
             {
                 user.ChangeGender(command.Gender.Value);
                 updatedFields.Add(nameof(command.Gender));
+            }
+
+            if (command.Phones is not null)
+            {
+                var phonesChanged = false;
+                Guid? selectedPrimaryPhoneId = null;
+
+                foreach (var phoneInput in command.Phones)
+                {
+                    var phoneNumberResult = CreateTelephoneNumber(phoneInput);
+                    if (phoneNumberResult.IsFailure)
+                        return Result<Response>.Failure(phoneNumberResult.Error);
+
+                    Guid phoneId;
+                    if (phoneInput.Id.HasValue)
+                    {
+                        phoneId = phoneInput.Id.Value;
+                        phonesChanged |= user.UpdatePhone(phoneId, phoneNumberResult.Value);
+                    }
+                    else
+                    {
+                        phoneId = user.AddPhone(phoneNumberResult.Value).Id;
+                        phonesChanged = true;
+                    }
+
+                    if (phoneInput.IsPrimary)
+                        selectedPrimaryPhoneId = phoneId;
+                }
+
+                if (!selectedPrimaryPhoneId.HasValue)
+                    return Result<Response>.Failure(UserErrors.PrimaryPhoneRequired);
+
+                phonesChanged |= user.SetPrimaryPhone(selectedPrimaryPhoneId.Value);
+
+                if (phonesChanged)
+                    updatedFields.Add(nameof(command.Phones));
             }
 
             foreach (var input in command.CpfDocumentsToAdd ?? [])
@@ -96,6 +137,28 @@ public sealed class Handler(
                 ErrorCategory.Unexpected,
                 ErrorRule.Unexpected));
         }
+    }
+
+    private Result<TelephoneNumber> CreateTelephoneNumber(PhoneInput input)
+    {
+        var identificationResult = telephoneNumberService.ValidateAndIdentify(
+            input.CallingCode,
+            input.RegionCode,
+            input.AreaCode,
+            input.PhoneNumber,
+            input.PhoneType);
+
+        if (identificationResult.IsFailure)
+            return Result<TelephoneNumber>.Failure(identificationResult.Error);
+
+        var identification = identificationResult.Value;
+        return telephoneNumberFactory.Create(
+            identification.CallingCode,
+            identification.RegionCode,
+            identification.AreaCode,
+            identification.TelephoneType,
+            identification.NationalNumber,
+            identification.InternationalNumber);
     }
 
     private static CpfDocumentResponse ToResponse(UserDocument document)

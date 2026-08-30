@@ -34,6 +34,7 @@ public sealed class UserRepository : IUserRepository
     public Task<User?> GetByIdWithDocumentsAsync(Guid id, CancellationToken cancellationToken)
     {
         return _context.DomainUsers
+            .Include(user => user.Phones)
             .Include(user => user.Documents)
                 .ThenInclude(document => document.Cpf)
             .Include(user => user.Documents)

@@ -42,8 +42,8 @@ import { useSidebarState } from '@/composables/use-sidebar-state'
 import { formatCpf } from '@/validators/fields/cpf'
 import type { PhoneModel } from '@/models/phone-model'
 import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
-import { getMyData } from '@/services/users/users-service'
-import { genderItems } from '@/constants/gender'
+import { getMyData, updateUser } from '@/services/users/users-service'
+import { genderItems, type Gender } from '@/constants/gender'
 import {
   getCachedCurrentSession,
   getCurrentSession,
@@ -87,6 +87,7 @@ interface UserDocumentHistoryDraft {
 
 interface UserPhoneDraft {
   id: string
+  isPersisted: boolean
   phone: PhoneModel
   isPrimary: boolean
 }
@@ -201,11 +202,18 @@ const historyDocumentType = ref<DocumentType | null>(null)
 const openedDocumentCards = ref<DocumentType | null>(null)
 const phoneFormError = ref('')
 const newPhoneIsPrimary = ref(false)
+const isLoadingMyData = ref(true)
+const myDataLoadError = ref('')
+const isSaving = ref(false)
+const saveMessage = ref('')
+const saveError = ref('')
+const isSaveMessageVisible = ref(false)
+const isSaveErrorVisible = ref(false)
 
 const profile = reactive({
   fullName: '',
   birthDate: '',
-  gender: '',
+  gender: '' as Gender | '',
   postalCode: '',
   street: '',
   number: '',
@@ -363,40 +371,52 @@ async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
   await router.push(to)
 }
 
+async function loadMyData(): Promise<void> {
+  isLoadingMyData.value = true
+  myDataLoadError.value = ''
+  try {
+    // A tela autenticada é preenchida exclusivamente pela projeção account_read.
+    const myData = await getMyData()
+    profile.fullName = myData.fullName
+    profile.birthDate = myData.birthDate
+    profile.gender = myData.gender
+    registeredPhones.value = myData.phones.map((phone) => ({
+      id: phone.id,
+      isPersisted: true,
+      phone: {
+        callingCode: phone.callingCode,
+        country: phone.country,
+        areaCode: phone.areaCode,
+        phoneType: phone.phoneType,
+        number: phone.number,
+      } as PhoneModel,
+      isPrimary: phone.isPrimary,
+    }))
+
+    for (const document of myData.documents) {
+      const type = document.type.toLowerCase() as DocumentType
+      const draft = registeredDocuments.value.find((item) => item.type === type)
+      if (!draft || !document.number) continue
+
+      draft.number = document.number
+      draft.history = [{
+        id: document.id,
+        number: document.number,
+        details: {},
+        images: [],
+        registeredAt: document.createdAt,
+      }]
+    }
+  } catch {
+    myDataLoadError.value = 'Não foi possível carregar seus dados básicos. Atualize a página para tentar novamente.'
+  } finally {
+    isLoadingMyData.value = false
+  }
+}
+
 onMounted(async () => {
   session.value ??= await getCurrentSession()
-
-  // A tela autenticada é preenchida exclusivamente pela projeção account_read.
-  const myData = await getMyData()
-  profile.fullName = myData.fullName
-  profile.birthDate = myData.birthDate
-  profile.gender = myData.gender
-  registeredPhones.value = myData.phones.map((phone) => ({
-    id: phone.id,
-    phone: {
-      callingCode: phone.callingCode,
-      country: phone.country,
-      areaCode: phone.areaCode,
-      phoneType: phone.phoneType,
-      number: phone.number,
-    } as PhoneModel,
-    isPrimary: phone.isPrimary,
-  }))
-
-  for (const document of myData.documents) {
-    const type = document.type.toLowerCase() as DocumentType
-    const draft = registeredDocuments.value.find((item) => item.type === type)
-    if (!draft || !document.number) continue
-
-    draft.number = document.number
-    draft.history = [{
-      id: document.id,
-      number: document.number,
-      details: {},
-      images: [],
-      registeredAt: document.createdAt,
-    }]
-  }
+  await loadMyData()
 })
 
 async function handleLogout(): Promise<void> {
@@ -524,6 +544,7 @@ function addPhone(): void {
   const phoneId = crypto.randomUUID()
   registeredPhones.value.push({
     id: phoneId,
+    isPersisted: false,
     phone: { ...phoneForm.value },
     isPrimary: willBePrimary,
   })
@@ -537,6 +558,62 @@ function makePhonePrimary(phoneId: string): void {
   registeredPhones.value.forEach((item) => {
     item.isPrimary = item.id === phoneId
   })
+}
+
+async function saveChanges(): Promise<void> {
+  if (isSaving.value) return
+
+  if (activeSection.value === 'documents' || activeSection.value === 'address') {
+    showPendingIntegration()
+    return
+  }
+
+  isSaving.value = true
+  saveMessage.value = ''
+  saveError.value = ''
+  isSaveMessageVisible.value = false
+  isSaveErrorVisible.value = false
+
+  try {
+    const response = activeSection.value === 'basic'
+      ? await updateUser({
+        fullName: profile.fullName,
+        birthDate: profile.birthDate,
+        gender: profile.gender || undefined,
+      })
+      : await updateUser({
+        phones: registeredPhones.value.map((item) => ({
+          ...(item.isPersisted ? { id: item.id } : {}),
+          callingCode: item.phone.callingCode,
+          regionCode: item.phone.country,
+          areaCode: item.phone.areaCode,
+          phoneType: item.phone.phoneType,
+          phoneNumber: item.phone.number,
+          isPrimary: item.isPrimary,
+        })),
+      })
+
+    if (activeSection.value === 'basic' && session.value) {
+      session.value = { ...session.value, fullName: profile.fullName }
+    }
+
+    saveMessage.value = response.updatedFields.length
+      ? 'Alterações salvas. Seus dados serão atualizados em instantes.'
+      : 'Não há alterações para salvar.'
+    isSaveMessageVisible.value = true
+  } catch (error) {
+    saveError.value = error instanceof Error || (typeof error === 'object' && error !== null && 'message' in error)
+      ? String((error as { message: unknown }).message)
+      : 'Não foi possível salvar suas alterações. Tente novamente.'
+    isSaveErrorVisible.value = true
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function cancelChanges(): Promise<void> {
+  if (isSaving.value) return
+  await loadMyData()
 }
 
 function openDocumentImagePicker(): void {
@@ -943,10 +1020,19 @@ onBeforeUnmount(() => {
               </router-link>
             </nav>
 
-            <v-form class="data-panel" @submit.prevent="showPendingIntegration">
+            <v-form class="data-panel" @submit.prevent="saveChanges">
               <template v-if="activeSection === 'basic'">
                 <h2>Dados básicos</h2>
-                <div class="form-grid">
+                <v-alert
+                  v-if="myDataLoadError"
+                  class="my-data-load-error"
+                  type="error"
+                  variant="tonal"
+                  role="alert"
+                >
+                  {{ myDataLoadError }}
+                </v-alert>
+                <div v-else class="form-grid" :aria-busy="isLoadingMyData">
                   <v-text-field
                     v-model="profile.fullName"
                     class="form-grid__full"
@@ -954,6 +1040,8 @@ onBeforeUnmount(() => {
                     :prepend-inner-icon="mdiAccountOutline"
                     variant="outlined"
                     hide-details
+                    :loading="isLoadingMyData"
+                    :disabled="isLoadingMyData"
                   />
                   <v-text-field
                     v-model="profile.birthDate"
@@ -962,6 +1050,8 @@ onBeforeUnmount(() => {
                     type="date"
                     variant="outlined"
                     hide-details
+                    :loading="isLoadingMyData"
+                    :disabled="isLoadingMyData"
                   />
                   <v-select
                     v-model="profile.gender"
@@ -972,6 +1062,8 @@ onBeforeUnmount(() => {
                     item-value="value"
                     variant="outlined"
                     hide-details
+                    :loading="isLoadingMyData"
+                    :disabled="isLoadingMyData"
                   />
                 </div>
               </template>
@@ -1186,13 +1278,13 @@ onBeforeUnmount(() => {
               </template>
 
               <div class="form-actions">
-                <v-btn variant="outlined" size="large" @click="showPendingIntegration">Cancelar</v-btn>
+                <v-btn variant="outlined" size="large" :disabled="isSaving" @click="cancelChanges">Cancelar</v-btn>
                 <v-btn
                   type="submit"
                   size="large"
                   color="#17543f"
-                  :disabled="(activeSection === 'documents' && completedDocumentCount === 0)
-                    || (activeSection === 'contact' && registeredPhones.length === 0)"
+                  :loading="isSaving"
+                  :disabled="isSaving"
                 >
                   Salvar alterações
                 </v-btn>
@@ -1452,6 +1544,12 @@ onBeforeUnmount(() => {
     </v-snackbar>
     <v-snackbar v-model="showLogoutError" color="error" timeout="5000">
       Não foi possível sair da conta. Tente novamente.
+    </v-snackbar>
+    <v-snackbar v-model="isSaveMessageVisible" color="#315f50" timeout="5000">
+      {{ saveMessage }}
+    </v-snackbar>
+    <v-snackbar v-model="isSaveErrorVisible" color="error" timeout="5000">
+      {{ saveError }}
     </v-snackbar>
   </v-main>
 </template>

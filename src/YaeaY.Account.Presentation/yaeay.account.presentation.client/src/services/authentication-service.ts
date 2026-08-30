@@ -23,7 +23,7 @@ type AntiforgeryTokenResponse = { token: string }
 
 let currentSession: CurrentSessionResponse | null = null
 
-async function getAntiforgeryToken(): Promise<string> {
+export async function getAntiforgeryToken(): Promise<string> {
   const response = await fetch('/api/authentication/antiforgery-token', {
     credentials: 'same-origin',
   })

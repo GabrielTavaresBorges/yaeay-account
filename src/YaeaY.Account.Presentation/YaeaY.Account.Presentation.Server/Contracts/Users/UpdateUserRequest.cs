@@ -6,7 +6,17 @@ public sealed record UpdateUserRequest(
     string? FullName,
     DateOnly? BirthDate,
     Gender? Gender,
+    IReadOnlyCollection<UpdateUserPhoneRequest>? Phones,
     IReadOnlyCollection<CpfDocumentRequest>? CpfDocumentsToAdd);
+
+public sealed record UpdateUserPhoneRequest(
+    Guid? Id,
+    string CallingCode,
+    string RegionCode,
+    string? AreaCode,
+    TelephoneType PhoneType,
+    string PhoneNumber,
+    bool IsPrimary);
 
 public sealed record CpfDocumentRequest(
     string Number,
