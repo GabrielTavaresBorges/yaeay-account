@@ -20,9 +20,25 @@ public sealed class UserRepository : IUserRepository
         await _context.DomainUsers.AddAsync(user, cancellationToken);
     }
 
-    public Task UpdateUserAsync(User user, CancellationToken cancellationToken)
+    public Task UpdateUserAsync(User user, CancellationToken cancellationToken) =>
+        UpdateUserAsync(user, [], cancellationToken);
+
+    public Task UpdateUserAsync(
+        User user,
+        IReadOnlyCollection<YaeaY.Account.Domain.Entities.UserPhones.UserPhone> addedPhones,
+        CancellationToken cancellationToken)
     {
-        _context.DomainUsers.Update(user);
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(addedPhones);
+
+        foreach (var phone in addedPhones)
+        {
+            if (!user.Phones.Contains(phone))
+                throw new InvalidOperationException("The added phone must belong to the user aggregate.");
+
+            _context.Entry(phone).State = EntityState.Added;
+        }
+
         return Task.CompletedTask;
     }
 

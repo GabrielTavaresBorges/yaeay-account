@@ -1,6 +1,7 @@
 using YaeaY.Account.Application;
 using YaeaY.Account.Infrastructure;
 using YaeaY.Account.Infrastructure.Data.Context;
+using YaeaY.Account.Infrastructure.Messaging.RabbitMq;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
@@ -67,6 +68,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddApplication();
 // Add infrastructure services
 builder.Services.AddInfrastructure(builder.Configuration);
+
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddHostedService<RabbitMqEventConsumer>();
 
 var app = builder.Build();
 

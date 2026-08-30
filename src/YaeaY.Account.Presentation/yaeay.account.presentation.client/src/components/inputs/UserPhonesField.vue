@@ -244,6 +244,7 @@
   .user-phones-field {
     width: 100%;
     padding: 16px 0 4px;
+    container-type: inline-size;
   }
 
   .phone-grid {
@@ -307,17 +308,27 @@
       text-transform: none;
     }
 
-  @media (max-width: 960px) {
+  @container (max-width: 720px) {
+    .phone-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .phone-field--number {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container (max-width: 520px) {
     .phone-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .phone-field--number {
-      grid-column: span 2;
+      grid-column: 1 / -1;
     }
   }
 
-  @media (max-width: 600px) {
+  @container (max-width: 300px) {
     .phone-grid {
       grid-template-columns: minmax(0, 1fr);
     }
