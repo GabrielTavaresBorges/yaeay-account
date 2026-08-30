@@ -9,6 +9,11 @@
 - `src/YaeaY.Account.Presentation/yaeay.account.presentation.client`: cliente Vue.
 - `tests`: testes unitários de Domain, Application e Infrastructure.
 
+`App` é exclusivamente o repositório da solução. Não armazene aqui Docker Compose,
+Dockerfiles, Nginx, manifests, templates de ambiente, scripts de publicação, runbooks,
+Specs ou qualquer configuração operacional da VM. Esses artefatos pertencem ao
+contexto privado `Account/Infrastructure` e `Account/Automation`.
+
 ## Regras de trabalho
 
 - Inspecione código e testes próximos antes de alterar comportamento.
