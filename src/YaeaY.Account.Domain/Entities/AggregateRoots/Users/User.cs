@@ -4,8 +4,8 @@ using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Entities.UserPhones;
 using YaeaY.Account.Domain.Enumerators;
-using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Errors.UserDocuments;
+using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Events.Users;
 using YaeaY.Account.Domain.ValueObjects.Accounts;
 using YaeaY.Account.Domain.ValueObjects.Dates;
@@ -119,97 +119,7 @@ public class User : Entity, IAggregateRoot
             throw new DomainException(UserErrors.PhoneRequired);
     }
 
-    public UserPhone AddPhone(TelephoneNumber phoneNumber, bool isPrimary = false)
-    {
-        if (phoneNumber is null)
-            throw new DomainException(UserErrors.PhoneRequired);
-
-        if (_phones.Any(existing => existing.E164 == phoneNumber.E164))
-            throw new DomainException(UserErrors.PhoneAlreadyExists);
-
-        if (isPrimary)
-        {
-            foreach (var currentPrimary in _phones.Where(p => p.IsPrimary))
-                currentPrimary.SetPrimary(false);
-        }
-
-        var phone = UserPhone.Create(phoneNumber, isPrimary);
-        _phones.Add(phone);
-        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-        return phone;
-    }
-
-    public bool UpdatePhone(Guid phoneId, TelephoneNumber phoneNumber)
-    {
-        if (phoneNumber is null)
-            throw new DomainException(UserErrors.PhoneRequired);
-
-        var phone = _phones.SingleOrDefault(existing => existing.Id == phoneId);
-        if (phone is null)
-            throw new DomainException(UserErrors.PhoneNotFound);
-
-        if (_phones.Any(existing => existing.Id != phoneId && existing.E164 == phoneNumber.E164))
-            throw new DomainException(UserErrors.PhoneAlreadyExists);
-
-        if (!phone.Update(phoneNumber))
-            return false;
-
-        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-        return true;
-    }
-
-    public bool SetPrimaryPhone(Guid phoneId)
-    {
-        var primaryPhone = _phones.SingleOrDefault(phone => phone.Id == phoneId);
-        if (primaryPhone is null)
-            throw new DomainException(UserErrors.PhoneNotFound);
-
-        var changed = false;
-        foreach (var phone in _phones)
-            changed |= phone.SetPrimary(phone.Id == phoneId);
-
-        if (changed)
-            AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-
-        return changed;
-    }
-
-    public void RemovePhone(Guid phoneId)
-    {
-        if (_phones.Count <= 1)
-            throw new DomainException(UserErrors.AtLeastOnePhoneRequired);
-
-        var phone = _phones.SingleOrDefault(existing => existing.Id == phoneId);
-        if (phone is null)
-            throw new DomainException(UserErrors.PhoneNotFound);
-
-        if (phone.IsPrimary)
-            throw new DomainException(UserErrors.PrimaryPhoneCannotBeRemoved);
-
-        _phones.Remove(phone);
-        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-    }
-
-    public UserDocument AddCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images = null)
-    {
-        if (cpf is null)
-            throw new DomainException(UserDocumentErrors.CpfRequired);
-
-        var documentImages = images?.ToArray() ?? [];
-        var existingStorageKeys = _documents
-            .SelectMany(document => document.Images)
-            .Select(image => image.StorageObjectKey)
-            .ToHashSet(StringComparer.Ordinal);
-
-        if (documentImages.Any(image => image is not null && existingStorageKeys.Contains(image.StorageObjectKey)))
-            throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists);
-
-        var document = UserDocument.CreateFromCpf(cpf, documentImages);
-        _documents.Add(document);
-        AddDomainEvent(new UserDocumentAddedDomainEvent(Id));
-        return document;
-    }
-
+    #region Email
     public void ConfirmEmail(DateTimeOffset confirmedAtUtc)
     {
         if (confirmedAtUtc == default)
@@ -249,6 +159,145 @@ public class User : Entity, IAggregateRoot
         _email = email;
         AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
+    #endregion
+
+    #region FullName
+    public void ChangeFullName(FullName fullName)
+    {
+        if (fullName is null)
+            throw new DomainException(
+                message: "Full name cannot be null.",
+                code: "FULL_NAME_NULL");
+
+        _fullName = fullName;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+    #endregion
+
+    #region Gender
+    public void ChangeGender(Gender gender)
+    {
+        if (gender == Gender.Unknown)
+            throw new DomainException(
+                message: "Gender cannot be unknown.",
+                code: "GENDER_UNKNOWN");
+
+        if (_gender == gender)
+            return;
+
+        _gender = gender;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+    #endregion
+
+    #region BirthDate
+    public void ChangeBirthDate(BirthDate birthDate)
+    {
+        if (birthDate is null)
+            throw new DomainException(
+                message: "Birth date cannot be null.",
+                code: "BIRTH_DATE_NULL");
+
+        _birthDate = birthDate;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+    #endregion
+
+    #region Telephones
+    public UserPhone AddPhone(TelephoneNumber phoneNumber, bool isPrimary = false)
+    {
+        if (phoneNumber is null)
+            throw new DomainException(UserErrors.PhoneRequired);
+
+        if (_phones.Any(existing => existing.E164 == phoneNumber.E164))
+            throw new DomainException(UserErrors.PhoneAlreadyExists);
+
+        if (isPrimary)
+        {
+            foreach (var currentPrimary in _phones.Where(p => p.IsPrimary))
+                currentPrimary.SetPrimary(false);
+        }
+
+        var phone = UserPhone.Create(phoneNumber, isPrimary);
+        _phones.Add(phone);
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+        return phone;
+    }
+
+    public bool SetPrimaryPhone(Guid phoneId)
+    {
+        var primaryPhone = _phones.SingleOrDefault(phone => phone.Id == phoneId);
+        if (primaryPhone is null)
+            throw new DomainException(UserErrors.PhoneNotFound);
+
+        var changed = false;
+        foreach (var phone in _phones)
+            changed |= phone.SetPrimary(phone.Id == phoneId);
+
+        if (changed)
+            AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+
+        return changed;
+    }
+
+    public bool ChangePhone(Guid phoneId, TelephoneNumber phoneNumber)
+    {
+        if (phoneNumber is null)
+            throw new DomainException(UserErrors.PhoneRequired);
+
+        var phone = _phones.SingleOrDefault(existing => existing.Id == phoneId);
+        if (phone is null)
+            throw new DomainException(UserErrors.PhoneNotFound);
+
+        if (_phones.Any(existing => existing.Id != phoneId && existing.E164 == phoneNumber.E164))
+            throw new DomainException(UserErrors.PhoneAlreadyExists);
+
+        if (!phone.Update(phoneNumber))
+            return false;
+
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+        return true;
+    }
+
+    public void RemovePhone(Guid phoneId)
+    {
+        if (_phones.Count <= 1)
+            throw new DomainException(UserErrors.AtLeastOnePhoneRequired);
+
+        var phone = _phones.SingleOrDefault(existing => existing.Id == phoneId);
+        if (phone is null)
+            throw new DomainException(UserErrors.PhoneNotFound);
+
+        if (phone.IsPrimary)
+            throw new DomainException(UserErrors.PrimaryPhoneCannotBeRemoved);
+
+        _phones.Remove(phone);
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+    }
+
+    #endregion
+
+    #region Documents
+    public UserDocument AddCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images = null)
+    {
+        if (cpf is null)
+            throw new DomainException(UserDocumentErrors.CpfRequired);
+
+        var documentImages = images?.ToArray() ?? [];
+        var existingStorageKeys = _documents
+            .SelectMany(document => document.Images)
+            .Select(image => image.StorageObjectKey)
+            .ToHashSet(StringComparer.Ordinal);
+
+        if (documentImages.Any(image => image is not null && existingStorageKeys.Contains(image.StorageObjectKey)))
+            throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists);
+
+        var document = UserDocument.CreateFromCpf(cpf, documentImages);
+        _documents.Add(document);
+        AddDomainEvent(new UserDocumentAddedDomainEvent(Id));
+        return document;
+    }
+    #endregion
 
     public void RegisterSuccessfulLogin(DateTimeOffset occurredAtUtc)
     {
@@ -306,42 +355,6 @@ public class User : Entity, IAggregateRoot
 
         _suspension = null;
         _status = AccountStatus.Active;
-        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-    }
-
-    public void ChangeFullName(FullName fullName)
-    {
-        if (fullName is null)
-            throw new DomainException(
-                message: "Full name cannot be null.",
-                code: "FULL_NAME_NULL");
-
-        _fullName = fullName;
-        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-    }
-
-    public void ChangeBirthDate(BirthDate birthDate)
-    {
-        if (birthDate is null)
-            throw new DomainException(
-                message: "Birth date cannot be null.",
-                code: "BIRTH_DATE_NULL");
-
-        _birthDate = birthDate;
-        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
-    }
-
-    public void ChangeGender(Gender gender)
-    {
-        if (gender == Gender.Unknown)
-            throw new DomainException(
-                message: "Gender cannot be unknown.",
-                code: "GENDER_UNKNOWN");
-
-        if (_gender == gender)
-            return;
-
-        _gender = gender;
         AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 }
