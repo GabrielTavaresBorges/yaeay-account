@@ -35,6 +35,7 @@ public sealed class Handler(
 
             var updatedFields = new List<string>();
             var addedDocuments = new List<CpfDocumentResponse>();
+            var addedPhones = new List<YaeaY.Account.Domain.Entities.UserPhones.UserPhone>();
 
             if (command.FullName is not null &&
                 !string.Equals(user.FullName.Name, command.FullName.Trim(), StringComparison.Ordinal))
@@ -78,7 +79,9 @@ public sealed class Handler(
                     }
                     else
                     {
-                        phoneId = user.AddPhone(phoneNumberResult.Value).Id;
+                        var addedPhone = user.AddPhone(phoneNumberResult.Value);
+                        phoneId = addedPhone.Id;
+                        addedPhones.Add(addedPhone);
                         phonesChanged = true;
                     }
 
@@ -90,6 +93,21 @@ public sealed class Handler(
                     return Result<Response>.Failure(UserErrors.PrimaryPhoneRequired);
 
                 phonesChanged |= user.SetPrimaryPhone(selectedPrimaryPhoneId.Value);
+
+                var requestedPhoneIds = command.Phones
+                    .Where(phone => phone.Id.HasValue)
+                    .Select(phone => phone.Id!.Value)
+                    .ToHashSet();
+                var addedPhoneIds = addedPhones.Select(phone => phone.Id).ToHashSet();
+
+                foreach (var existingPhone in user.Phones.ToArray())
+                {
+                    if (requestedPhoneIds.Contains(existingPhone.Id) || addedPhoneIds.Contains(existingPhone.Id))
+                        continue;
+
+                    user.RemovePhone(existingPhone.Id);
+                    phonesChanged = true;
+                }
 
                 if (phonesChanged)
                     updatedFields.Add(nameof(command.Phones));
@@ -120,6 +138,7 @@ public sealed class Handler(
             if (updatedFields.Count == 0)
                 return Result<Response>.Success(new Response(user.Id, [], [], "No changes to apply."));
 
+            await userRepository.UpdateUserAsync(user, addedPhones, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
             return Result<Response>.Success(new Response(user.Id, updatedFields, addedDocuments, "User updated successfully."));
         }

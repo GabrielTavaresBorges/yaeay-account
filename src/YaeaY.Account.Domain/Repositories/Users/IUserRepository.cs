@@ -8,6 +8,11 @@ public interface IUserRepository : IRepository<User>
     Task<bool> ExistsByEmailAsync(Email email, CancellationToken cancellationToken);
     Task CreateUserAsync(User user, CancellationToken cancellationToken);
     Task UpdateUserAsync(User user, CancellationToken cancellationToken);
+    Task UpdateUserAsync(
+        User user,
+        IReadOnlyCollection<global::YaeaY.Account.Domain.Entities.UserPhones.UserPhone> addedPhones,
+        CancellationToken cancellationToken)
+        => UpdateUserAsync(user, cancellationToken);
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<User?> GetByIdWithDocumentsAsync(Guid id, CancellationToken cancellationToken)
         => GetByIdAsync(id, cancellationToken);

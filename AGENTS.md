@@ -23,6 +23,8 @@ requests, versionamento e a execução privada pertencem a
 
 ## Regras de trabalho
 
+- Produza textos de interface, títulos, descrições e comentários de revisão em português do Brasil, com codificação UTF-8 correta.
+
 - Inspecione código e testes próximos antes de alterar comportamento.
 - Preserve alterações locais preexistentes e não reverta trabalho do usuário.
 - Mantenha dependências apontando para dentro: Domain não depende das demais camadas;

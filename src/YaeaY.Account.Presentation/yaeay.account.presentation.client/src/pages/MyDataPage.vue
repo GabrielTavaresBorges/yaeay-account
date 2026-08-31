@@ -31,7 +31,6 @@ import {
   mdiPhoneOutline,
   mdiPencilOutline,
   mdiPlus,
-  mdiShieldCheckOutline,
   mdiStar,
   mdiStarOutline,
   mdiViewGridOutline,
@@ -225,6 +224,7 @@ const profile = reactive({
 
 const phoneForm = ref<PhoneModel>(createDefaultPhone())
 const registeredPhones = ref<UserPhoneDraft[]>([])
+const editingPhoneId = ref<string | null>(null)
 const phoneNumberVisibility = reactive<Record<string, boolean>>({})
 const phoneVisibilityTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
@@ -552,6 +552,67 @@ function addPhone(): void {
 
   phoneForm.value = createDefaultPhone()
   newPhoneIsPrimary.value = false
+}
+
+function resetPhoneEditor(): void {
+  editingPhoneId.value = null
+  phoneForm.value = createDefaultPhone()
+  newPhoneIsPrimary.value = false
+  phoneFormError.value = ''
+}
+
+function beginPhoneEdit(phoneItem: UserPhoneDraft): void {
+  editingPhoneId.value = phoneItem.id
+  phoneForm.value = { ...phoneItem.phone }
+  newPhoneIsPrimary.value = phoneItem.isPrimary
+  phoneFormError.value = ''
+}
+
+function updatePhone(): void {
+  const phoneId = editingPhoneId.value
+  const phoneItem = registeredPhones.value.find((item) => item.id === phoneId)
+  if (!phoneId || !phoneItem) {
+    resetPhoneEditor()
+    return
+  }
+
+  if (!isValidPhone(phoneForm.value)) {
+    phoneFormError.value = 'Informe um telefone válido antes de atualizar.'
+    return
+  }
+
+  if (registeredPhones.value.some((item) =>
+    item.id !== phoneId && phoneIdentity(item.phone) === phoneIdentity(phoneForm.value))) {
+    phoneFormError.value = 'Este telefone já foi adicionado.'
+    return
+  }
+
+  phoneItem.phone = { ...phoneForm.value }
+  if (newPhoneIsPrimary.value)
+    makePhonePrimary(phoneId)
+
+  resetPhoneEditor()
+}
+
+function removePhone(phoneId: string): void {
+  const phoneItem = registeredPhones.value.find((item) => item.id === phoneId)
+  if (!phoneItem) return
+
+  if (registeredPhones.value.length <= 1) {
+    phoneFormError.value = 'É necessário manter ao menos um telefone cadastrado.'
+    return
+  }
+
+  if (phoneItem.isPrimary) {
+    phoneFormError.value = 'Defina outro telefone como principal antes de removê-lo.'
+    return
+  }
+
+  registeredPhones.value = registeredPhones.value.filter((item) => item.id !== phoneId)
+  hidePhoneNumber(phoneId)
+
+  if (editingPhoneId.value === phoneId)
+    resetPhoneEditor()
 }
 
 function makePhonePrimary(phoneId: string): void {
@@ -960,7 +1021,6 @@ onBeforeUnmount(() => {
               </span>
               <div>
                 <h1>Meus Dados</h1>
-                <p>Mantenha suas informações pessoais sempre atualizadas.</p>
               </div>
             </div>
 
@@ -977,10 +1037,6 @@ onBeforeUnmount(() => {
               <div class="completion-summary__content">
                 <h2>Cadastro completo</h2>
                 <p>Complete seus dados para aproveitar todos os recursos da sua conta.</p>
-                <div class="completion-summary__privacy">
-                  <v-icon :icon="mdiShieldCheckOutline" size="19" />
-                  <span>Seus dados são protegidos e usados apenas para manter sua conta atualizada.</span>
-                </div>
               </div>
               <v-btn variant="text" class="completion-summary__action" @click="showPendingIntegration">
                 Ver pendências
@@ -1099,14 +1155,23 @@ onBeforeUnmount(() => {
                       <span v-else>O primeiro telefone será definido como principal.</span>
                     </div>
                     <v-btn
-                      :prepend-icon="mdiPlus"
+                      :prepend-icon="editingPhoneId ? mdiCheck : mdiPlus"
                       rounded="pill"
                       color="#17543f"
                       variant="flat"
-                      :disabled="registeredPhones.length >= MAX_USER_PHONES"
-                      @click="addPhone"
+                      :disabled="!editingPhoneId && registeredPhones.length >= MAX_USER_PHONES"
+                      @click="editingPhoneId ? updatePhone() : addPhone()"
                     >
-                      Adicionar telefone
+                      {{ editingPhoneId ? 'Atualizar telefone' : 'Adicionar telefone' }}
+                    </v-btn>
+                    <v-btn
+                      v-if="editingPhoneId"
+                      rounded="pill"
+                      variant="text"
+                      color="#315f50"
+                      @click="resetPhoneEditor"
+                    >
+                      Cancelar
                     </v-btn>
                   </div>
 
@@ -1152,25 +1217,62 @@ onBeforeUnmount(() => {
                       </div>
                       <span>{{ phoneTypeLabel(phoneItem.phone) }} · {{ phoneItem.phone.country }}</span>
                     </div>
-                    <v-chip
-                      v-if="phoneItem.isPrimary"
-                      :prepend-icon="mdiStar"
-                      color="#1c644b"
-                      variant="tonal"
-                      size="small"
-                    >
-                      Principal
-                    </v-chip>
-                    <v-btn
-                      v-else
-                      :prepend-icon="mdiStarOutline"
-                      rounded="pill"
-                      variant="text"
-                      color="#315f50"
-                      @click="makePhonePrimary(phoneItem.id)"
-                    >
-                      Tornar principal
-                    </v-btn>
+                    <div class="registered-phone-card__controls">
+                      <v-chip
+                        v-if="phoneItem.isPrimary"
+                        :prepend-icon="mdiStar"
+                        color="#1c644b"
+                        variant="tonal"
+                        size="small"
+                      >
+                        Principal
+                      </v-chip>
+                      <div class="registered-phone-card__actions">
+                      <v-btn
+                        v-if="!phoneItem.isPrimary"
+                        :prepend-icon="mdiStarOutline"
+                        rounded="pill"
+                        variant="text"
+                        color="#315f50"
+                        @click="makePhonePrimary(phoneItem.id)"
+                      >
+                        Tornar principal
+                      </v-btn>
+                      <v-tooltip text="Editar telefone" location="top">
+                        <template #activator="{ props: tooltipProps }">
+                          <v-btn
+                            v-bind="tooltipProps"
+                            :icon="mdiPencilOutline"
+                            variant="text"
+                            color="#315f50"
+                            aria-label="Editar telefone"
+                            @click="beginPhoneEdit(phoneItem)"
+                          />
+                        </template>
+                      </v-tooltip>
+                      <v-tooltip
+                        :text="phoneItem.isPrimary
+                          ? 'Defina outro telefone como principal antes de remover este'
+                          : registeredPhones.length <= 1
+                            ? 'Mantenha ao menos um telefone cadastrado'
+                            : 'Remover telefone'"
+                        location="top"
+                      >
+                        <template #activator="{ props: tooltipProps }">
+                          <span v-bind="tooltipProps">
+                            <v-btn
+                              :icon="mdiDeleteOutline"
+                              variant="text"
+                              color="#a13f3f"
+                              aria-label="Remover telefone"
+                              :disabled="phoneItem.isPrimary || registeredPhones.length <= 1"
+                              @click="removePhone(phoneItem.id)"
+                            />
+                          </span>
+                        </template>
+                      </v-tooltip>
+                      </div>
+                    </div>
                   </article>
                 </section>
               </template>
@@ -1839,20 +1941,6 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.completion-summary__privacy {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 11px;
-  color: #315f50;
-  font-size: 0.77rem;
-  line-height: 1.4;
-}
-
-.completion-summary__privacy :deep(.v-icon) {
-  flex: 0 0 auto;
-}
-
 .completion-summary__action {
   color: #1d5c46;
   text-transform: none;
@@ -2141,6 +2229,20 @@ onBeforeUnmount(() => {
 .registered-phone-card :deep(.v-btn) {
   text-transform: none;
   letter-spacing: 0;
+}
+
+.registered-phone-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.registered-phone-card__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .documents-heading {
@@ -3287,14 +3389,10 @@ onBeforeUnmount(() => {
     padding: 12px;
   }
 
-  .registered-phone-card > :deep(.v-chip),
-  .registered-phone-card > :deep(.v-btn) {
+  .registered-phone-card__controls {
     grid-column: 1 / -1;
     justify-self: stretch;
-  }
-
-  .registered-phone-card > :deep(.v-btn) {
-    width: 100%;
+    justify-content: flex-start;
   }
 
   .documents-heading {
