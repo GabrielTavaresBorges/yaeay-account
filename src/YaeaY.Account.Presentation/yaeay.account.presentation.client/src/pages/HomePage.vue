@@ -20,6 +20,7 @@ import {
   mdiMenuOpen,
   mdiPiggyBankOutline,
   mdiSchoolOutline,
+  mdiShieldCrownOutline,
   mdiShieldCheckOutline,
   mdiViewGridOutline,
 } from '@mdi/js'
@@ -55,7 +56,7 @@ const baseNavigationItems = [
 const navigationItems = computed(() => [
   ...baseNavigationItems,
   ...(session.value?.canManageAccount
-    ? [{ label: 'Administração', icon: mdiShieldCheckOutline, active: false, to: { name: 'administration' } }]
+    ? [{ label: 'Administração', icon: mdiShieldCrownOutline, active: false, to: { name: 'administration' } }]
     : []),
 ])
 

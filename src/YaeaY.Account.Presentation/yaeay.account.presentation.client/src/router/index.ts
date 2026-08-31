@@ -38,7 +38,10 @@ router.beforeEach(async (to) => {
   if (!to.meta.requiresAuthentication) return true
 
   try {
-    await getCurrentSession()
+    const session = await getCurrentSession()
+    if (to.meta.requiresAdministration && !session.canManageAccount) {
+      return { name: 'home' }
+    }
     return true
   } catch {
     return {

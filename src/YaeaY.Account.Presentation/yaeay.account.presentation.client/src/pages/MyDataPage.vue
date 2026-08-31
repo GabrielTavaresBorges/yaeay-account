@@ -33,6 +33,7 @@ import {
   mdiPlus,
   mdiStar,
   mdiStarOutline,
+  mdiShieldCrownOutline,
   mdiViewGridOutline,
 } from '@mdi/js'
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
@@ -357,12 +358,19 @@ const overallCompletion = computed(() => Math.round(
 const firstName = computed(() =>
   session.value?.fullName.trim().split(/\s+/).at(0) ?? 'Usuário')
 
-const navigationItems = [
+const baseNavigationItems = [
   { label: 'Home', icon: mdiHomeVariant, to: { name: 'home' } },
   { label: 'Meus dados', icon: mdiAccountOutline, to: { name: 'my-data-section', params: { section: 'basic' } } },
   { label: 'Apps', icon: mdiViewGridOutline, to: null },
   { label: 'Calendário', icon: mdiCalendarMonthOutline, to: null },
 ]
+
+const navigationItems = computed(() => [
+  ...baseNavigationItems,
+  ...(session.value?.canManageAccount
+    ? [{ label: 'Administração', icon: mdiShieldCrownOutline, to: { name: 'administration' } }]
+    : []),
+])
 
 async function navigateTo(to: RouteLocationRaw | null): Promise<void> {
   if (!to) return

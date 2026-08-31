@@ -10,10 +10,10 @@ public sealed class EmailConfirmationTemplate : Entity, IAggregateRoot
 {
     private readonly Email _fromEmail = null!;
     private readonly string _fromName = string.Empty;
-    private readonly string _subject = string.Empty;
-    private readonly string _bodyHtml = string.Empty;
+    private string _subject = string.Empty;
+    private string _bodyHtml = string.Empty;
     private readonly bool _isActive;
-    private readonly DateTimeOffset _updatedAt;
+    private DateTimeOffset _updatedAt;
 
     public Email FromEmail => _fromEmail;
     public string FromName => _fromName;
@@ -56,6 +56,14 @@ public sealed class EmailConfirmationTemplate : Entity, IAggregateRoot
             isActive);
 
         return emailConfirmationTemplate;
+    }
+
+    public void UpdateContent(string subject, string bodyHtml)
+    {
+        Validate(_fromEmail, _fromName, subject, bodyHtml);
+        _subject = subject.Trim();
+        _bodyHtml = bodyHtml.Trim();
+        _updatedAt = DateTimeOffset.UtcNow;
     }
 
     private static void Validate(

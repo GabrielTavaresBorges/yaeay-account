@@ -29,7 +29,15 @@ public sealed class DapperAdministrationReader(ReadModelConnectionFactory connec
             FROM account_read."UserMyData" ORDER BY "CreatedAt" DESC;
             """;
         await using var connection = connectionFactory.CreateConnection();
-        return (await connection.QueryAsync<UserSummary>(new CommandDefinition(sql, cancellationToken: cancellationToken))).AsList();
+        var rows = await connection.QueryAsync<UserSummaryRow>(new CommandDefinition(sql, cancellationToken: cancellationToken));
+        return rows.Select(row => new UserSummary(
+            row.UserId,
+            row.Email,
+            row.FullName,
+            row.Status,
+            row.CreatedAt,
+            row.EmailConfirmedAt,
+            row.LastLoginAt)).ToList();
     }
 
     public async Task<IReadOnlyList<AuditEntry>> GetAuditAsync(CancellationToken cancellationToken)
@@ -39,8 +47,36 @@ public sealed class DapperAdministrationReader(ReadModelConnectionFactory connec
             FROM account_read."AdministrationAuditEntries" ORDER BY "OccurredAtUtc" DESC LIMIT 100;
             """;
         await using var connection = connectionFactory.CreateConnection();
-        return (await connection.QueryAsync<AuditEntry>(new CommandDefinition(sql, cancellationToken: cancellationToken))).AsList();
+        var rows = await connection.QueryAsync<AuditEntryRow>(new CommandDefinition(sql, cancellationToken: cancellationToken));
+        return rows.Select(row => new AuditEntry(
+            row.Id,
+            row.AdministratorId,
+            row.TargetUserId,
+            row.Action,
+            row.Justification,
+            row.OccurredAtUtc)).ToList();
     }
 
     private sealed class Counts { public int TotalUsers { get; init; } public int PendingEmailConfirmation { get; init; } public int ActiveUsers { get; init; } public int SuspendedUsers { get; init; } public int DisabledUsers { get; init; } }
+
+    private sealed class UserSummaryRow
+    {
+        public Guid UserId { get; init; }
+        public string Email { get; init; } = string.Empty;
+        public string FullName { get; init; } = string.Empty;
+        public string Status { get; init; } = string.Empty;
+        public DateTimeOffset CreatedAt { get; init; }
+        public DateTimeOffset? EmailConfirmedAt { get; init; }
+        public DateTimeOffset? LastLoginAt { get; init; }
+    }
+
+    private sealed class AuditEntryRow
+    {
+        public Guid Id { get; init; }
+        public Guid AdministratorId { get; init; }
+        public Guid? TargetUserId { get; init; }
+        public string Action { get; init; } = string.Empty;
+        public string Justification { get; init; } = string.Empty;
+        public DateTimeOffset OccurredAtUtc { get; init; }
+    }
 }
