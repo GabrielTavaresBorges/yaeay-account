@@ -138,4 +138,14 @@ app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
 
+var spaProxyEnabled = builder.Environment.IsDevelopment()
+    && (Environment.GetEnvironmentVariable("ASPNETCORE_HOSTINGSTARTUPASSEMBLIES")?.Contains("Microsoft.AspNetCore.SpaProxy", StringComparison.Ordinal) ?? false);
+
+if (spaProxyEnabled)
+{
+    var clientPort = Environment.GetEnvironmentVariable("DEV_SERVER_PORT") ?? "57830";
+    app.Lifetime.ApplicationStarted.Register(() =>
+        app.Logger.LogInformation("Cliente Vite disponível em: https://localhost:{ClientPort}", clientPort));
+}
+
 app.Run();
