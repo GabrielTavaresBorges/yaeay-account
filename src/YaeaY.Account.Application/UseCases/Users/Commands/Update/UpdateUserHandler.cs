@@ -75,7 +75,7 @@ public sealed class Handler(
                     if (phoneInput.Id.HasValue)
                     {
                         phoneId = phoneInput.Id.Value;
-                        phonesChanged |= user.UpdatePhone(phoneId, phoneNumberResult.Value);
+                        phonesChanged |= user.ChangePhone(phoneId, phoneNumberResult.Value);
                     }
                     else
                     {
