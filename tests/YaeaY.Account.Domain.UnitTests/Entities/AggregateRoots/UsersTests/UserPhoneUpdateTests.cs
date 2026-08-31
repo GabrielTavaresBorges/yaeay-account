@@ -32,7 +32,7 @@ public class UserPhoneUpdateTests
     }
 
     [Fact]
-    public void UpdatePhone_WhenNumberIsDifferent_ShouldUpdatePhone()
+    public void ChangePhone_WhenNumberIsDifferent_ShouldUpdatePhone()
     {
         // Arrange
 
@@ -42,7 +42,7 @@ public class UserPhoneUpdateTests
 
         // Act
 
-        var changed = user.UpdatePhone(phone.Id, updatedNumber);
+        var changed = user.ChangePhone(phone.Id, updatedNumber);
 
         // Assert
 
@@ -51,7 +51,7 @@ public class UserPhoneUpdateTests
     }
 
     [Fact]
-    public void UpdatePhone_WhenNumberBelongsToAnotherPhone_ShouldThrowDomainException()
+    public void ChangePhone_WhenNumberBelongsToAnotherPhone_ShouldThrowDomainException()
     {
         // Arrange
 
@@ -61,7 +61,7 @@ public class UserPhoneUpdateTests
 
         // Act
 
-        Action act = () => user.UpdatePhone(addedPhone.Id, existingPhone.TelephoneNumber);
+        Action act = () => user.ChangePhone(addedPhone.Id, existingPhone.TelephoneNumber);
 
         // Assert
 
