@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddSingleton<ReadModelConnectionFactory>();
         services.AddScoped<IMyDataReader, DapperMyDataReader>();
         services.AddScoped<IAdministrationReader, DapperAdministrationReader>();
+        services.AddScoped<IAdministrationConfigurationService, AdministrationConfigurationService>();
         services.AddScoped<UserMyDataProjector>();
         services.AddOptions<RabbitMqOptions>()
             .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
