@@ -104,6 +104,10 @@ if (app.Environment.IsDevelopment())
             ON account_write."OutboxMessages" ("NextPublishAttemptOnUtc", "OccurredOnUtc")
             WHERE "ProcessedOnUtc" IS NOT NULL
               AND "PublishedOnUtc" IS NULL;
+
+        CREATE INDEX IF NOT EXISTS "IX_OutboxMessages_UserProfileFreshness"
+            ON account_write."OutboxMessages" (("Payload" ->> 'UserId'), "OccurredOnUtc" DESC)
+            WHERE "EventType" = 'YaeaY.Account.Domain.Events.Users.UserProfileChangedDomainEvent';
         """);
 }
 

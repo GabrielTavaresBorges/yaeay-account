@@ -577,13 +577,13 @@ function updatePhone(): void {
   }
 
   if (!isValidPhone(phoneForm.value)) {
-    phoneFormError.value = 'Informe um telefone vÃ¡lido antes de atualizar.'
+    phoneFormError.value = 'Informe um telefone válido antes de atualizar.'
     return
   }
 
   if (registeredPhones.value.some((item) =>
     item.id !== phoneId && phoneIdentity(item.phone) === phoneIdentity(phoneForm.value))) {
-    phoneFormError.value = 'Este telefone jÃ¡ foi adicionado.'
+    phoneFormError.value = 'Este telefone já foi adicionado.'
     return
   }
 
@@ -599,12 +599,12 @@ function removePhone(phoneId: string): void {
   if (!phoneItem) return
 
   if (registeredPhones.value.length <= 1) {
-    phoneFormError.value = 'Ã‰ necessÃ¡rio manter ao menos um telefone cadastrado.'
+    phoneFormError.value = 'É necessário manter ao menos um telefone cadastrado.'
     return
   }
 
   if (phoneItem.isPrimary) {
-    phoneFormError.value = 'Defina outro telefone como principal antes de removÃª-lo.'
+    phoneFormError.value = 'Defina outro telefone como principal antes de removê-lo.'
     return
   }
 

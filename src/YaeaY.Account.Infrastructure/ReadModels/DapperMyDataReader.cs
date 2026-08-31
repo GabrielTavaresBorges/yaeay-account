@@ -21,7 +21,7 @@ public sealed class DapperMyDataReader(ReadModelConnectionFactory connectionFact
         const string latestWriteEventSql = """
             SELECT MAX("OccurredOnUtc")
             FROM account_write."OutboxMessages"
-            WHERE "EventType" LIKE 'YaeaY.Account.Domain.Events.Users.%'
+            WHERE "EventType" = 'YaeaY.Account.Domain.Events.Users.UserProfileChangedDomainEvent'
               AND "Payload" ->> 'UserId' = CAST(@UserId AS text);
             """;
 
