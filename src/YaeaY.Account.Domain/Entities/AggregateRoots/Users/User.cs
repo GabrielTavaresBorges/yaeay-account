@@ -119,7 +119,7 @@ public class User : Entity, IAggregateRoot
             throw new DomainException(UserErrors.PhoneRequired);
     }
 
-    public void AddPhone(TelephoneNumber phoneNumber, bool isPrimary = false)
+    public UserPhone AddPhone(TelephoneNumber phoneNumber, bool isPrimary = false)
     {
         if (phoneNumber is null)
             throw new DomainException(UserErrors.PhoneRequired);
@@ -133,7 +133,60 @@ public class User : Entity, IAggregateRoot
                 currentPrimary.SetPrimary(false);
         }
 
-        _phones.Add(UserPhone.Create(phoneNumber, isPrimary));
+        var phone = UserPhone.Create(phoneNumber, isPrimary);
+        _phones.Add(phone);
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+        return phone;
+    }
+
+    public bool UpdatePhone(Guid phoneId, TelephoneNumber phoneNumber)
+    {
+        if (phoneNumber is null)
+            throw new DomainException(UserErrors.PhoneRequired);
+
+        var phone = _phones.SingleOrDefault(existing => existing.Id == phoneId);
+        if (phone is null)
+            throw new DomainException(UserErrors.PhoneNotFound);
+
+        if (_phones.Any(existing => existing.Id != phoneId && existing.E164 == phoneNumber.E164))
+            throw new DomainException(UserErrors.PhoneAlreadyExists);
+
+        if (!phone.Update(phoneNumber))
+            return false;
+
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+        return true;
+    }
+
+    public bool SetPrimaryPhone(Guid phoneId)
+    {
+        var primaryPhone = _phones.SingleOrDefault(phone => phone.Id == phoneId);
+        if (primaryPhone is null)
+            throw new DomainException(UserErrors.PhoneNotFound);
+
+        var changed = false;
+        foreach (var phone in _phones)
+            changed |= phone.SetPrimary(phone.Id == phoneId);
+
+        if (changed)
+            AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+
+        return changed;
+    }
+
+    public void RemovePhone(Guid phoneId)
+    {
+        if (_phones.Count <= 1)
+            throw new DomainException(UserErrors.AtLeastOnePhoneRequired);
+
+        var phone = _phones.SingleOrDefault(existing => existing.Id == phoneId);
+        if (phone is null)
+            throw new DomainException(UserErrors.PhoneNotFound);
+
+        if (phone.IsPrimary)
+            throw new DomainException(UserErrors.PrimaryPhoneCannotBeRemoved);
+
+        _phones.Remove(phone);
         AddDomainEvent(new UserProfileChangedDomainEvent(Id));
     }
 
@@ -191,9 +244,7 @@ public class User : Entity, IAggregateRoot
     public void ChangeEmail(Email email)
     {
         if (email is null)
-            throw new DomainException(
-                message: "Email cannot be null.",
-                code: "EMAIL_NULL");
+            throw new DomainException(UserErrors.EmailRequired);
 
         _email = email;
         AddDomainEvent(new UserProfileChangedDomainEvent(Id));

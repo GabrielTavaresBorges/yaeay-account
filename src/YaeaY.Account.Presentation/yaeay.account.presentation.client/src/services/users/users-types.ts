@@ -29,21 +29,28 @@ export type CreateUserResponse = {
   message: string
 }
 
-/** ===== UPDATE =====
- * Update parcial:
- * - Envie apenas o que quer alterar (campos opcionais)
- * - CPF NÃO é atualizado (não existe no payload)
- * - Id vai na URL: PUT /api/users/{id}
- */
 export type UpdateUserRequest = {
   fullName?: string
-  email?: string
+  birthDate?: string
+  gender?: Gender
+  phones?: UpdateUserPhoneRequest[]
+}
+
+export type UpdateUserPhoneRequest = {
+  id?: string
+  callingCode: string
+  regionCode: string
+  areaCode?: string
+  phoneType: PhoneType
+  phoneNumber: string
+  isPrimary: boolean
 }
 
 /** Campos retornados pelo Update (conforme seu handler) */
 export type UpdateUserResponse = {
   id: UserId
   updatedFields: string[]
+  addedCpfDocuments: unknown[]
   message: string
 }
 

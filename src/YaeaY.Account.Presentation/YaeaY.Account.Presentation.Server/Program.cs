@@ -1,6 +1,7 @@
 using YaeaY.Account.Application;
 using YaeaY.Account.Infrastructure;
 using YaeaY.Account.Infrastructure.Data.Context;
+using YaeaY.Account.Infrastructure.Messaging.RabbitMq;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
@@ -68,6 +69,9 @@ builder.Services.AddApplication();
 // Add infrastructure services
 builder.Services.AddInfrastructure(builder.Configuration);
 
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddHostedService<RabbitMqEventConsumer>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -100,6 +104,10 @@ if (app.Environment.IsDevelopment())
             ON account_write."OutboxMessages" ("NextPublishAttemptOnUtc", "OccurredOnUtc")
             WHERE "ProcessedOnUtc" IS NOT NULL
               AND "PublishedOnUtc" IS NULL;
+
+        CREATE INDEX IF NOT EXISTS "IX_OutboxMessages_UserProfileFreshness"
+            ON account_write."OutboxMessages" (("Payload" ->> 'UserId'), "OccurredOnUtc" DESC)
+            WHERE "EventType" = 'YaeaY.Account.Domain.Events.Users.UserProfileChangedDomainEvent';
         """);
 }
 

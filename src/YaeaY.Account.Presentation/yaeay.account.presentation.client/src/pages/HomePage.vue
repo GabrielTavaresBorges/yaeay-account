@@ -60,6 +60,7 @@ const navigationItems = computed(() => [
 ])
 
 const futureApps = [
+  { title: 'Gerenciamento de Saúde', icon: mdiHeartPulse },
   { title: 'Gerenciamento Financeiro', icon: mdiPiggyBankOutline },
   { title: 'Gerenciamento Educacional', icon: mdiSchoolOutline },
   { title: 'Gerenciamento Trabalhista', icon: mdiBriefcaseOutline },
@@ -333,16 +334,7 @@ async function handleLogout() {
               <section class="apps-section">
                 <h2 class="section-title">Apps disponíveis</h2>
 
-                <article class="available-app">
-                  <div class="available-app__icon">
-                    <v-icon :icon="mdiHeartPulse" size="56" />
-                  </div>
-                  <div class="available-app__content">
-                    <h3>Gerenciamento de Saúde</h3>
-                    <p>Cuide do corpo e da mente, organize informações de saúde, tratamentos e rotinas.</p>
-                  </div>
-                  <span class="static-button static-button--green">Acessar</span>
-                </article>
+                <p class="apps-empty-state">Nenhum aplicativo liberado.</p>
 
                 <h3 class="future-heading">Em breve</h3>
                 <div class="future-apps">
@@ -644,24 +636,24 @@ async function handleLogout() {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(600px, 1fr) minmax(320px, 390px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
   gap: 42px;
   align-items: stretch;
 }
 
 .primary-content {
   min-width: 0;
+  container-type: inline-size;
 }
 
 .summary-row {
   display: grid;
-  grid-template-columns: minmax(430px, 1fr) 210px;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 210px);
   gap: 18px;
 }
 
 .status-card,
 .last-login-card,
-.available-app,
 .future-app,
 .agenda-card {
   border-radius: 18px;
@@ -710,26 +702,6 @@ async function handleLogout() {
 .status-card__illustration strong {
   color: #fff;
   font-size: 1.25rem;
-}
-
-.static-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 43px;
-  padding: 0 28px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-  user-select: none;
-}
-
-.static-button--green {
-  min-width: 150px;
-  color: #fff;
-  background: linear-gradient(110deg, #064d38, #0a3f31);
 }
 
 .status-card__illustration {
@@ -795,41 +767,15 @@ async function handleLogout() {
   text-transform: uppercase;
 }
 
-.available-app {
-  min-height: 138px;
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 24px;
-  padding: 22px 28px;
+.apps-empty-state {
+  margin: 0;
+  padding: 24px 28px;
   border: 1px solid #d8dedb;
+  border-radius: 18px;
+  color: #65706c;
   background: #fff;
   box-shadow: 0 6px 15px rgba(17, 60, 46, 0.045);
-}
-
-.available-app__icon {
-  width: 90px;
-  height: 90px;
-  display: grid;
-  place-items: center;
-  border-radius: 18px;
-  color: #628e76;
-  background: linear-gradient(145deg, #e0e9e3, #f3f5f3);
-}
-
-.available-app__content h3 {
-  margin: 0 0 8px;
-  color: #153f33;
-  font-size: 1.28rem;
-  font-weight: 750;
-}
-
-.available-app__content p {
-  max-width: 510px;
-  margin: 0;
-  color: #65706c;
   font-size: 0.94rem;
-  line-height: 1.55;
 }
 
 .future-heading {
@@ -841,8 +787,18 @@ async function handleLogout() {
 
 .future-apps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
   gap: 18px;
+}
+
+@container (max-width: 660px) {
+  .summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .last-login-card {
+    min-height: 160px;
+  }
 }
 
 .future-app {
@@ -1181,19 +1137,8 @@ async function handleLogout() {
     display: none;
   }
 
-  .available-app {
-    grid-template-columns: 74px 1fr;
+  .apps-empty-state {
     padding: 20px;
-  }
-
-  .available-app__icon {
-    width: 68px;
-    height: 68px;
-  }
-
-  .available-app .static-button {
-    grid-column: 1 / -1;
-    width: 100%;
   }
 
   .future-apps {

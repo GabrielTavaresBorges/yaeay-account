@@ -127,7 +127,19 @@ public static class UserErrors
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.Required);
 
+    public static readonly Error FullNameCannotBeNull = new(
+        Code: "user.full-name.required",
+        Message: "A user must have a full name.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
     public static readonly Error BirthDateRequired = new(
+        Code: "user.birth-date.required",
+        Message: "A user must have a birth date.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error BirthDateCannotBeNull = new(
         Code: "user.birth-date.required",
         Message: "A user must have a birth date.",
         Category: ErrorCategory.Validation,
@@ -144,6 +156,18 @@ public static class UserErrors
         Message: "The informed gender is invalid.",
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidValue);
+
+    public static readonly Error PhoneIdRequired = new(
+        Code: "user.phone.id.required",
+        Message: "A phone identifier is required.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
+    public static readonly Error PhoneIdDuplicated = new(
+        Code: "user.phone.id.duplicated",
+        Message: "A phone identifier can only appear once in the request.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.AlreadyExists);
 
     public static readonly Error PhoneRequired = new(
         Code: "user.phone.required",

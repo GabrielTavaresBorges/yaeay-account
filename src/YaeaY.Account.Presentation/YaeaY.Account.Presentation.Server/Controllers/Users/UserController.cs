@@ -60,6 +60,14 @@ public class UserController : ControllerBase
             request.FullName,
             request.BirthDate,
             request.Gender,
+            request.Phones?.Select(phone => new UpdateUser.PhoneInput(
+                phone.Id,
+                phone.CallingCode,
+                phone.RegionCode,
+                phone.AreaCode,
+                phone.PhoneType,
+                phone.PhoneNumber,
+                phone.IsPrimary)).ToArray(),
             request.CpfDocumentsToAdd?.Select(document => new UpdateUser.CpfDocumentInput(
                 document.Number,
                 document.Images?.Select(image => new UpdateUser.DocumentImageInput(

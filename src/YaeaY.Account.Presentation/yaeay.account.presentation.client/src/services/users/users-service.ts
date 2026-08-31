@@ -1,7 +1,8 @@
 // src/services/users/users-service.ts
 
-import type { CreateUserRequest, CreateUserResponse, MyDataResponse, UpdateUserRequest, UpdateUserResponse, UserId } from './users-types'
+import type { CreateUserRequest, CreateUserResponse, MyDataResponse, UpdateUserRequest, UpdateUserResponse } from './users-types'
 import { throwApiError } from '@/services/http/http-error'
+import { getAntiforgeryToken } from '@/services/authentication-service'
 
 export async function createUser(payload: CreateUserRequest): Promise<CreateUserResponse> {
   const response = await fetch('/api/User', {
@@ -15,10 +16,15 @@ export async function createUser(payload: CreateUserRequest): Promise<CreateUser
 }
 
 
-export async function updateUser(id: UserId, payload: UpdateUserRequest): Promise<UpdateUserResponse> {
-  const res = await fetch(`/api/users/${id}`, {
+export async function updateUser(payload: UpdateUserRequest): Promise<UpdateUserResponse> {
+  const antiforgeryToken = await getAntiforgeryToken()
+  const res = await fetch('/api/User', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-YaeaY-CSRF': antiforgeryToken,
+    },
     body: JSON.stringify(payload),
   })
 
@@ -27,7 +33,7 @@ export async function updateUser(id: UserId, payload: UpdateUserRequest): Promis
 }
 
 export async function getMyData(): Promise<MyDataResponse> {
-  const response = await fetch('/api/users/me', { credentials: 'same-origin' })
+  const response = await fetch('/api/User/me', { credentials: 'same-origin' })
   if (response.ok) return (await response.json()) as MyDataResponse
   return throwApiError(response)
 }

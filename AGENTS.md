@@ -14,7 +14,16 @@ Dockerfiles, Nginx, manifests, templates de ambiente, scripts de publicação, r
 Specs ou qualquer configuração operacional da VM. Esses artefatos pertencem ao
 contexto privado `Account/Infrastructure` e `Account/Automation`.
 
+O único artefato de automação permitido no App é a configuração declarativa exigida
+pela plataforma de hospedagem, como `.github/workflows/ci.yml`. Ela pode conter CI e
+um despacho mínimo para CD em runner privado, desde que não inclua paths internos,
+infraestrutura, scripts de publicação ou secrets. As regras de branches, pull
+requests, versionamento e a execução privada pertencem a
+`Account/Automation/SourceControl/Standard.md` e `Account/Automation/Deployment`.
+
 ## Regras de trabalho
+
+- Produza textos de interface, títulos, descrições e comentários de revisão em português do Brasil, com codificação UTF-8 correta.
 
 - Inspecione código e testes próximos antes de alterar comportamento.
 - Preserve alterações locais preexistentes e não reverta trabalho do usuário.
@@ -26,6 +35,8 @@ contexto privado `Account/Infrastructure` e `Account/Automation`.
 - Não altere contrato público, schema, dependência de produção ou arquitetura sem
   explicitar o impacto.
 - Não execute commit, push, SQL real ou deploy sem autorização específica.
+- Nunca trabalhe diretamente em `develop` ou `main`: use uma branch curta derivada de
+  `develop` e entregue-a por pull request para `develop`.
 - Valide primeiro o menor escopo afetado e depois a camada ou solução aplicável.
 
 ## Comandos de validação

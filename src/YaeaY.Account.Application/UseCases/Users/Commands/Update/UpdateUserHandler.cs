@@ -7,16 +7,21 @@ using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Errors.Users;
+using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
+using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Documents;
 using YaeaY.Account.Domain.ValueObjects.Names;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
 namespace YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
 public sealed class Handler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
+    ITelephoneNumberService telephoneNumberService,
+    ITelephoneNumberFactory telephoneNumberFactory,
     ILogger<Handler> logger)
     : IRequestHandler<Command, Result<Response>>
 {
@@ -30,6 +35,7 @@ public sealed class Handler(
 
             var updatedFields = new List<string>();
             var addedDocuments = new List<CpfDocumentResponse>();
+            var addedPhones = new List<YaeaY.Account.Domain.Entities.UserPhones.UserPhone>();
 
             if (command.FullName is not null &&
                 !string.Equals(user.FullName.Name, command.FullName.Trim(), StringComparison.Ordinal))
@@ -52,6 +58,59 @@ public sealed class Handler(
             {
                 user.ChangeGender(command.Gender.Value);
                 updatedFields.Add(nameof(command.Gender));
+            }
+
+            if (command.Phones is not null)
+            {
+                var phonesChanged = false;
+                Guid? selectedPrimaryPhoneId = null;
+
+                foreach (var phoneInput in command.Phones)
+                {
+                    var phoneNumberResult = CreateTelephoneNumber(phoneInput);
+                    if (phoneNumberResult.IsFailure)
+                        return Result<Response>.Failure(phoneNumberResult.Error);
+
+                    Guid phoneId;
+                    if (phoneInput.Id.HasValue)
+                    {
+                        phoneId = phoneInput.Id.Value;
+                        phonesChanged |= user.UpdatePhone(phoneId, phoneNumberResult.Value);
+                    }
+                    else
+                    {
+                        var addedPhone = user.AddPhone(phoneNumberResult.Value);
+                        phoneId = addedPhone.Id;
+                        addedPhones.Add(addedPhone);
+                        phonesChanged = true;
+                    }
+
+                    if (phoneInput.IsPrimary)
+                        selectedPrimaryPhoneId = phoneId;
+                }
+
+                if (!selectedPrimaryPhoneId.HasValue)
+                    return Result<Response>.Failure(UserErrors.PrimaryPhoneRequired);
+
+                phonesChanged |= user.SetPrimaryPhone(selectedPrimaryPhoneId.Value);
+
+                var requestedPhoneIds = command.Phones
+                    .Where(phone => phone.Id.HasValue)
+                    .Select(phone => phone.Id!.Value)
+                    .ToHashSet();
+                var addedPhoneIds = addedPhones.Select(phone => phone.Id).ToHashSet();
+
+                foreach (var existingPhone in user.Phones.ToArray())
+                {
+                    if (requestedPhoneIds.Contains(existingPhone.Id) || addedPhoneIds.Contains(existingPhone.Id))
+                        continue;
+
+                    user.RemovePhone(existingPhone.Id);
+                    phonesChanged = true;
+                }
+
+                if (phonesChanged)
+                    updatedFields.Add(nameof(command.Phones));
             }
 
             foreach (var input in command.CpfDocumentsToAdd ?? [])
@@ -79,6 +138,7 @@ public sealed class Handler(
             if (updatedFields.Count == 0)
                 return Result<Response>.Success(new Response(user.Id, [], [], "No changes to apply."));
 
+            await userRepository.UpdateUserAsync(user, addedPhones, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
             return Result<Response>.Success(new Response(user.Id, updatedFields, addedDocuments, "User updated successfully."));
         }
@@ -96,6 +156,28 @@ public sealed class Handler(
                 ErrorCategory.Unexpected,
                 ErrorRule.Unexpected));
         }
+    }
+
+    private Result<TelephoneNumber> CreateTelephoneNumber(PhoneInput input)
+    {
+        var identificationResult = telephoneNumberService.ValidateAndIdentify(
+            input.CallingCode,
+            input.RegionCode,
+            input.AreaCode,
+            input.PhoneNumber,
+            input.PhoneType);
+
+        if (identificationResult.IsFailure)
+            return Result<TelephoneNumber>.Failure(identificationResult.Error);
+
+        var identification = identificationResult.Value;
+        return telephoneNumberFactory.Create(
+            identification.CallingCode,
+            identification.RegionCode,
+            identification.AreaCode,
+            identification.TelephoneType,
+            identification.NationalNumber,
+            identification.InternationalNumber);
     }
 
     private static CpfDocumentResponse ToResponse(UserDocument document)

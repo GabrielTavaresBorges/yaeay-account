@@ -1,6 +1,8 @@
 using FluentAssertions;
+using YaeaY.Account.Domain.Abstraction.Exceptions;
 using YaeaY.Account.Domain.Entities.AggregateRoots.Users;
 using YaeaY.Account.Domain.Enumerators;
+using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Domain.Events.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
 using YaeaY.Account.Domain.ValueObjects.Emails;
@@ -11,6 +13,17 @@ namespace YaeaY.Account.Domain.UnitTests.Entities.AggregateRoots.UsersTests;
 
 public sealed class UserChangeEmailTests
 {
+    [Fact]
+    public void ChangeEmail_WhenEmailIsNull_ShouldThrowDomainException_WithUserErrorsEmailRequired()
+    {
+        var user = CreateUser();
+
+        var act = () => user.ChangeEmail(null!);
+
+        var exception = act.Should().Throw<DomainException>().Which;
+        exception.Error.Should().Be(UserErrors.EmailRequired);
+    }
+
     [Fact]
     public void ChangeEmail_WhenEmailChanges_ShouldRaiseProfileChangedEvent()
     {

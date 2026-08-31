@@ -1,0 +1,81 @@
+name: CI and Stage CD
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: src/YaeaY.Account.Presentation/yaeay.account.presentation.client/package-lock.json
+
+      - name: Clean solution
+        run: dotnet clean YaeaY.Account.slnx --configuration Release
+
+      - name: Restore solution
+        run: dotnet restore YaeaY.Account.slnx
+
+      - name: Build solution
+        run: dotnet build YaeaY.Account.slnx --configuration Release --no-restore
+
+      - name: Test solution
+        run: dotnet test YaeaY.Account.slnx --configuration Release --no-build
+
+      - name: Install client dependencies
+        working-directory: src/YaeaY.Account.Presentation/yaeay.account.presentation.client
+        run: npm ci
+
+      - name: Type-check client
+        working-directory: src/YaeaY.Account.Presentation/yaeay.account.presentation.client
+        run: npm run type-check
+
+      - name: Build client
+        working-directory: src/YaeaY.Account.Presentation/yaeay.account.presentation.client
+        run: npm run build
+
+  deploy-stage:
+    name: deploy-stage
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: [self-hosted, yaeay-account, stage-deploy]
+    timeout-minutes: 45
+    concurrency:
+      group: stage-deployment
+      cancel-in-progress: false
+    environment:
+      name: stage
+
+    steps:
+      - name: Deploy the validated revision through the private Harness
+        shell: pwsh
+        env:
+          DEPLOY_REVISION: ${{ github.sha }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:ACCOUNT_HARNESS_ROOT)) {
+            throw 'The private runner configuration is missing ACCOUNT_HARNESS_ROOT.'
+          }
+
+          $scriptPath = Join-Path $env:ACCOUNT_HARNESS_ROOT 'Automation/Deployment/Invoke-GitHubStageDeployment.ps1'
+          & $scriptPath -Revision $env:DEPLOY_REVISION

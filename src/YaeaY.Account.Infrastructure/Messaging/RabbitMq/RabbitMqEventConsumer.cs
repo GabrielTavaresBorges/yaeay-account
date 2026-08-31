@@ -21,6 +21,30 @@ public sealed class RabbitMqEventConsumer(
         var settings = options.Value;
         if (!settings.Enabled) return;
 
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ConsumeAsync(settings, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "Falha no consumidor RabbitMQ do read model. Uma nova conexão será tentada em cinco segundos.");
+
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+        }
+    }
+
+    private async Task ConsumeAsync(RabbitMqOptions settings, CancellationToken stoppingToken)
+    {
+
         var factory = new ConnectionFactory { HostName = settings.HostName, Port = settings.Port, VirtualHost = settings.VirtualHost, UserName = settings.UserName, Password = settings.Password };
         await using var connection = await factory.CreateConnectionAsync(stoppingToken);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
@@ -81,6 +105,8 @@ public sealed class RabbitMqEventConsumer(
             }
         };
         await channel.BasicConsumeAsync(settings.ReadModelQueueName, false, consumer, stoppingToken);
-        await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
+
+        while (connection.IsOpen && !stoppingToken.IsCancellationRequested)
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
     }
 }
