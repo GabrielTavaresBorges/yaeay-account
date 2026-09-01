@@ -23,17 +23,17 @@ public static class UserDocumentErrors
         Category: ErrorCategory.BusinessRule,
         Rule: ErrorRule.InvariantViolation);
 
-    public static readonly Error CpfImagesMinimumRequired = new(
-        Code: "user-document.cpf.images.minimum-required",
-        Message: "A CPF document must contain at least three images.",
-        Category: ErrorCategory.Validation,
-        Rule: ErrorRule.MinimumLength);
-
     public static readonly Error CpfSingleCurrentRequired = new(
         Code: "user-document.cpf.single-current-required",
         Message: "Only one current CPF document can be updated at a time.",
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidValue);
+
+    public static readonly Error ChangedConcurrently = new(
+        Code: "user-document.changed-concurrently",
+        Message: "O documento foi alterado em outra solicitação. Atualize a página e tente novamente.",
+        Category: ErrorCategory.Conflict,
+        Rule: ErrorRule.InvariantViolation);
 
     public static readonly Error ImagePositionAlreadyExists = new(
         Code: "user-document.image.position.already-exists",

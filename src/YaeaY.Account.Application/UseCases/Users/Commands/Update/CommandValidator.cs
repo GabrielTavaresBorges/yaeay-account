@@ -157,8 +157,6 @@ public sealed class CommandValidator : AbstractValidator<Command>
                 context.AddDomainFailure($"{documentPath}.{nameof(CpfDocumentInput.Number)}", cpfResult.Error);
 
             var images = document.Images ?? [];
-            if (images.Count < 3)
-                context.AddDomainFailure($"{documentPath}.{nameof(CpfDocumentInput.Images)}", UserDocumentErrors.CpfImagesMinimumRequired);
             if (images.Count > UserDocumentImage.MaximumPosition)
                 context.AddDomainFailure($"{documentPath}.{nameof(CpfDocumentInput.Images)}", UserDocumentErrors.ImageLimitExceeded);
 

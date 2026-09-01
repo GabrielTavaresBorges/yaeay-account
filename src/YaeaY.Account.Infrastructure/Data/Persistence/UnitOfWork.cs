@@ -66,6 +66,21 @@ public sealed class UnitOfWork : IUnitOfWork
             Detach(outboxMessages);
             throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists, ex);
         }
+        catch (DbUpdateException ex)
+            when (ex.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation,
+                ConstraintName: "UX_UserDocumentImages_UserDocumentId_Position"
+            })
+        {
+            Detach(outboxMessages);
+            throw new DomainException(UserDocumentErrors.ImagePositionAlreadyExists, ex);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            Detach(outboxMessages);
+            throw new DomainException(UserDocumentErrors.ChangedConcurrently, ex);
+        }
         catch
         {
             Detach(outboxMessages);

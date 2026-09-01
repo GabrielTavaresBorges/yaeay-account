@@ -31,7 +31,7 @@ public sealed class UserUpsertCpfDocumentTests
         // Assert
 
         changed.Should().BeTrue();
-        updatedDocument.Id.Should().Be(originalDocument.Id);
+        updatedDocument.Id.Should().NotBe(originalDocument.Id);
         user.Documents.Should().ContainSingle();
         updatedDocument.Cpf!.Cpf.Number.Should().Be("11144477735");
         updatedDocument.Images.Should().ContainSingle()

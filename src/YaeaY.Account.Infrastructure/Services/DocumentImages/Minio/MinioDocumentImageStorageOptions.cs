@@ -4,7 +4,9 @@ public sealed class MinioDocumentImageStorageOptions
 {
     public const string SectionName = "DocumentImageStorage";
 
+    public string Provider { get; init; } = "Minio";
     public bool Enabled { get; init; }
+    public string LocalRootPath { get; init; } = string.Empty;
     public string Endpoint { get; init; } = "minio:9000";
     public bool UseSsl { get; init; }
     public string AccessKey { get; init; } = string.Empty;

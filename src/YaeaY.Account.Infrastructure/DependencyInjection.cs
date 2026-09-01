@@ -25,6 +25,7 @@ using YaeaY.Account.Domain.Repositories.PasswordRecoveryTemplates;
 using YaeaY.Account.Domain.Policies.PasswordRecoveries;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Data.Persistence;
+using YaeaY.Account.Infrastructure.Data.Persistence.DocumentImages;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Infrastructure.Data.Repositories.Users;
@@ -46,6 +47,7 @@ using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneN
 using YaeaY.Account.Infrastructure.Services.Emails;
 using YaeaY.Account.Infrastructure.Services.Emails.Smtp;
 using YaeaY.Account.Infrastructure.Services.DocumentImages.Minio;
+using YaeaY.Account.Infrastructure.Services.DocumentImages.Local;
 
 namespace YaeaY.Account.Infrastructure;
 
@@ -66,6 +68,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ICurrentCpfDocumentWriter, CurrentCpfDocumentWriter>();
         services.AddSingleton<IDomainEventSerializer, JsonDomainEventSerializer>();
         services.AddScoped<IOutboxMessageProcessor, OutboxMessageProcessor>();
         services.AddSingleton<ReadModelConnectionFactory>();
@@ -233,16 +236,24 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, HostingerSmtpEmailSender>();
         services.AddOptions<MinioDocumentImageStorageOptions>()
             .Bind(configuration.GetSection(MinioDocumentImageStorageOptions.SectionName))
-            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Endpoint),
+            .Validate(options => options.Provider is "Minio" or "LocalFileSystem",
+                "DocumentImageStorage:Provider must be Minio or LocalFileSystem.")
+            .Validate(options => options.Provider != "LocalFileSystem" || !string.IsNullOrWhiteSpace(options.LocalRootPath),
+                "DocumentImageStorage:LocalRootPath is required for LocalFileSystem.")
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.Endpoint),
                 "DocumentImageStorage:Endpoint is required when document image storage is enabled.")
-            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.AccessKey),
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.AccessKey),
                 "DocumentImageStorage:AccessKey is required when document image storage is enabled.")
-            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.SecretKey),
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.SecretKey),
                 "DocumentImageStorage:SecretKey is required when document image storage is enabled.")
-            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.BucketName),
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.BucketName),
                 "DocumentImageStorage:BucketName is required when document image storage is enabled.")
             .ValidateOnStart();
-        services.AddSingleton<IDocumentImageStorage, MinioDocumentImageStorage>();
+        var imageStorageProvider = configuration[$"{MinioDocumentImageStorageOptions.SectionName}:Provider"] ?? "Minio";
+        if (string.Equals(imageStorageProvider, "LocalFileSystem", StringComparison.Ordinal))
+            services.AddSingleton<IDocumentImageStorage, LocalFileSystemDocumentImageStorage>();
+        else
+            services.AddSingleton<IDocumentImageStorage, MinioDocumentImageStorage>();
 
         // Domain event dispatching
         services.AddScoped<DomainEventDispatcher>();

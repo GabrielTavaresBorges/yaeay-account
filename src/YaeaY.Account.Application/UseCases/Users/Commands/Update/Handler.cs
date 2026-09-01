@@ -1,136 +1,277 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using YaeaY.Account.Domain.Abstraction.Exceptions;
-using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Errors;
 using YaeaY.Account.Domain.Abstraction.Errors.Enumerators;
+using YaeaY.Account.Domain.Abstraction.Exceptions;
+using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Result;
+using YaeaY.Account.Domain.Entities.UserDocuments;
+using YaeaY.Account.Domain.Errors.Users;
+using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
+using YaeaY.Account.Application.Services.DocumentImages.Interfaces;
+using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
-using YaeaY.Account.Domain.ValueObjects.Emails;
+using YaeaY.Account.Domain.ValueObjects.Dates;
+using YaeaY.Account.Domain.ValueObjects.Documents;
 using YaeaY.Account.Domain.ValueObjects.Names;
+using YaeaY.Account.Domain.ValueObjects.Telephones;
 
-#if false // Legacy draft retained temporarily for source history; replaced by UpdateUserHandler.cs.
 namespace YaeaY.Account.Application.UseCases.Users.Commands.Update;
 
-public sealed class Handler : IRequestHandler<Command, Result<Response>>
+public sealed class Handler(
+    IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
+    ITelephoneNumberService telephoneNumberService,
+    ITelephoneNumberFactory telephoneNumberFactory,
+    IDocumentImageStorage documentImageStorage,
+    ICurrentCpfDocumentWriter currentCpfDocumentWriter,
+    ILogger<Handler> logger)
+    : IRequestHandler<Command, Result<Response>>
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<Handler> _logger;
-
-    public Handler(IUserRepository usersRepository, IUnitOfWork unitOfWork, ILogger<Handler> logger)
-    {
-        _userRepository = usersRepository;
-        _unitOfWork = unitOfWork;
-        _logger = logger;
-    }
-
     public async Task<Result<Response>> Handle(Command command, CancellationToken cancellationToken)
     {
         try
         {
-            // 1) Carrega o usuário atual
-            // Ajuste o nome do método conforme seu repositório (ex.: GetByIdAsync / FindByIdAsync)
-            var user = await _userRepository.GetByIdAsync(command.Id, cancellationToken);
+            var user = await userRepository.GetByIdWithDocumentsAsync(command.Id, cancellationToken);
             if (user is null)
-            {
-                return Result<Response>.Failure(
-                    new Error(
-                        Code: "user.not-found",
-                        Message: "User not found.",
-                        Category: ErrorCategory.NotFound,
-                        Rule: ErrorRule.NotFound));
-            }
+                return Result<Response>.Failure(UserErrors.NotFound);
 
             var updatedFields = new List<string>();
+            var updatedDocuments = new List<CpfDocumentResponse>();
+            var addedPhones = new List<YaeaY.Account.Domain.Entities.UserPhones.UserPhone>();
+            var documentImagesToDelete = new List<string>();
+            var cpfDocumentUpdates = new List<CpfDocumentUpdate>();
 
-            // 2) Atualiza somente o que veio no comando (update parcial)
-            if (command.FullName is not null)
+            if (command.FullName is not null &&
+                !string.Equals(user.FullName.Name, command.FullName.Trim(), StringComparison.Ordinal))
             {
-                // Se quiser evitar marcar como atualizado quando for igual ao atual:
-                if (!string.Equals(user.FullName.Name, command.FullName, StringComparison.Ordinal))
-                {
-                    var fullNameResult = FullName.Create(command.FullName);
-                    if (fullNameResult.IsFailure)
-                        return Result<Response>.Failure(fullNameResult.Error);
-
-                    user.ChangeFullName(fullNameResult.Value);
-                    updatedFields.Add("FullName");
-                }
+                var result = FullName.Create(command.FullName);
+                if (result.IsFailure) return Result<Response>.Failure(result.Error);
+                user.ChangeFullName(result.Value);
+                updatedFields.Add(nameof(command.FullName));
             }
 
-            if (command.Email is not null)
+            if (command.BirthDate.HasValue && user.BirthDate.Date != command.BirthDate.Value)
             {
-                // Se quiser evitar marcar como atualizado quando for igual ao atual:
-                if (!string.Equals(user.Email.EmailAddress, command.Email, StringComparison.OrdinalIgnoreCase))
-                {
-                    var emailResult = Email.Create(command.Email);
-                    if (emailResult.IsFailure)
-                        return Result<Response>.Failure(emailResult.Error);
-
-                    user.ChangeEmail(emailResult.Value);
-                    updatedFields.Add("EmailAddress");
-                }
+                var result = BirthDate.Create(command.BirthDate.Value);
+                if (result.IsFailure) return Result<Response>.Failure(result.Error);
+                user.ChangeBirthDate(result.Value);
+                updatedFields.Add(nameof(command.BirthDate));
             }
 
-            // 3) Se nada mudou (ex.: mandou o mesmo valor), retorne uma resposta “no-op”
+            if (command.Gender.HasValue && user.Gender != command.Gender.Value)
+            {
+                user.ChangeGender(command.Gender.Value);
+                updatedFields.Add(nameof(command.Gender));
+            }
+
+            if (command.Phones is not null)
+            {
+                var phonesChanged = false;
+                Guid? selectedPrimaryPhoneId = null;
+
+                foreach (var phoneInput in command.Phones)
+                {
+                    var phoneNumberResult = CreateTelephoneNumber(phoneInput);
+                    if (phoneNumberResult.IsFailure)
+                        return Result<Response>.Failure(phoneNumberResult.Error);
+
+                    Guid phoneId;
+                    if (phoneInput.Id.HasValue)
+                    {
+                        phoneId = phoneInput.Id.Value;
+                        phonesChanged |= user.ChangePhone(phoneId, phoneNumberResult.Value);
+                    }
+                    else
+                    {
+                        var addedPhone = user.AddPhone(phoneNumberResult.Value);
+                        phoneId = addedPhone.Id;
+                        addedPhones.Add(addedPhone);
+                        phonesChanged = true;
+                    }
+
+                    if (phoneInput.IsPrimary)
+                        selectedPrimaryPhoneId = phoneId;
+                }
+
+                if (!selectedPrimaryPhoneId.HasValue)
+                    return Result<Response>.Failure(UserErrors.PrimaryPhoneRequired);
+
+                phonesChanged |= user.SetPrimaryPhone(selectedPrimaryPhoneId.Value);
+
+                var requestedPhoneIds = command.Phones
+                    .Where(phone => phone.Id.HasValue)
+                    .Select(phone => phone.Id!.Value)
+                    .ToHashSet();
+                var addedPhoneIds = addedPhones.Select(phone => phone.Id).ToHashSet();
+
+                foreach (var existingPhone in user.Phones.ToArray())
+                {
+                    if (requestedPhoneIds.Contains(existingPhone.Id) || addedPhoneIds.Contains(existingPhone.Id))
+                        continue;
+
+                    user.RemovePhone(existingPhone.Id);
+                    phonesChanged = true;
+                }
+
+                if (phonesChanged)
+                    updatedFields.Add(nameof(command.Phones));
+            }
+
+            foreach (var input in command.CpfDocumentsToAdd ?? [])
+            {
+                var cpfResult = Cpf.Create(input.Number);
+                if (cpfResult.IsFailure) return Result<Response>.Failure(cpfResult.Error);
+
+                var images = (input.Images ?? [])
+                    .Select(image => UserDocumentImage.Create(
+                        image.Position,
+                        image.StorageObjectKey,
+                        image.OriginalFileName,
+                        image.ContentType,
+                        image.FileSizeBytes,
+                        image.Sha256Hash))
+                    .ToArray();
+
+                if (images.Any(image => !image.StorageObjectKey.StartsWith($"users/{user.Id:N}/", StringComparison.Ordinal))
+                    || !(await Task.WhenAll(images.Select(image => documentImageStorage.ExistsAsync(image.StorageObjectKey, cancellationToken))).ConfigureAwait(false)).All(exists => exists))
+                {
+                    return Result<Response>.Failure(new Error(
+                        "document_image.not_found",
+                        "Uma ou mais imagens do documento não estão disponíveis para salvar.",
+                        ErrorCategory.Validation,
+                        ErrorRule.NotFound));
+                }
+
+                var oldStorageKeys = user.Documents
+                    .Where(document => document.DocumentType == YaeaY.Account.Domain.Enumerators.DocumentType.Cpf)
+                    .SelectMany(document => document.Images)
+                    .Select(image => image.StorageObjectKey)
+                    .ToHashSet(StringComparer.Ordinal);
+
+                var currentDocument = user.Documents
+                    .Where(document => document.DocumentType == YaeaY.Account.Domain.Enumerators.DocumentType.Cpf)
+                    .OrderByDescending(document => document.CreatedAt)
+                    .FirstOrDefault();
+                var unchanged = currentDocument?.Cpf?.Cpf.Number == cpfResult.Value.Number
+                    && currentDocument.Images.Count == images.Length
+                    && currentDocument.Images.OrderBy(image => image.Position).Select(image => image.StorageObjectKey)
+                        .SequenceEqual(images.OrderBy(image => image.Position).Select(image => image.StorageObjectKey), StringComparer.Ordinal);
+                if (unchanged)
+                    continue;
+
+                oldStorageKeys.ExceptWith(images.Select(image => image.StorageObjectKey));
+                documentImagesToDelete.AddRange(oldStorageKeys);
+                cpfDocumentUpdates.Add(new CpfDocumentUpdate(
+                    cpfResult.Value.Number,
+                    images.Select(image => new CpfDocumentImageWriteModel(
+                        image.Position, image.StorageObjectKey, image.OriginalFileName,
+                        image.ContentType, image.FileSizeBytes, image.Sha256Hash)).ToArray()));
+            }
+
+            if (cpfDocumentUpdates.Count > 0)
+                updatedFields.Add(nameof(command.CpfDocumentsToAdd));
+
             if (updatedFields.Count == 0)
+                return Result<Response>.Success(new Response(user.Id, [], [], "No changes to apply."));
+
+            await unitOfWork.ExecuteInTransactionAsync(async transactionCancellationToken =>
             {
-                return Result<Response>.Success(
-                    new Response(
-                        id: user.Id,
-                        updatedFields: Array.Empty<string>(),
-                        message: "No changes to apply."
-                    )
-                );
+                foreach (var update in cpfDocumentUpdates)
+                {
+                    var writtenDocument = await currentCpfDocumentWriter.ReplaceAsync(
+                        user.Id, update.Number, update.Images, transactionCancellationToken);
+                    updatedDocuments.Add(ToResponse(writtenDocument));
+                    user.RegisterDocumentChanged();
+                }
+
+                await userRepository.UpdateUserAsync(user, addedPhones, transactionCancellationToken);
+                await unitOfWork.CommitAsync(transactionCancellationToken);
+                return 0;
+            }, cancellationToken);
+            foreach (var storageObjectKey in documentImagesToDelete.Distinct(StringComparer.Ordinal))
+            {
+                try
+                {
+                    await documentImageStorage.DeleteAsync(storageObjectKey, cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogWarning(exception, "Unable to remove replaced CPF image {StorageObjectKey} for user {UserId}.", storageObjectKey, user.Id);
+                }
             }
 
-            // 4) Persistência
-            // Se você usa EF Core e o user já está rastreado, pode nem precisar chamar Update.
-            // Ajuste conforme seu repositório:
-            await _userRepository.UpdateUserAsync(user, cancellationToken);
-
-            await _unitOfWork.CommitAsync(cancellationToken);
-
-            // 5) Mensagem amigável
-            var message = updatedFields.Count switch
-            {
-                1 when updatedFields[0] == "FullName" => "Full name updated successfully!",
-                1 when updatedFields[0] == "EmailAddress" => "Email updated successfully!",
-                _ => "Full name and email updated successfully!"
-            };
-
-            return Result<Response>.Success(
-                new Response(
-                    id: user.Id,
-                    updatedFields: updatedFields,
-                    message: message
-                )
-            );
+            return Result<Response>.Success(new Response(user.Id, updatedFields, updatedDocuments, "User updated successfully."));
         }
-        catch (DomainException ex)
+        catch (DomainException exception)
         {
-            _logger.LogError(ex, "Domain error updating user.");
-            return Result<Response>.Failure(
-                new Error(
-                    Code: ex.Code,
-                    Message: ex.Message,
-                    Category: ex.Category,
-                    Rule: ex.Rule));
+            logger.LogWarning(exception, "Domain error updating user {UserId}.", command.Id);
+            return Result<Response>.Failure(exception.Error);
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogError(ex, "Unexpected error updating user.");
-            return Result<Response>.Failure(
-                new Error(
-                    Code: "unexpected.error",
-                    Message: "An unexpected error occurred.",
-                    Category: ErrorCategory.Unexpected,
-                    Rule: ErrorRule.Unexpected));
+            logger.LogError(exception, "Unexpected error updating user {UserId}.", command.Id);
+            return Result<Response>.Failure(new Error(
+                "unexpected.error",
+                "An unexpected error occurred.",
+                ErrorCategory.Unexpected,
+                ErrorRule.Unexpected));
         }
     }
+
+    private Result<TelephoneNumber> CreateTelephoneNumber(PhoneInput input)
+    {
+        var identificationResult = telephoneNumberService.ValidateAndIdentify(
+            input.CallingCode,
+            input.RegionCode,
+            input.AreaCode,
+            input.PhoneNumber,
+            input.PhoneType);
+
+        if (identificationResult.IsFailure)
+            return Result<TelephoneNumber>.Failure(identificationResult.Error);
+
+        var identification = identificationResult.Value;
+        return telephoneNumberFactory.Create(
+            identification.CallingCode,
+            identification.RegionCode,
+            identification.AreaCode,
+            identification.TelephoneType,
+            identification.NationalNumber,
+            identification.InternationalNumber);
+    }
+
+    private static CpfDocumentResponse ToResponse(UserDocument document)
+    {
+        var cpf = document.Cpf ?? throw new InvalidOperationException("A CPF document must contain its CPF detail.");
+        return new CpfDocumentResponse(
+            document.Id,
+            cpf.Id,
+            cpf.Cpf.Number,
+            document.IssuerCountry,
+            document.CreatedAt,
+            document.Images.Select(image => new DocumentImageResponse(
+                image.Id,
+                image.Position,
+                image.StorageObjectKey,
+                image.OriginalFileName,
+                image.ContentType,
+                image.FileSizeBytes,
+                image.Sha256Hash,
+                image.CreatedAt)).ToArray());
+    }
+
+    private static CpfDocumentResponse ToResponse(CpfDocumentWriteResult document) => new(
+        document.DocumentId,
+        document.CpfId,
+        document.Number,
+        "BR",
+        document.CreatedAt,
+        document.Images.Select(image => new DocumentImageResponse(
+            image.Id, image.Position, image.StorageObjectKey, image.OriginalFileName,
+            image.ContentType, image.FileSizeBytes, image.Sha256Hash, image.CreatedAt)).ToArray());
+
+    private sealed record CpfDocumentUpdate(
+        string Number,
+        IReadOnlyCollection<CpfDocumentImageWriteModel> Images);
 }
-#endif

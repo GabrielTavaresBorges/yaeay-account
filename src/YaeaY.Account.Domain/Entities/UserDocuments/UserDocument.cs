@@ -88,8 +88,16 @@ public sealed class UserDocument : Entity
         if (!cpfChanged && sameImages)
             return false;
 
-        _images.Clear();
-        foreach (var image in updatedImages)
+        var imagesByPosition = updatedImages.ToDictionary(image => image.Position);
+        foreach (var existingImage in _images.ToArray())
+        {
+            if (imagesByPosition.Remove(existingImage.Position, out var replacement))
+                existingImage.Update(replacement);
+            else
+                _images.Remove(existingImage);
+        }
+
+        foreach (var image in imagesByPosition.Values)
             AddImage(image);
 
         return true;

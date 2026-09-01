@@ -300,11 +300,24 @@ public class User : Entity, IAggregateRoot
 
         if (existingCpfDocument is not null)
         {
-            changed = existingCpfDocument.UpdateCpf(cpf, documentImages);
-            if (changed)
-                AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+            var sameCpf = existingCpfDocument.Cpf?.Cpf.Number == cpf.Number;
+            var sameImages = existingCpfDocument.Images.Count == documentImages.Length
+                && existingCpfDocument.Images.OrderBy(image => image.Position).Select(image => image.StorageObjectKey)
+                    .SequenceEqual(documentImages.OrderBy(image => image.Position).Select(image => image.StorageObjectKey), StringComparer.Ordinal);
+            if (sameCpf && sameImages)
+            {
+                changed = false;
+                return existingCpfDocument;
+            }
 
-            return existingCpfDocument;
+            // CPF possui somente um estado atual. Substituir o agregado-filho evita
+            // depender de identidades legadas inconsistentes dos detalhes e imagens.
+            _documents.Remove(existingCpfDocument);
+            var replacement = UserDocument.CreateFromCpf(cpf, documentImages);
+            _documents.Add(replacement);
+            changed = true;
+            AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+            return replacement;
         }
 
         var document = UserDocument.CreateFromCpf(cpf, documentImages);
@@ -314,6 +327,8 @@ public class User : Entity, IAggregateRoot
         return document;
     }
     #endregion
+
+    public void RegisterDocumentChanged() => AddDomainEvent(new UserProfileChangedDomainEvent(Id));
 
     public void RegisterSuccessfulLogin(DateTimeOffset occurredAtUtc)
     {

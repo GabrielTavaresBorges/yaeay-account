@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { RouteLocationRaw } from 'vue-router'
+import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import {
   mdiAccountCircleOutline,
   mdiAccountOutline,
@@ -259,8 +259,7 @@ const completedDocumentCount = computed(() =>
 const cpfDocument = computed(() =>
   registeredDocuments.value.find((document) => document.type === 'cpf')!)
 
-const isCpfDocumentNumberValid = computed(() =>
-  isValidCpf(cpfDocument.value.number) && cpfDocument.value.images.length >= 3)
+const isCpfDocumentNumberValid = computed(() => isValidCpf(cpfDocument.value.number))
 
 function documentDefinition(type: DocumentType) {
   return documentDefinitions.find((definition) => definition.value === type)
@@ -335,6 +334,7 @@ const sectionDefinitions = [
     label: 'Endereço',
     icon: mdiMapMarkerOutline,
     fields: ['postalCode', 'street', 'number', 'district', 'city', 'state'] as const,
+    disabled: true,
   },
 ]
 
@@ -704,9 +704,8 @@ async function saveChanges(): Promise<void> {
 }
 
 async function saveCpfDocument() {
-  if (!isValidCpf(cpfDocument.value.number) || cpfDocument.value.images.length < 3) {
-    throw new Error('Informe um CPF válido e adicione as três imagens obrigatórias do documento.')
-  }
+  if (!isValidCpf(cpfDocument.value.number))
+    throw new Error('Informe um CPF válido antes de salvar.')
 
   const images = await Promise.all(cpfDocument.value.images.map(async (image, index) => {
     if (image.file) {
@@ -737,11 +736,6 @@ async function saveCpfDocument() {
   return updateUser({
     cpfDocumentsToAdd: [{ number: cpfDocument.value.number, images }],
   })
-}
-
-async function cancelChanges(): Promise<void> {
-  if (isSaving.value) return
-  await loadMyData()
 }
 
 function openDocumentImagePicker(target: 'cpf' | 'cic' = 'cpf'): void {
@@ -1146,12 +1140,17 @@ onBeforeUnmount(() => {
 
           <div class="profile-workspace">
             <nav class="section-navigation" aria-label="Seções dos meus dados">
-              <router-link
+              <component
                 v-for="section in sections"
                 :key="section.id"
-                :to="section.to"
+                :is="section.disabled ? 'div' : RouterLink"
+                v-bind="section.disabled ? {} : { to: section.to }"
                 class="section-card"
-                :class="{ 'section-card--active': activeSection === section.id }"
+                :class="{
+                  'section-card--active': activeSection === section.id,
+                  'section-card--disabled': section.disabled,
+                }"
+                :aria-disabled="section.disabled ? 'true' : undefined"
               >
                 <span class="section-card__icon">
                   <v-icon :icon="section.icon" size="26" />
@@ -1173,7 +1172,7 @@ onBeforeUnmount(() => {
                 >
                   <small>{{ section.completion }}%</small>
                 </v-progress-circular>
-              </router-link>
+              </component>
             </nav>
 
             <v-form class="data-panel" @submit.prevent="saveChanges">
@@ -1420,7 +1419,7 @@ onBeforeUnmount(() => {
                             class="cpf-access-field"
                             variant="outlined"
                             density="comfortable"
-                            readonly
+                            disabled
                             hide-details
                           />
                           <CpfField
@@ -1435,10 +1434,10 @@ onBeforeUnmount(() => {
                           />
                         </div>
 
-                        <h3 class="document-upload-section__title">Imagens do documento</h3>
+                        <h3 class="document-upload-section__title">Imagens do documento (opcional)</h3>
                         <div class="document-upload-grid" aria-label="Imagens do documento CPF">
                           <v-btn
-                            v-for="slot in 3"
+                            v-for="slot in 5"
                             :key="slot"
                             class="document-upload-slot"
                             variant="outlined"
@@ -1514,7 +1513,6 @@ onBeforeUnmount(() => {
               </template>
 
               <div class="form-actions">
-                <v-btn variant="outlined" size="large" :disabled="isSaving" @click="cancelChanges">Cancelar</v-btn>
                 <v-btn
                   type="submit"
                   size="large"
@@ -2140,6 +2138,16 @@ onBeforeUnmount(() => {
 .section-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(20, 62, 49, 0.08);
+}
+
+.section-card--disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.section-card--disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .section-card--active {
