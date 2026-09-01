@@ -8,6 +8,7 @@ using YaeaY.Account.Domain.Abstraction.Result;
 using YaeaY.Account.Domain.Entities.UserDocuments;
 using YaeaY.Account.Domain.Errors.Users;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
+using YaeaY.Account.Application.Services.DocumentImages.Interfaces;
 using YaeaY.Account.Domain.Factories.Telephones;
 using YaeaY.Account.Domain.Repositories.Users;
 using YaeaY.Account.Domain.ValueObjects.Dates;
@@ -22,6 +23,7 @@ public sealed class Handler(
     IUnitOfWork unitOfWork,
     ITelephoneNumberService telephoneNumberService,
     ITelephoneNumberFactory telephoneNumberFactory,
+    IDocumentImageStorage documentImageStorage,
     ILogger<Handler> logger)
     : IRequestHandler<Command, Result<Response>>
 {
@@ -34,8 +36,9 @@ public sealed class Handler(
                 return Result<Response>.Failure(UserErrors.NotFound);
 
             var updatedFields = new List<string>();
-            var addedDocuments = new List<CpfDocumentResponse>();
+            var updatedDocuments = new List<CpfDocumentResponse>();
             var addedPhones = new List<YaeaY.Account.Domain.Entities.UserPhones.UserPhone>();
+            var documentImagesToDelete = new List<string>();
 
             if (command.FullName is not null &&
                 !string.Equals(user.FullName.Name, command.FullName.Trim(), StringComparison.Ordinal))
@@ -128,11 +131,32 @@ public sealed class Handler(
                         image.Sha256Hash))
                     .ToArray();
 
-                var document = user.AddCpfDocument(cpfResult.Value, images);
-                addedDocuments.Add(ToResponse(document));
+                if (images.Any(image => !image.StorageObjectKey.StartsWith($"users/{user.Id:N}/", StringComparison.Ordinal))
+                    || !(await Task.WhenAll(images.Select(image => documentImageStorage.ExistsAsync(image.StorageObjectKey, cancellationToken))).ConfigureAwait(false)).All(exists => exists))
+                {
+                    return Result<Response>.Failure(new Error(
+                        "document_image.not_found",
+                        "Uma ou mais imagens do documento não estão disponíveis para salvar.",
+                        ErrorCategory.Validation,
+                        ErrorRule.NotFound));
+                }
+
+                var oldStorageKeys = user.Documents
+                    .Where(document => document.DocumentType == YaeaY.Account.Domain.Enumerators.DocumentType.Cpf)
+                    .SelectMany(document => document.Images)
+                    .Select(image => image.StorageObjectKey)
+                    .ToHashSet(StringComparer.Ordinal);
+
+                var document = user.UpsertCpfDocument(cpfResult.Value, images, out var documentChanged);
+                if (!documentChanged)
+                    continue;
+
+                updatedDocuments.Add(ToResponse(document));
+                oldStorageKeys.ExceptWith(images.Select(image => image.StorageObjectKey));
+                documentImagesToDelete.AddRange(oldStorageKeys);
             }
 
-            if (addedDocuments.Count > 0)
+            if (updatedDocuments.Count > 0)
                 updatedFields.Add(nameof(command.CpfDocumentsToAdd));
 
             if (updatedFields.Count == 0)
@@ -140,7 +164,19 @@ public sealed class Handler(
 
             await userRepository.UpdateUserAsync(user, addedPhones, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
-            return Result<Response>.Success(new Response(user.Id, updatedFields, addedDocuments, "User updated successfully."));
+            foreach (var storageObjectKey in documentImagesToDelete.Distinct(StringComparer.Ordinal))
+            {
+                try
+                {
+                    await documentImageStorage.DeleteAsync(storageObjectKey, cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogWarning(exception, "Unable to remove replaced CPF image {StorageObjectKey} for user {UserId}.", storageObjectKey, user.Id);
+                }
+            }
+
+            return Result<Response>.Success(new Response(user.Id, updatedFields, updatedDocuments, "User updated successfully."));
         }
         catch (DomainException exception)
         {

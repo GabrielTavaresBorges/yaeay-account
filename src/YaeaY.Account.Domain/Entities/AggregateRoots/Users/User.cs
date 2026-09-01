@@ -278,13 +278,19 @@ public class User : Entity, IAggregateRoot
     #endregion
 
     #region Documents
-    public UserDocument AddCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images = null)
+    public UserDocument UpsertCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images, out bool changed)
     {
         if (cpf is null)
             throw new DomainException(UserDocumentErrors.CpfRequired);
 
         var documentImages = images?.ToArray() ?? [];
+        var existingCpfDocument = _documents
+            .Where(document => document.DocumentType == DocumentType.Cpf)
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+
         var existingStorageKeys = _documents
+            .Where(document => document != existingCpfDocument)
             .SelectMany(document => document.Images)
             .Select(image => image.StorageObjectKey)
             .ToHashSet(StringComparer.Ordinal);
@@ -292,9 +298,19 @@ public class User : Entity, IAggregateRoot
         if (documentImages.Any(image => image is not null && existingStorageKeys.Contains(image.StorageObjectKey)))
             throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists);
 
+        if (existingCpfDocument is not null)
+        {
+            changed = existingCpfDocument.UpdateCpf(cpf, documentImages);
+            if (changed)
+                AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+
+            return existingCpfDocument;
+        }
+
         var document = UserDocument.CreateFromCpf(cpf, documentImages);
         _documents.Add(document);
-        AddDomainEvent(new UserDocumentAddedDomainEvent(Id));
+        changed = true;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
         return document;
     }
     #endregion

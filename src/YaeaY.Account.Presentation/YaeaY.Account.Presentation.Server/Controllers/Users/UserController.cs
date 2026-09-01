@@ -8,6 +8,8 @@ using YaeaY.Account.Presentation.Server.Contracts.Users;
 using CreateUser = YaeaY.Account.Application.UseCases.Users.Commands.Create;
 using UpdateUser = YaeaY.Account.Application.UseCases.Users.Commands.Update;
 using GetMyData = YaeaY.Account.Application.UseCases.Users.Queries.GetMyData;
+using GetDocumentImage = YaeaY.Account.Application.UseCases.Users.Queries.GetDocumentImage;
+using UploadCpfDocumentImage = YaeaY.Account.Application.UseCases.Users.Commands.UploadCpfDocumentImage;
 
 namespace YaeaY.Account.Presentation.Server.Controllers.Users;
 
@@ -104,6 +106,43 @@ public class UserController : ControllerBase
 
         var result = await _mediator.Send(new GetMyData.Query(userId), cancellationToken);
         return result.IsFailure ? ToErrorResponse(result.Error) : Ok(result.Value);
+    }
+
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    [HttpPost("documents/cpf/images")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UploadCpfDocumentImage(IFormFile? image, CancellationToken cancellationToken)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+        if (image is null)
+            return UnprocessableEntity(new { code = "document_image.required", message = "Selecione uma imagem para enviar." });
+
+        await using var content = image.OpenReadStream();
+        var result = await _mediator.Send(new UploadCpfDocumentImage.Command(
+            userId, content, image.FileName, image.ContentType, image.Length), cancellationToken);
+        return result.IsFailure ? ToErrorResponse(result.Error) : Ok(result.Value);
+    }
+
+    [Authorize]
+    [HttpGet("documents/images/{imageId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDocumentImage(Guid imageId, CancellationToken cancellationToken)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var result = await _mediator.Send(new GetDocumentImage.Query(userId, imageId), cancellationToken);
+        return result.IsFailure
+            ? ToErrorResponse(result.Error)
+            : File(result.Value.Content, result.Value.ContentType, result.Value.OriginalFileName, enableRangeProcessing: true);
     }
 
     private IActionResult ToErrorResponse(Error error)

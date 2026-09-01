@@ -1,6 +1,6 @@
 // src/services/users/users-service.ts
 
-import type { CreateUserRequest, CreateUserResponse, MyDataResponse, UpdateUserRequest, UpdateUserResponse } from './users-types'
+import type { CreateUserRequest, CreateUserResponse, MyDataResponse, UpdateUserRequest, UpdateUserResponse, UploadedDocumentImageResponse } from './users-types'
 import { throwApiError } from '@/services/http/http-error'
 import { getAntiforgeryToken } from '@/services/authentication-service'
 
@@ -35,5 +35,20 @@ export async function updateUser(payload: UpdateUserRequest): Promise<UpdateUser
 export async function getMyData(): Promise<MyDataResponse> {
   const response = await fetch('/api/User/me', { credentials: 'same-origin' })
   if (response.ok) return (await response.json()) as MyDataResponse
+  return throwApiError(response)
+}
+
+export async function uploadCpfDocumentImage(file: File): Promise<UploadedDocumentImageResponse> {
+  const antiforgeryToken = await getAntiforgeryToken()
+  const formData = new FormData()
+  formData.append('image', file, file.name)
+  const response = await fetch('/api/User/documents/cpf/images', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'X-YaeaY-CSRF': antiforgeryToken },
+    body: formData,
+  })
+
+  if (response.ok) return (await response.json()) as UploadedDocumentImageResponse
   return throwApiError(response)
 }

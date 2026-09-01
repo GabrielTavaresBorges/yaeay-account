@@ -10,6 +10,7 @@ import {
   mdiCalendarMonthOutline,
   mdiCardAccountDetailsOutline,
   mdiCheck,
+  mdiCheckCircle,
   mdiChevronDown,
   mdiChevronLeft,
   mdiChevronRight,
@@ -23,8 +24,10 @@ import {
   mdiFileDocumentOutline,
   mdiHomeVariant,
   mdiHistory,
+  mdiInformationOutline,
   mdiImageOutline,
   mdiLogoutVariant,
+  mdiLightbulbOutline,
   mdiMapMarkerOutline,
   mdiMenu,
   mdiMenuOpen,
@@ -39,10 +42,10 @@ import {
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
 import { CpfField, UserPhonesField } from '@/components/inputs'
 import { useSidebarState } from '@/composables/use-sidebar-state'
-import { formatCpf } from '@/validators/fields/cpf'
+import { formatCpf, isValidCpf } from '@/validators/fields/cpf'
 import type { PhoneModel } from '@/models/phone-model'
 import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
-import { getMyData, updateUser } from '@/services/users/users-service'
+import { getMyData, updateUser, uploadCpfDocumentImage } from '@/services/users/users-service'
 import { genderItems, type Gender } from '@/constants/gender'
 import {
   getCachedCurrentSession,
@@ -64,8 +67,13 @@ interface DocumentFieldDefinition {
 
 interface DocumentImageDraft {
   id: string
-  file: File
+  file?: File
   previewUrl: string
+  storageObjectKey?: string
+  originalFileName?: string
+  contentType?: string
+  fileSizeBytes?: number
+  sha256Hash?: string
 }
 
 interface UserDocumentDraft {
@@ -93,6 +101,7 @@ interface UserPhoneDraft {
 }
 
 const MAX_DOCUMENT_IMAGES = 5
+const MAX_CIC_IMAGES = 2
 const MAX_DOCUMENT_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 const MAX_USER_PHONES = 10
 const ACCEPTED_DOCUMENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
@@ -196,10 +205,13 @@ const showLayoutNotice = ref(false)
 const documentImageInput = ref<HTMLInputElement | null>(null)
 const replacementImageInput = ref<HTMLInputElement | null>(null)
 const documentUploadError = ref('')
+const documentImageTarget = ref<'cpf' | 'cic'>('cpf')
 const imageViewerDocumentId = ref<string | null>(null)
 const imageViewerIndex = ref(0)
 const historyDocumentType = ref<DocumentType | null>(null)
 const openedDocumentCards = ref<DocumentType | null>(null)
+const cicImages = ref<DocumentImageDraft[]>([])
+const isCicInfoDialogOpen = ref(false)
 const phoneFormError = ref('')
 const newPhoneIsPrimary = ref(false)
 const isLoadingMyData = ref(true)
@@ -246,6 +258,9 @@ const completedDocumentCount = computed(() =>
 
 const cpfDocument = computed(() =>
   registeredDocuments.value.find((document) => document.type === 'cpf')!)
+
+const isCpfDocumentNumberValid = computed(() =>
+  isValidCpf(cpfDocument.value.number) && cpfDocument.value.images.length >= 3)
 
 function documentDefinition(type: DocumentType) {
   return documentDefinitions.find((definition) => definition.value === type)
@@ -407,13 +422,16 @@ async function loadMyData(): Promise<void> {
       if (!draft || !document.number) continue
 
       draft.number = document.number
-      draft.history = [{
-        id: document.id,
-        number: document.number,
-        details: {},
-        images: [],
-        registeredAt: document.createdAt,
-      }]
+      draft.images = document.images.map((image) => ({
+        id: image.id,
+        previewUrl: `/api/User/documents/images/${image.id}`,
+        storageObjectKey: image.storageObjectKey,
+        originalFileName: image.originalFileName,
+        contentType: image.contentType,
+        fileSizeBytes: image.fileSizeBytes,
+        sha256Hash: image.sha256Hash,
+      }))
+      draft.history = []
     }
   } catch {
     myDataLoadError.value = 'Não foi possível carregar seus dados básicos. Atualize a página para tentar novamente.'
@@ -632,7 +650,7 @@ function makePhonePrimary(phoneId: string): void {
 async function saveChanges(): Promise<void> {
   if (isSaving.value) return
 
-  if (activeSection.value === 'documents' || activeSection.value === 'address') {
+  if (activeSection.value === 'address') {
     showPendingIntegration()
     return
   }
@@ -650,7 +668,8 @@ async function saveChanges(): Promise<void> {
         birthDate: profile.birthDate,
         gender: profile.gender || undefined,
       })
-      : await updateUser({
+      : activeSection.value === 'contact'
+        ? await updateUser({
         phones: registeredPhones.value.map((item) => ({
           ...(item.isPersisted ? { id: item.id } : {}),
           callingCode: item.phone.callingCode,
@@ -660,11 +679,15 @@ async function saveChanges(): Promise<void> {
           phoneNumber: item.phone.number,
           isPrimary: item.isPrimary,
         })),
-      })
+        })
+        : await saveCpfDocument()
 
     if (activeSection.value === 'basic' && session.value) {
       session.value = { ...session.value, fullName: profile.fullName }
     }
+
+    if (activeSection.value === 'documents')
+      await loadMyData()
 
     saveMessage.value = response.updatedFields.length
       ? 'Alterações salvas. Seus dados serão atualizados em instantes.'
@@ -680,22 +703,63 @@ async function saveChanges(): Promise<void> {
   }
 }
 
+async function saveCpfDocument() {
+  if (!isValidCpf(cpfDocument.value.number) || cpfDocument.value.images.length < 3) {
+    throw new Error('Informe um CPF válido e adicione as três imagens obrigatórias do documento.')
+  }
+
+  const images = await Promise.all(cpfDocument.value.images.map(async (image, index) => {
+    if (image.file) {
+      const uploaded = await uploadCpfDocumentImage(image.file)
+      image.storageObjectKey = uploaded.storageObjectKey
+      image.originalFileName = uploaded.originalFileName
+      image.contentType = uploaded.contentType
+      image.fileSizeBytes = uploaded.fileSizeBytes
+      image.sha256Hash = uploaded.sha256Hash
+      image.file = undefined
+    }
+
+    if (!image.storageObjectKey || !image.originalFileName || !image.contentType
+      || !image.fileSizeBytes || !image.sha256Hash) {
+      throw new Error('Uma das imagens do CPF está incompleta. Selecione-a novamente antes de salvar.')
+    }
+
+    return {
+      position: index + 1,
+      storageObjectKey: image.storageObjectKey,
+      originalFileName: image.originalFileName,
+      contentType: image.contentType,
+      fileSizeBytes: image.fileSizeBytes,
+      sha256Hash: image.sha256Hash,
+    }
+  }))
+
+  return updateUser({
+    cpfDocumentsToAdd: [{ number: cpfDocument.value.number, images }],
+  })
+}
+
 async function cancelChanges(): Promise<void> {
   if (isSaving.value) return
   await loadMyData()
 }
 
-function openDocumentImagePicker(): void {
+function openDocumentImagePicker(target: 'cpf' | 'cic' = 'cpf'): void {
   documentUploadError.value = ''
+  documentImageTarget.value = target
   documentImageInput.value?.click()
 }
 
-function addDocumentImages(files: File[], images: DocumentImageDraft[]): void {
+function addDocumentImages(
+  files: File[],
+  images: DocumentImageDraft[],
+  maximumImages = MAX_DOCUMENT_IMAGES,
+): void {
   documentUploadError.value = ''
 
   for (const file of files) {
-    if (images.length >= MAX_DOCUMENT_IMAGES) {
-      documentUploadError.value = `Você pode adicionar no máximo ${MAX_DOCUMENT_IMAGES} imagens por documento.`
+    if (images.length >= maximumImages) {
+      documentUploadError.value = `Você pode adicionar no máximo ${maximumImages} imagens por documento.`
       break
     }
 
@@ -709,8 +773,8 @@ function addDocumentImages(files: File[], images: DocumentImageDraft[]): void {
       continue
     }
 
-    const duplicate = images.some((image) =>
-      image.file.name === file.name
+    const duplicate = images.some((image) => image.file
+      && image.file.name === file.name
       && image.file.size === file.size
       && image.file.lastModified === file.lastModified)
 
@@ -729,14 +793,41 @@ function addDocumentImages(files: File[], images: DocumentImageDraft[]): void {
 
 function handleDocumentImageSelection(event: Event): void {
   const input = event.target as HTMLInputElement
-  const document = imageViewerDocument.value
-  if (document) addDocumentImages(Array.from(input.files ?? []), document.images)
+  const files = Array.from(input.files ?? [])
+  const images = documentImageTarget.value === 'cic'
+    ? cicImages.value
+    : cpfDocument.value.images
+  const maximumImages = documentImageTarget.value === 'cic'
+    ? MAX_CIC_IMAGES
+    : MAX_DOCUMENT_IMAGES
+  addDocumentImages(files, images, maximumImages)
   input.value = ''
 }
 
 function handleDocumentImageDrop(event: DragEvent): void {
   const document = imageViewerDocument.value
   if (document) addDocumentImages(Array.from(event.dataTransfer?.files ?? []), document.images)
+}
+
+function handleCpfImageSlotClick(index: number): void {
+  if (cpfDocument.value.images[index]) {
+    openImageViewer(cpfDocument.value.id, index)
+    return
+  }
+
+  openDocumentImagePicker('cpf')
+}
+
+function handleCicImageSlotClick(): void {
+  openDocumentImagePicker('cic')
+}
+
+function hasImageAt(images: DocumentImageDraft[], index: number): boolean {
+  return images[index] !== undefined
+}
+
+function imagePreviewAt(images: DocumentImageDraft[], index: number): string {
+  return images[index]?.previewUrl ?? ''
 }
 
 function documentTitle(type: DocumentType): string {
@@ -884,6 +975,7 @@ onBeforeUnmount(() => {
     document.history.forEach((history) =>
       history.images.forEach((image) => previewUrls.add(image.previewUrl)))
   })
+  cicImages.value.forEach((image) => previewUrls.add(image.previewUrl))
   previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
 })
 </script>
@@ -1292,83 +1384,117 @@ onBeforeUnmount(() => {
 
                 <v-expansion-panels
                   v-model="openedDocumentCards"
-                  class="document-type-cards"
+                  class="cpf-document-panels"
                   aria-label="Tipos de documentos disponíveis"
                 >
                   <v-expansion-panel
                     :value="cpfDocument.type"
-                    class="document-type-card"
+                    class="cpf-document-panel"
                     elevation="0"
                   >
-                    <v-expansion-panel-title class="document-type-card__header">
-                      <span class="document-type-card__icon">
-                        <v-icon :icon="mdiFileDocumentOutline" size="25" />
-                      </span>
-                      <span class="document-type-card__heading">
-                        <strong>CPF</strong>
+                    <v-expansion-panel-title class="cpf-section-title" hide-actions>
+                      <span class="cpf-section-title__content">
+                        <span class="cpf-section-title__label">
+                          <span class="cpf-section-title__icon">
+                            <v-icon :icon="mdiFileDocumentOutline" size="23" />
+                          </span>
+                          <span>CPF - Cadastro de Pessoa Física</span>
+                        </span>
+                        <v-icon
+                          v-if="isCpfDocumentNumberValid"
+                          class="cpf-panel-completed-icon"
+                          :icon="mdiCheckCircle"
+                          size="24"
+                          aria-label="Documento CPF completo"
+                        />
                       </span>
                     </v-expansion-panel-title>
 
-                    <v-expansion-panel-text class="document-type-card__content">
-                      <div class="cpf-document-fields">
-                        <v-text-field
-                          model-value="CPF"
-                          label="Tipo de documento"
-                          :prepend-inner-icon="mdiFileDocumentOutline"
-                          variant="outlined"
-                          readonly
-                          hide-details
-                        />
-                        <CpfField
-                          v-model="cpfDocument.number"
-                          label="Número do CPF"
-                          :prepend-inner-icon="mdiCardAccountDetailsOutline"
-                          variant="outlined"
-                          hide-details="auto"
-                          validate-on="blur"
-                          :readonly="isDocumentNumberLocked(cpfDocument)"
-                        />
-                        <v-tooltip
-                          :text="cpfDocument.images.length ? 'Visualizar imagens' : 'Adicionar imagens'"
-                          location="top"
-                        >
-                          <template #activator="{ props: tooltipProps }">
-                            <v-btn
-                              v-bind="tooltipProps"
-                              class="document-image-trigger cpf-document-fields__images"
-                              icon
-                              variant="flat"
-                              color="#21644d"
-                              :aria-label="cpfDocument.images.length ? 'Visualizar imagens' : 'Adicionar imagens'"
-                              @click="openImageViewer(cpfDocument.id)"
-                            >
-                              <span class="cloud-image-icon" aria-hidden="true">
-                                <v-icon :icon="mdiCloudUploadOutline" size="23" />
-                                <v-icon class="cloud-image-icon__image" :icon="mdiImageOutline" size="10" />
-                              </span>
-                              <span v-if="cpfDocument.images.length" class="document-image-trigger__count">
-                                {{ cpfDocument.images.length }}
-                              </span>
-                            </v-btn>
-                          </template>
-                        </v-tooltip>
-                      </div>
+                    <v-expansion-panel-text class="cpf-document-content">
+                      <section class="cpf-document-form" aria-label="Dados do documento CPF">
+                        <div class="cpf-document-fields">
+                          <v-select
+                            model-value="CPF"
+                            :items="['CPF']"
+                            label="Tipo Documento"
+                            class="cpf-access-field"
+                            variant="outlined"
+                            density="comfortable"
+                            readonly
+                            hide-details
+                          />
+                          <CpfField
+                            v-model="cpfDocument.number"
+                            label="Número Inscrição"
+                            class="cpf-access-field"
+                            variant="outlined"
+                            density="comfortable"
+                            hide-details="auto"
+                            validate-on="blur"
+                            :readonly="isDocumentNumberLocked(cpfDocument)"
+                          />
+                        </div>
 
-                      <div class="cpf-document-history">
-                        <v-tooltip text="Visualizar histórico do CPF" location="top">
-                          <template #activator="{ props: tooltipProps }">
-                            <v-btn
-                              v-bind="tooltipProps"
-                              :icon="mdiEyeOutline"
-                              variant="text"
-                              color="#315f50"
-                              aria-label="Visualizar histórico do CPF"
-                              @click="openDocumentHistory('cpf')"
-                            />
-                          </template>
-                        </v-tooltip>
-                        <span v-if="cpfDocument.history.length">{{ cpfDocument.history.length }}</span>
-                      </div>
+                        <h3 class="document-upload-section__title">Imagens do documento</h3>
+                        <div class="document-upload-grid" aria-label="Imagens do documento CPF">
+                          <v-btn
+                            v-for="slot in 3"
+                            :key="slot"
+                            class="document-upload-slot"
+                            variant="outlined"
+                            :aria-label="cpfDocument.images[slot - 1]
+                              ? `Visualizar imagem ${slot} do CPF`
+                              : `Adicionar imagem ${slot} do CPF`"
+                            @click="handleCpfImageSlotClick(slot - 1)"
+                          >
+                            <img
+                              v-if="hasImageAt(cpfDocument.images, slot - 1)"
+                              :src="imagePreviewAt(cpfDocument.images, slot - 1)"
+                              :alt="`Prévia da imagem ${slot} do CPF`"
+                            >
+                            <v-icon v-else :icon="mdiCloudUploadOutline" size="32" />
+                          </v-btn>
+                        </div>
+                      </section>
+
+                      <v-divider class="my-4" />
+
+                      <section class="cic-document-form" aria-labelledby="cic-document-title">
+                        <div class="cic-document-form__heading">
+                          <h3 id="cic-document-title">CIC - Cartão de Identificação do Contribuinte</h3>
+                          <v-tooltip text="Informação" location="top">
+                            <template #activator="{ props: tooltipProps }">
+                              <v-btn
+                                v-bind="tooltipProps"
+                                :icon="mdiInformationOutline"
+                                color="info"
+                                variant="text"
+                                aria-label="Informações sobre o documento CIC"
+                                @click.stop="isCicInfoDialogOpen = true"
+                              />
+                            </template>
+                          </v-tooltip>
+                        </div>
+                        <div class="document-upload-grid document-upload-grid--cic" aria-label="Imagens históricas do CIC">
+                          <v-btn
+                            v-for="slot in 2"
+                            :key="slot"
+                            class="document-upload-slot"
+                            variant="outlined"
+                            :aria-label="cicImages[slot - 1]
+                              ? `Adicionar outra imagem histórica do CIC`
+                              : `Adicionar imagem histórica ${slot} do CIC`"
+                            @click="handleCicImageSlotClick"
+                          >
+                            <img
+                              v-if="hasImageAt(cicImages, slot - 1)"
+                              :src="imagePreviewAt(cicImages, slot - 1)"
+                              :alt="`Prévia da imagem histórica ${slot} do CIC`"
+                            >
+                            <v-icon v-else :icon="mdiCloudUploadOutline" size="32" />
+                          </v-btn>
+                        </div>
+                      </section>
                     </v-expansion-panel-text>
                   </v-expansion-panel>
                 </v-expansion-panels>
@@ -1404,6 +1530,35 @@ onBeforeUnmount(() => {
         </div>
       </section>
     </div>
+
+    <v-dialog v-model="isCicInfoDialogOpen" max-width="620">
+      <v-card class="cic-info-dialog">
+        <header class="cic-info-dialog__header">
+          <span class="cic-info-dialog__icon" aria-hidden="true">
+            <v-icon :icon="mdiFileDocumentOutline" size="32" />
+          </span>
+          <div>
+            <h2>CIC - Cartão de Identificação do Contribuinte</h2>
+            <span>Informações do documento</span>
+          </div>
+          <v-btn
+            :icon="mdiClose"
+            variant="text"
+            aria-label="Fechar informações sobre o CIC"
+            @click="isCicInfoDialogOpen = false"
+          />
+        </header>
+        <v-card-text>
+          <div class="cic-info-dialog__notice">
+            <v-icon :icon="mdiLightbulbOutline" size="20" />
+            <div>
+              <strong>Registro histórico</strong>
+              <p>Esta área é um acervo pessoal para até duas imagens do seu cartão CIC. Elas não possuem validade para confirmar dados e não substituem um documento atual.</p>
+            </div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="isHistoryDialogOpen" max-width="980" scrollable>
       <v-card v-if="historyDocument" class="document-history-dialog">
@@ -1530,7 +1685,7 @@ onBeforeUnmount(() => {
           v-else
           type="button"
           class="document-viewer__empty"
-          @click="openDocumentImagePicker"
+          @click="openDocumentImagePicker()"
           @dragover.prevent
           @drop.prevent="handleDocumentImageDrop"
         >
@@ -1543,23 +1698,6 @@ onBeforeUnmount(() => {
           <strong>Este documento ainda não possui imagens</strong>
           <small>Adicione JPEG, PNG ou WebP de até 5 MB.</small>
         </button>
-
-        <input
-          ref="documentImageInput"
-          class="document-image-input"
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-          multiple
-          @change="handleDocumentImageSelection"
-        >
-
-        <input
-          ref="replacementImageInput"
-          class="document-image-input"
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-          @change="handleReplacementImageSelection"
-        >
 
         <p v-if="documentUploadError" class="document-viewer__error" role="alert">
           {{ documentUploadError }}
@@ -1586,10 +1724,10 @@ onBeforeUnmount(() => {
 
         <footer v-if="imageViewerImage" class="document-viewer__footer">
           <div class="document-viewer__file-details">
-            <strong>{{ imageViewerImage.file.name }}</strong>
+            <strong>{{ imageViewerImage.originalFileName ?? imageViewerImage.file?.name }}</strong>
             <span>
               {{ imageViewerIndex + 1 }} de {{ imageViewerDocument.images.length }}
-              · {{ (imageViewerImage.file.size / 1024 / 1024).toFixed(2) }} MB
+              · {{ ((imageViewerImage.fileSizeBytes ?? imageViewerImage.file?.size ?? 0) / 1024 / 1024).toFixed(2) }} MB
             </span>
           </div>
           <v-btn
@@ -1648,6 +1786,23 @@ onBeforeUnmount(() => {
         </footer>
       </v-card>
     </v-dialog>
+
+    <input
+      ref="documentImageInput"
+      class="document-image-input"
+      type="file"
+      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+      multiple
+      @change="handleDocumentImageSelection"
+    >
+
+    <input
+      ref="replacementImageInput"
+      class="document-image-input"
+      type="file"
+      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+      @change="handleReplacementImageSelection"
+    >
 
     <v-snackbar v-model="showLayoutNotice" color="#315f50" timeout="5000">
       O layout está pronto. A persistência desta seção ainda não foi conectada ao back-end.
@@ -2283,6 +2438,9 @@ onBeforeUnmount(() => {
 }
 
 .document-type-cards {
+  --v-theme-surface: transparent;
+  width: min(440px, 100%);
+  margin-inline: auto;
   display: grid;
   gap: 18px;
 }
@@ -2493,45 +2651,272 @@ onBeforeUnmount(() => {
 
 .cpf-document-fields {
   display: grid;
-  grid-template-columns: 190px minmax(260px, 1fr) 56px;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(280px, 1fr);
   align-items: start;
   gap: 14px;
 }
 
 .cpf-document-fields :deep(.v-field) {
-  min-height: 56px;
+  min-height: 46px;
 }
 
-.cpf-document-fields :deep(.cpf-document-fields__images) {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  min-width: 56px;
-  border-radius: 16px !important;
-  color: #155a43 !important;
-  background: #e3eee8 !important;
+.document-type-card {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  border: 1px solid rgba(24, 55, 41, 0.1);
+  border-radius: 16px;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.cpf-document-history {
-  min-height: 44px;
+:deep(.document-type-card__header),
+:deep(.document-type-card__header:hover) {
+  padding-block: 16px;
+  background: #ffffff;
+}
+
+.document-type-card__icon {
+  color: #245c43;
+  background: #edf4ef;
+}
+
+.document-type-card__heading strong {
+  color: #183729;
+}
+
+:deep(.document-type-card__content .v-expansion-panel-text__wrapper) {
+  min-height: 0;
+  padding: 18px 14px;
+  border-top: 1px solid rgba(24, 55, 41, 0.1);
+}
+
+.cpf-document-form,
+.cic-document-form {
+  display: grid;
+  gap: 14px;
+}
+
+.document-upload-section__title,
+.cic-document-form__heading h3 {
+  margin: 0;
+  color: #183729;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.document-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.document-upload-grid--cic {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.document-upload-slot {
+  height: 132px !important;
+  min-height: 132px;
+  padding: 0 !important;
+  border-style: dashed;
+  color: #245c43;
+  background: #f8faf9;
+  border-color: rgba(36, 92, 67, 0.35);
+  overflow: hidden;
+}
+
+.document-upload-slot :deep(.v-btn__content) {
+  width: 100%;
+  height: 100%;
+}
+
+.document-upload-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cic-document-form__heading {
   display: flex;
   align-items: center;
-  gap: 2px;
-  margin-top: 14px;
-  padding-top: 8px;
-  border-top: 1px solid #edf0ee;
+  gap: 4px;
 }
 
-.cpf-document-history > span {
-  min-width: 20px;
-  height: 20px;
+:deep(.document-type-card .v-field) {
+  color: #183729;
+  background: #ffffff;
+}
+
+:deep(.document-type-card .v-field__input),
+:deep(.document-type-card .v-select__selection) {
+  color: #183729;
+}
+
+:deep(.document-type-card .v-label) {
+  color: #53675e;
+}
+
+:deep(.document-type-card .v-field__outline) {
+  color: rgba(24, 55, 41, 0.28);
+}
+
+.cic-document-form__heading :deep(.v-btn) {
+  color: #1976d2;
+}
+
+.cic-info-dialog {
+  color: #183729;
+  overflow: hidden;
+  background: #ffffff !important;
+  border: 1px solid rgba(24, 55, 41, 0.1);
+  border-radius: 20px !important;
+}
+
+.cic-info-dialog :deep(.v-card-text) {
+  color: #183729;
+}
+
+.cic-info-dialog :deep(.v-card-text) {
+  padding: 0 28px 28px;
+  line-height: 1.6;
+}
+
+.cic-info-dialog__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 28px 20px;
+}
+
+.cic-info-dialog__header h2 {
+  margin: 0;
+  color: #214b3a;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.cic-info-dialog__header span {
+  color: #6b7973;
+  font-size: 0.8rem;
+}
+
+.cic-info-dialog__icon {
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  color: #fff;
-  background: #315f50;
-  font-size: 0.66rem;
-  font-weight: 800;
+  color: #218354;
+  background: #edf6f1;
+  border-radius: 16px;
+}
+
+.cic-info-dialog__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px;
+  color: #6d5319;
+  background: #fff8e8;
+  border-radius: 13px;
+}
+
+.cic-info-dialog__notice p {
+  margin: 6px 0 0;
+}
+
+/* Mantido intencionalmente em paridade com os painéis de UserCreatePage.vue. */
+.cpf-document-panels {
+  --v-theme-surface: transparent;
+  width: min(100%, 700px);
+  margin-inline: auto;
+}
+
+.cpf-document-panel {
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 27, 22, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+:deep(.cpf-section-title) {
+  color: #214b3a;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: 0.15px;
+}
+
+.cpf-section-title__content {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cpf-section-title__label {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.cpf-section-title__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #218354;
+  background: #edf6f1;
+  border-radius: 13px;
+}
+
+.cpf-panel-completed-icon {
+  flex: 0 0 auto;
+  color: #218354;
+}
+
+:deep(.cpf-document-content .v-expansion-panel-text__wrapper) {
+  padding: 18px 24px 24px;
+}
+
+.cpf-document-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.cpf-access-field {
+  color: #183729;
+}
+
+:deep(.cpf-access-field .v-field) {
+  box-shadow: none;
+  background-color: #ffffff;
+}
+
+:deep(.cpf-access-field .v-label) {
+  color: #424844;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:deep(.cpf-access-field .v-field__input) {
+  min-height: 56px;
+  padding-inline-start: 18px;
+  color: #183729;
+}
+
+:deep(.cpf-access-field .v-field__outline) {
+  color: rgba(24, 55, 41, 0.42);
 }
 
 .document-fields {
@@ -3413,11 +3798,16 @@ onBeforeUnmount(() => {
   }
 
   .cpf-document-fields {
-    grid-template-columns: 1fr 56px;
+    grid-template-columns: 1fr;
   }
 
-  .cpf-document-fields > :first-child {
-    grid-column: 1 / -1;
+  .document-upload-grid,
+  .document-upload-grid--cic {
+    grid-template-columns: 1fr;
+  }
+
+  .document-type-card {
+    min-height: 0;
   }
 
   :deep(.document-type-card__header) {

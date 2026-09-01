@@ -143,6 +143,9 @@ public sealed class CommandValidator : AbstractValidator<Command>
     {
         if (documents is null) return;
 
+        if (documents.Count > 1)
+            context.AddDomainFailure(nameof(Command.CpfDocumentsToAdd), UserDocumentErrors.CpfSingleCurrentRequired);
+
         var requestStorageKeys = new HashSet<string>(StringComparer.Ordinal);
         var documentIndex = 0;
 
@@ -154,6 +157,8 @@ public sealed class CommandValidator : AbstractValidator<Command>
                 context.AddDomainFailure($"{documentPath}.{nameof(CpfDocumentInput.Number)}", cpfResult.Error);
 
             var images = document.Images ?? [];
+            if (images.Count < 3)
+                context.AddDomainFailure($"{documentPath}.{nameof(CpfDocumentInput.Images)}", UserDocumentErrors.CpfImagesMinimumRequired);
             if (images.Count > UserDocumentImage.MaximumPosition)
                 context.AddDomainFailure($"{documentPath}.{nameof(CpfDocumentInput.Images)}", UserDocumentErrors.ImageLimitExceeded);
 

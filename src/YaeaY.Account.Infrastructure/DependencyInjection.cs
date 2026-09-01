@@ -13,6 +13,7 @@ using YaeaY.Account.Application.Services.Scheduling.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.Identity.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
+using YaeaY.Account.Application.Services.DocumentImages.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Policies.EmailConfirmations;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
@@ -44,6 +45,7 @@ using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 using YaeaY.Account.Infrastructure.Services.Emails;
 using YaeaY.Account.Infrastructure.Services.Emails.Smtp;
+using YaeaY.Account.Infrastructure.Services.DocumentImages.Minio;
 
 namespace YaeaY.Account.Infrastructure;
 
@@ -229,6 +231,18 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddScoped<IEmailSender, HostingerSmtpEmailSender>();
+        services.AddOptions<MinioDocumentImageStorageOptions>()
+            .Bind(configuration.GetSection(MinioDocumentImageStorageOptions.SectionName))
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Endpoint),
+                "DocumentImageStorage:Endpoint is required when document image storage is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.AccessKey),
+                "DocumentImageStorage:AccessKey is required when document image storage is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.SecretKey),
+                "DocumentImageStorage:SecretKey is required when document image storage is enabled.")
+            .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.BucketName),
+                "DocumentImageStorage:BucketName is required when document image storage is enabled.")
+            .ValidateOnStart();
+        services.AddSingleton<IDocumentImageStorage, MinioDocumentImageStorage>();
 
         // Domain event dispatching
         services.AddScoped<DomainEventDispatcher>();

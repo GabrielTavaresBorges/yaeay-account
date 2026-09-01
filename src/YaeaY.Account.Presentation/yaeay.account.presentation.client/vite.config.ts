@@ -53,7 +53,7 @@ export default defineConfig({
       proxy: {
         '^/api': { target, secure: false, changeOrigin: true },
       }, 
-      port: parseInt(env.DEV_SERVER_PORT || '57830'),
+      port: parseInt(env.DEV_SERVER_PORT || '57930'),
       https: {
           key: fs.readFileSync(keyFilePath),
           cert: fs.readFileSync(certFilePath),

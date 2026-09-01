@@ -40,8 +40,8 @@ public sealed class DapperMyDataReader(ReadModelConnectionFactory connectionFact
                         'Id', d."Id", 'Type', d."DocumentType", 'Number', cpf."Number", 'CreatedAt', d."CreatedAt",
                         'Images', COALESCE((
                             SELECT jsonb_agg(jsonb_build_object(
-                                'Id', i."Id", 'Position', i."Position", 'OriginalFileName', i."OriginalFileName",
-                                'ContentType', i."ContentType", 'FileSizeBytes', i."FileSizeBytes", 'CreatedAt', i."CreatedAt") ORDER BY i."Position")
+                                'Id', i."Id", 'Position', i."Position", 'StorageObjectKey', i."StorageObjectKey", 'OriginalFileName', i."OriginalFileName",
+                                'ContentType', i."ContentType", 'FileSizeBytes', i."FileSizeBytes", 'Sha256Hash', i."Sha256Hash", 'CreatedAt', i."CreatedAt") ORDER BY i."Position")
                             FROM account_write."UserDocumentImages" i WHERE i."UserDocumentId" = d."Id"), '[]'::jsonb)) ORDER BY d."CreatedAt")
                     FROM account_write."UserDocuments" d
                     LEFT JOIN account_write."UserDocumentCpf" cpf ON cpf."UserDocumentId" = d."Id"

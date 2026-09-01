@@ -34,6 +34,7 @@ export type UpdateUserRequest = {
   birthDate?: string
   gender?: Gender
   phones?: UpdateUserPhoneRequest[]
+  cpfDocumentsToAdd?: CpfDocumentRequest[]
 }
 
 export type UpdateUserPhoneRequest = {
@@ -45,6 +46,22 @@ export type UpdateUserPhoneRequest = {
   phoneNumber: string
   isPrimary: boolean
 }
+
+export type CpfDocumentRequest = {
+  number: string
+  images: DocumentImageRequest[]
+}
+
+export type DocumentImageRequest = {
+  position: number
+  storageObjectKey: string
+  originalFileName: string
+  contentType: string
+  fileSizeBytes: number
+  sha256Hash: string
+}
+
+export type UploadedDocumentImageResponse = Omit<DocumentImageRequest, 'position'>
 
 /** Campos retornados pelo Update (conforme seu handler) */
 export type UpdateUserResponse = {
@@ -69,6 +86,18 @@ export type MyDataDocumentResponse = {
   id: string
   type: string
   number: string | null
+  createdAt: string
+  images: MyDataDocumentImageResponse[]
+}
+
+export type MyDataDocumentImageResponse = {
+  id: string
+  position: number
+  storageObjectKey: string
+  originalFileName: string
+  contentType: string
+  fileSizeBytes: number
+  sha256Hash: string
   createdAt: string
 }
 

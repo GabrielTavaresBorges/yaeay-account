@@ -73,4 +73,25 @@ public sealed class UserDocument : Entity
 
         _images.Add(image);
     }
+
+    internal bool UpdateCpf(Cpf cpf, IEnumerable<UserDocumentImage>? images)
+    {
+        if (cpf is null)
+            throw new DomainException(UserDocumentErrors.CpfRequired);
+
+        var updatedImages = images?.ToArray() ?? [];
+        var sameImages = _images.Count == updatedImages.Length
+            && _images.OrderBy(image => image.Position).Select(image => image.StorageObjectKey)
+                .SequenceEqual(updatedImages.OrderBy(image => image.Position).Select(image => image.StorageObjectKey), StringComparer.Ordinal);
+
+        var cpfChanged = _cpf is null || _cpf.Update(cpf);
+        if (!cpfChanged && sameImages)
+            return false;
+
+        _images.Clear();
+        foreach (var image in updatedImages)
+            AddImage(image);
+
+        return true;
+    }
 }

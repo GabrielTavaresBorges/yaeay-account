@@ -35,7 +35,9 @@ public sealed record DocumentResponse(
 public sealed record DocumentImageResponse(
     Guid Id,
     int Position,
+    string StorageObjectKey,
     string OriginalFileName,
     string ContentType,
     long FileSizeBytes,
+    string Sha256Hash,
     DateTimeOffset CreatedAt);
