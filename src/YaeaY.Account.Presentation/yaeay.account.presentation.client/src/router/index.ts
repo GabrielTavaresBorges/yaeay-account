@@ -9,6 +9,7 @@ import { helpRoutes } from './routes/help-route'
 import { publicInformationRoutes } from './routes/public-information-route'
 import { myDataRoutes } from './routes/my-data-route'
 import { administrationRoutes } from './routes/administration-route'
+import { accountExperienceRoutes } from './routes/account-experience-route'
 import { getCurrentSession } from '@/services/authentication-service'
 
 const routes = [
@@ -19,6 +20,7 @@ const routes = [
   ...homeRoutes,
   ...myDataRoutes,
   ...administrationRoutes,
+  ...accountExperienceRoutes,
   ...helpRoutes,
   ...publicInformationRoutes,
 ]

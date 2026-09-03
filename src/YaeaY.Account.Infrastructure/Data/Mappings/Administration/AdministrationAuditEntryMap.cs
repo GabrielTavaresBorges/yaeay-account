@@ -10,11 +10,24 @@ public sealed class AdministrationAuditEntryMap : IEntityTypeConfiguration<Admin
     {
         builder.ToTable("AdministrationAuditEntries");
         builder.HasKey(entry => entry.Id);
-        builder.Property(entry => entry.AdministratorId).IsRequired();
-        builder.Property(entry => entry.TargetUserId);
-        builder.Property(entry => entry.Action).HasMaxLength(100).IsRequired();
-        builder.Property(entry => entry.Justification).HasMaxLength(500).IsRequired();
-        builder.Property(entry => entry.OccurredAtUtc).IsRequired();
+
+        builder.Property(entry => entry.AdministratorId)
+            .IsRequired();
+
+        builder.Property(entry => entry.TargetUserId)
+            .IsRequired();
+
+        builder.Property(entry => entry.Action)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.Property(entry => entry.Justification)
+            .HasMaxLength(500)
+            .IsRequired();
+
+        builder.Property(entry => entry.OccurredAtUtc)
+            .IsRequired();
+
         builder.HasIndex(entry => entry.OccurredAtUtc);
         builder.HasIndex(entry => entry.TargetUserId);
     }

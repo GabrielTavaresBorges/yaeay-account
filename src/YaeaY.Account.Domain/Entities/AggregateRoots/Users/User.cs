@@ -326,6 +326,33 @@ public class User : Entity, IAggregateRoot
         AddDomainEvent(new UserProfileChangedDomainEvent(Id));
         return document;
     }
+
+    public UserDocument UpsertRgDocument(Rg rg, IEnumerable<UserDocumentImage>? images, out bool changed)
+    {
+        if (rg is null)
+            throw new DomainException(UserDocumentErrors.RgRequired);
+
+        var documentImages = images?.ToArray() ?? [];
+        var existingRgDocument = _documents
+            .Where(document => document.DocumentType == DocumentType.Rg)
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+
+        if (existingRgDocument is not null)
+        {
+            changed = existingRgDocument.UpdateRg(rg, documentImages);
+            if (changed)
+                AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+
+            return existingRgDocument;
+        }
+
+        var document = UserDocument.CreateFromRg(rg, documentImages);
+        _documents.Add(document);
+        changed = true;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+        return document;
+    }
     #endregion
 
     public void RegisterDocumentChanged() => AddDomainEvent(new UserProfileChangedDomainEvent(Id));

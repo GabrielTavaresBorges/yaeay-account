@@ -52,6 +52,15 @@ public sealed class UserDocumentMap : IEntityTypeConfiguration<UserDocument>
         builder.Navigation(document => document.Cpf)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasOne(document => document.Rg)
+            .WithOne()
+            .HasForeignKey<UserDocumentRg>("UserDocumentId")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(document => document.Rg)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasMany(document => document.Images)
             .WithOne()
             .HasForeignKey("UserDocumentId")

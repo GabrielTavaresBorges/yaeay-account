@@ -37,7 +37,8 @@ public sealed class DapperMyDataReader(ReadModelConnectionFactory connectionFact
                     FROM account_write."UserPhones" p WHERE p."UserId" = u."Id"), '[]'::jsonb) AS "Phones",
                 COALESCE((
                     SELECT jsonb_agg(jsonb_build_object(
-                        'Id', d."Id", 'Type', d."DocumentType", 'Number', cpf."Number", 'CreatedAt', d."CreatedAt",
+                        'Id', d."Id", 'Type', d."DocumentType", 'Number', COALESCE(cpf."Number", rg."IdentityNumber"),
+                        'IssuedAt', rg."IssuedAt", 'IssuingAuthority', rg."IssuingAuthority", 'IssuingState', rg."IssuingState", 'CreatedAt', d."CreatedAt",
                         'Images', COALESCE((
                             SELECT jsonb_agg(jsonb_build_object(
                                 'Id', i."Id", 'Position', i."Position", 'StorageObjectKey', i."StorageObjectKey", 'OriginalFileName', i."OriginalFileName",
@@ -45,6 +46,7 @@ public sealed class DapperMyDataReader(ReadModelConnectionFactory connectionFact
                             FROM account_write."UserDocumentImages" i WHERE i."UserDocumentId" = d."Id"), '[]'::jsonb)) ORDER BY d."CreatedAt")
                     FROM account_write."UserDocuments" d
                     LEFT JOIN account_write."UserDocumentCpf" cpf ON cpf."UserDocumentId" = d."Id"
+                    LEFT JOIN account_write."UserDocumentRg" rg ON rg."UserDocumentId" = d."Id"
                     WHERE d."UserId" = u."Id"), '[]'::jsonb) AS "Documents"
             FROM account_write."User" u
             WHERE u."Id" = @UserId;

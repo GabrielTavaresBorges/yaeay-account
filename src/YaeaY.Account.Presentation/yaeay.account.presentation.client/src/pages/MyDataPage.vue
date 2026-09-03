@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import {
-  mdiAccountCircleOutline,
+  mdiAccountGroupOutline,
   mdiAccountOutline,
   mdiArrowLeft,
   mdiBellOutline,
   mdiCalendarMonthOutline,
   mdiCardAccountDetailsOutline,
   mdiCheck,
+  mdiCheckDecagram,
   mdiCheckCircle,
   mdiChevronDown,
   mdiChevronLeft,
@@ -40,12 +41,13 @@ import {
   mdiViewGridOutline,
 } from '@mdi/js'
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
-import { CpfField, UserPhonesField } from '@/components/inputs'
+import { BrazilianStateSelect, CpfField, UserPhonesField } from '@/components/inputs'
 import { useSidebarState } from '@/composables/use-sidebar-state'
 import { formatCpf, isValidCpf } from '@/validators/fields/cpf'
 import type { PhoneModel } from '@/models/phone-model'
 import { getPhoneDigitsRange } from '@/services/phoneFormat/phone-format-service'
-import { getMyData, updateUser, uploadCpfDocumentImage } from '@/services/users/users-service'
+import { getMyData, updateBasicData, updateDocuments, updatePhones, uploadCpfDocumentImage } from '@/services/users/users-service'
+import { enqueueSnackbar } from '@/services/ui/snackbar-queue'
 import { genderItems, type Gender } from '@/constants/gender'
 import {
   getCachedCurrentSession,
@@ -54,7 +56,7 @@ import {
   type CurrentSessionResponse,
 } from '@/services/authentication-service'
 
-type ProfileSection = 'basic' | 'contact' | 'documents' | 'address'
+type ProfileSection = 'basic' | 'contact' | 'documents' | 'address' | 'family'
 type DocumentType = 'cpf' | 'rg' | 'cnh' | 'passport'
 
 interface DocumentFieldDefinition {
@@ -106,6 +108,14 @@ const MAX_DOCUMENT_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 const MAX_USER_PHONES = 10
 const ACCEPTED_DOCUMENT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
+const futureDocuments = [
+  { id: 'cin', title: 'CIN - Carteira de Identidade Nacional', icon: mdiCardAccountDetailsOutline },
+  { id: 'cnh', title: 'CNH - Carteira Nacional de Habilitação', icon: mdiCardAccountDetailsOutline },
+  { id: 'birth-certificate', title: 'Certidão de Nascimento', icon: mdiFileDocumentOutline },
+  { id: 'voter-registration', title: 'Título de Eleitor', icon: mdiFileDocumentOutline },
+  { id: 'brazilian-passport', title: 'Passaporte Brasileiro', icon: mdiFileDocumentOutline },
+] as const
+
 const documentDefinitions: Array<{
   value: DocumentType
   title: string
@@ -132,7 +142,7 @@ const documentDefinitions: Array<{
     numberLabel: 'Número do RG',
     placeholder: 'Informe o número do RG',
     description: 'Registro Geral',
-    available: false,
+    available: true,
     numberIsFixed: true,
     fields: [
       { key: 'holderName', label: 'Nome no documento', placeholder: 'Nome conforme impresso no RG' },
@@ -200,18 +210,18 @@ const {
 } = useSidebarState()
 const session = ref<CurrentSessionResponse | null>(getCachedCurrentSession())
 const isLoggingOut = ref(false)
-const showLogoutError = ref(false)
-const showLayoutNotice = ref(false)
 const documentImageInput = ref<HTMLInputElement | null>(null)
 const replacementImageInput = ref<HTMLInputElement | null>(null)
 const documentUploadError = ref('')
-const documentImageTarget = ref<'cpf' | 'cic'>('cpf')
+const documentImageTarget = ref<'cpf' | 'rg' | 'cic'>('cpf')
 const imageViewerDocumentId = ref<string | null>(null)
 const imageViewerIndex = ref(0)
 const historyDocumentType = ref<DocumentType | null>(null)
 const openedDocumentCards = ref<DocumentType | null>(null)
 const cicImages = ref<DocumentImageDraft[]>([])
 const isCicInfoDialogOpen = ref(false)
+const isRgInfoDialogOpen = ref(false)
+const rgIssueDate = ref<Date | null>(null)
 const phoneFormError = ref('')
 const newPhoneIsPrimary = ref(false)
 const isLoadingMyData = ref(true)
@@ -219,13 +229,14 @@ const myDataLoadError = ref('')
 const isSaving = ref(false)
 const saveMessage = ref('')
 const saveError = ref('')
-const isSaveMessageVisible = ref(false)
-const isSaveErrorVisible = ref(false)
 
 const profile = reactive({
   fullName: '',
   birthDate: '',
   gender: '' as Gender | '',
+  nationality: '',
+  birthPlace: '',
+  birthState: '',
   postalCode: '',
   street: '',
   number: '',
@@ -260,6 +271,30 @@ const cpfDocument = computed(() =>
   registeredDocuments.value.find((document) => document.type === 'cpf')!)
 
 const isCpfDocumentNumberValid = computed(() => isValidCpf(cpfDocument.value.number))
+const rgDocument = computed(() =>
+  registeredDocuments.value.find((document) => document.type === 'rg')!)
+const isRgDocumentComplete = computed(() => Boolean(
+  rgDocument.value.number.trim()
+  && rgDocument.value.details.issueDate
+  && rgDocument.value.details.issuingAuthority?.trim()
+  && rgDocument.value.details.issuingState,
+))
+
+const rgIssueDateLabel = computed(() => rgIssueDate.value
+  ? new Intl.DateTimeFormat('pt-BR').format(rgIssueDate.value)
+  : '')
+
+watch(rgIssueDate, (value) => {
+  if (!value) {
+    rgDocument.value.details.issueDate = ''
+    return
+  }
+
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  rgDocument.value.details.issueDate = `${year}-${month}-${day}`
+})
 
 function documentDefinition(type: DocumentType) {
   return documentDefinitions.find((definition) => definition.value === type)
@@ -330,6 +365,13 @@ const sectionDefinitions = [
     fields: [] as const,
   },
   {
+    id: 'family' as const,
+    label: 'Núcleo Familiar',
+    icon: mdiAccountGroupOutline,
+    fields: [] as const,
+    disabled: true,
+  },
+  {
     id: 'address' as const,
     label: 'Endereço',
     icon: mdiMapMarkerOutline,
@@ -355,6 +397,8 @@ function completionFor(fields: readonly (keyof typeof profile)[], sectionId: Pro
     return completedDocumentCount.value > 0 ? 100 : 0
   }
 
+  if (sectionId === 'family') return 0
+
   const completed = fields.filter((field) => profile[field].trim().length > 0).length
   return Math.round((completed / fields.length) * 100)
 }
@@ -376,7 +420,7 @@ const firstName = computed(() =>
 const baseNavigationItems = [
   { label: 'Home', icon: mdiHomeVariant, to: { name: 'home' } },
   { label: 'Meus dados', icon: mdiAccountOutline, to: { name: 'my-data-section', params: { section: 'basic' } } },
-  { label: 'Apps', icon: mdiViewGridOutline, to: null },
+  { label: 'Apps', icon: mdiViewGridOutline, to: { name: 'account-apps' } },
   { label: 'Calendário', icon: mdiCalendarMonthOutline, to: null },
 ]
 
@@ -422,6 +466,12 @@ async function loadMyData(): Promise<void> {
       if (!draft || !document.number) continue
 
       draft.number = document.number
+      if (type === 'rg') {
+        draft.details.issueDate = document.issuedAt ?? ''
+        draft.details.issuingAuthority = document.issuingAuthority ?? ''
+        draft.details.issuingState = document.issuingState ?? ''
+        rgIssueDate.value = document.issuedAt ? new Date(`${document.issuedAt}T00:00:00`) : null
+      }
       draft.images = document.images.map((image) => ({
         id: image.id,
         previewUrl: `/api/User/documents/images/${image.id}`,
@@ -449,20 +499,18 @@ async function handleLogout(): Promise<void> {
   if (isLoggingOut.value) return
 
   isLoggingOut.value = true
-  showLogoutError.value = false
-
   try {
     await logout()
     await router.replace({ name: 'login' })
   } catch {
-    showLogoutError.value = true
+    enqueueSnackbar('N\u00e3o foi poss\u00edvel sair da conta. Tente novamente.', 'error')
   } finally {
     isLoggingOut.value = false
   }
 }
 
 function showPendingIntegration(): void {
-  showLayoutNotice.value = true
+  enqueueSnackbar('O layout est\u00e1 pronto. A persist\u00eancia desta se\u00e7\u00e3o ainda n\u00e3o foi conectada ao back-end.', 'info')
 }
 
 function createDefaultPhone(): PhoneModel {
@@ -650,7 +698,7 @@ function makePhonePrimary(phoneId: string): void {
 async function saveChanges(): Promise<void> {
   if (isSaving.value) return
 
-  if (activeSection.value === 'address') {
+  if (activeSection.value === 'address' || activeSection.value === 'family') {
     showPendingIntegration()
     return
   }
@@ -658,18 +706,16 @@ async function saveChanges(): Promise<void> {
   isSaving.value = true
   saveMessage.value = ''
   saveError.value = ''
-  isSaveMessageVisible.value = false
-  isSaveErrorVisible.value = false
 
   try {
     const response = activeSection.value === 'basic'
-      ? await updateUser({
+      ? await updateBasicData({
         fullName: profile.fullName,
         birthDate: profile.birthDate,
         gender: profile.gender || undefined,
       })
       : activeSection.value === 'contact'
-        ? await updateUser({
+        ? await updatePhones({
         phones: registeredPhones.value.map((item) => ({
           ...(item.isPersisted ? { id: item.id } : {}),
           callingCode: item.phone.callingCode,
@@ -680,7 +726,7 @@ async function saveChanges(): Promise<void> {
           isPrimary: item.isPrimary,
         })),
         })
-        : await saveCpfDocument()
+        : await saveDocuments()
 
     if (activeSection.value === 'basic' && session.value) {
       session.value = { ...session.value, fullName: profile.fullName }
@@ -689,21 +735,21 @@ async function saveChanges(): Promise<void> {
     if (activeSection.value === 'documents')
       await loadMyData()
 
-    saveMessage.value = response.updatedFields.length
+    saveMessage.value = response.hasChanges
       ? 'Alterações salvas. Seus dados serão atualizados em instantes.'
       : 'Não há alterações para salvar.'
-    isSaveMessageVisible.value = true
+    enqueueSnackbar(saveMessage.value, response.hasChanges ? 'success' : 'info')
   } catch (error) {
     saveError.value = error instanceof Error || (typeof error === 'object' && error !== null && 'message' in error)
       ? String((error as { message: unknown }).message)
       : 'Não foi possível salvar suas alterações. Tente novamente.'
-    isSaveErrorVisible.value = true
+    enqueueSnackbar(saveError.value, 'error')
   } finally {
     isSaving.value = false
   }
 }
 
-async function saveCpfDocument() {
+async function prepareCpfDocument() {
   if (!isValidCpf(cpfDocument.value.number))
     throw new Error('Informe um CPF válido antes de salvar.')
 
@@ -733,12 +779,57 @@ async function saveCpfDocument() {
     }
   }))
 
-  return updateUser({
-    cpfDocumentsToAdd: [{ number: cpfDocument.value.number, images }],
-  })
+  return { number: cpfDocument.value.number, images }
 }
 
-function openDocumentImagePicker(target: 'cpf' | 'cic' = 'cpf'): void {
+async function saveCpfDocument() {
+  return updateDocuments({ cpfDocumentsToAdd: [await prepareCpfDocument()] })
+}
+
+async function saveDocuments() {
+  const cpfHasValue = cpfDocument.value.number.trim().length > 0
+  const rgHasValue = rgDocument.value.number.trim().length > 0
+
+  if (!cpfHasValue && !rgHasValue)
+    throw new Error('Informe ao menos um documento antes de salvar.')
+
+  if (rgHasValue) {
+    if (!isRgDocumentComplete.value)
+      throw new Error('Preencha número, data de expedição, órgão expedidor e UF do RG antes de salvar.')
+
+    const images = await Promise.all(rgDocument.value.images.map(async (image, index) => {
+      if (image.file) {
+        const uploaded = await uploadCpfDocumentImage(image.file)
+        image.storageObjectKey = uploaded.storageObjectKey
+        image.originalFileName = uploaded.originalFileName
+        image.contentType = uploaded.contentType
+        image.fileSizeBytes = uploaded.fileSizeBytes
+        image.sha256Hash = uploaded.sha256Hash
+        image.file = undefined
+      }
+
+      if (!image.storageObjectKey || !image.originalFileName || !image.contentType || !image.fileSizeBytes || !image.sha256Hash)
+        throw new Error('Uma das imagens do RG está incompleta. Selecione-a novamente antes de salvar.')
+
+      return { position: index + 1, storageObjectKey: image.storageObjectKey, originalFileName: image.originalFileName, contentType: image.contentType, fileSizeBytes: image.fileSizeBytes, sha256Hash: image.sha256Hash }
+    }))
+
+    return updateDocuments({
+      cpfDocumentsToAdd: cpfHasValue ? [await prepareCpfDocument()] : undefined,
+      rgDocumentsToAdd: [{
+        number: rgDocument.value.number,
+        issuedAt: rgDocument.value.details.issueDate ?? '',
+        issuingAuthority: rgDocument.value.details.issuingAuthority ?? '',
+        issuingState: rgDocument.value.details.issuingState ?? '',
+        images,
+      }],
+    })
+  }
+
+  return saveCpfDocument()
+}
+
+function openDocumentImagePicker(target: 'cpf' | 'rg' | 'cic' = 'cpf'): void {
   documentUploadError.value = ''
   documentImageTarget.value = target
   documentImageInput.value?.click()
@@ -790,7 +881,9 @@ function handleDocumentImageSelection(event: Event): void {
   const files = Array.from(input.files ?? [])
   const images = documentImageTarget.value === 'cic'
     ? cicImages.value
-    : cpfDocument.value.images
+    : documentImageTarget.value === 'rg'
+      ? rgDocument.value.images
+      : cpfDocument.value.images
   const maximumImages = documentImageTarget.value === 'cic'
     ? MAX_CIC_IMAGES
     : MAX_DOCUMENT_IMAGES
@@ -810,6 +903,15 @@ function handleCpfImageSlotClick(index: number): void {
   }
 
   openDocumentImagePicker('cpf')
+}
+
+function handleRgImageSlotClick(index: number): void {
+  if (rgDocument.value.images[index]) {
+    openImageViewer(rgDocument.value.id, index)
+    return
+  }
+
+  openDocumentImagePicker('rg')
 }
 
 function handleCicImageSlotClick(): void {
@@ -1016,10 +1118,15 @@ onBeforeUnmount(() => {
         </nav>
 
         <div class="sidebar__footer">
-          <div class="navigation-item navigation-item--static">
+          <button
+            type="button"
+            class="navigation-item"
+            aria-label="Configurações"
+            @click="navigateTo({ name: 'account-settings' })"
+          >
             <v-icon :icon="mdiCogOutline" size="23" />
             <span>Configurações</span>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -1050,11 +1157,6 @@ onBeforeUnmount(() => {
                 />
               </template>
             </v-tooltip>
-
-            <div class="topbar__context">
-              <v-icon :icon="mdiAccountCircleOutline" size="24" />
-              <span>Minha conta</span>
-            </div>
           </div>
 
           <StageEnvironmentBanner class="topbar__stage-banner" />
@@ -1062,7 +1164,6 @@ onBeforeUnmount(() => {
           <div class="topbar__account">
             <div class="notification" aria-label="Notificações">
               <v-icon :icon="mdiBellOutline" size="25" />
-              <span class="notification__badge">3</span>
             </div>
 
             <v-menu location="bottom end" :close-on-content-click="!isLoggingOut">
@@ -1219,6 +1320,35 @@ onBeforeUnmount(() => {
                     hide-details
                     :loading="isLoadingMyData"
                     :disabled="isLoadingMyData"
+                  />
+                  <v-text-field
+                    v-model="profile.nationality"
+                    label="Nacionalidade"
+                    placeholder="Ex.: Brasileira"
+                    :prepend-inner-icon="mdiAccountOutline"
+                    variant="outlined"
+                    hint="Disponível em breve"
+                    persistent-hint
+                    disabled
+                  />
+                  <v-text-field
+                    v-model="profile.birthPlace"
+                    label="Naturalidade"
+                    placeholder="Ex.: São Paulo"
+                    :prepend-inner-icon="mdiMapMarkerOutline"
+                    variant="outlined"
+                    hint="Disponível em breve"
+                    persistent-hint
+                    disabled
+                  />
+                  <BrazilianStateSelect
+                    v-model="profile.birthState"
+                    label="UF de nascimento"
+                    :required="false"
+                    variant="outlined"
+                    hint="Disponível em breve"
+                    persistent-hint
+                    disabled
                   />
                 </div>
               </template>
@@ -1399,13 +1529,22 @@ onBeforeUnmount(() => {
                           </span>
                           <span>CPF - Cadastro de Pessoa Física</span>
                         </span>
-                        <v-icon
-                          v-if="isCpfDocumentNumberValid"
-                          class="cpf-panel-completed-icon"
-                          :icon="mdiCheckCircle"
-                          size="24"
-                          aria-label="Documento CPF completo"
-                        />
+                        <span class="cpf-panel-status-icons">
+                          <v-tooltip text="Documento Verificado" location="top">
+                            <template #activator="{ props: tooltipProps }">
+                              <span v-bind="tooltipProps" class="cpf-panel-verified-icon" aria-label="Documento Verificado indisponível">
+                                <v-icon :icon="mdiCheckDecagram" size="22" />
+                              </span>
+                            </template>
+                          </v-tooltip>
+                          <v-icon
+                            v-if="isCpfDocumentNumberValid"
+                            class="cpf-panel-completed-icon"
+                            :icon="mdiCheckCircle"
+                            size="24"
+                            aria-label="Documento CPF completo"
+                          />
+                        </span>
                       </span>
                     </v-expansion-panel-title>
 
@@ -1496,10 +1635,65 @@ onBeforeUnmount(() => {
                       </section>
                     </v-expansion-panel-text>
                   </v-expansion-panel>
+                  <v-expansion-panel :value="rgDocument.type" class="cpf-document-panel" elevation="0">
+                    <v-expansion-panel-title class="cpf-section-title" hide-actions>
+                      <span class="cpf-section-title__content">
+                        <span class="cpf-section-title__label">
+                          <span class="cpf-section-title__icon"><v-icon :icon="mdiCardAccountDetailsOutline" size="23" /></span>
+                          <span>RG - Registro Geral</span>
+                        </span>
+                        <v-icon v-if="isRgDocumentComplete" class="cpf-panel-completed-icon" :icon="mdiCheckCircle" size="24" aria-label="Documento RG completo" />
+                      </span>
+                    </v-expansion-panel-title>
+                    <v-expansion-panel-text class="cpf-document-content">
+                      <section class="cpf-document-form" aria-label="Dados do documento RG">
+                        <div class="cpf-document-fields">
+                          <v-select model-value="RG" :items="['RG']" label="Tipo Documento" class="cpf-access-field" variant="outlined" density="comfortable" disabled hide-details />
+                          <v-text-field v-model="rgDocument.number" label="Número Registro Geral" placeholder="Informe o número do RG" class="cpf-access-field" variant="outlined" density="comfortable" hide-details="auto" required />
+                          <v-menu :close-on-content-click="false" location="bottom">
+                            <template #activator="{ props: menuProps }">
+                              <v-text-field v-bind="menuProps" :model-value="rgIssueDateLabel" label="Data de expedição" class="cpf-access-field" variant="outlined" density="comfortable" hide-details="auto" readonly required />
+                            </template>
+                            <v-date-picker :model-value="rgIssueDate" @update:model-value="(value) => rgIssueDate = value" />
+                          </v-menu>
+                          <v-text-field v-model="rgDocument.details.issuingAuthority" label="Órgão expedidor" placeholder="Ex.: SSP" class="cpf-access-field" variant="outlined" density="comfortable" hide-details="auto" required />
+                          <BrazilianStateSelect v-model="rgDocument.details.issuingState" class="cpf-access-field" variant="outlined" density="comfortable" hide-details="auto" required />
+                        </div>
+                        <div class="cic-document-form__heading">
+                          <h3 class="document-upload-section__title">Imagens do documento (opcional)</h3>
+                          <v-btn :icon="mdiInformationOutline" variant="text" color="info" aria-label="Informações sobre a validade do RG" @click.stop="isRgInfoDialogOpen = true" />
+                        </div>
+                        <div class="document-upload-grid" aria-label="Imagens do documento RG">
+                          <v-btn v-for="slot in 5" :key="slot" class="document-upload-slot" variant="outlined" :aria-label="rgDocument.images[slot - 1] ? `Visualizar imagem ${slot} do RG` : `Adicionar imagem ${slot} do RG`" @click="handleRgImageSlotClick(slot - 1)">
+                            <img v-if="hasImageAt(rgDocument.images, slot - 1)" :src="imagePreviewAt(rgDocument.images, slot - 1)" :alt="`Prévia da imagem ${slot} do RG`">
+                            <v-icon v-else :icon="mdiCloudUploadOutline" size="32" />
+                          </v-btn>
+                        </div>
+                      </section>
+                    </v-expansion-panel-text>
+                  </v-expansion-panel>
+                  <v-expansion-panel
+                    v-for="document in futureDocuments"
+                    :key="document.id"
+                    :value="document.id"
+                    class="cpf-document-panel cpf-document-panel--unavailable"
+                    elevation="0"
+                    disabled
+                  >
+                    <v-expansion-panel-title class="cpf-section-title" hide-actions>
+                      <span class="cpf-section-title__content">
+                        <span class="cpf-section-title__label">
+                          <span class="cpf-section-title__icon"><v-icon :icon="document.icon" size="23" /></span>
+                          <span>{{ document.title }}</span>
+                        </span>
+                        <span class="document-coming-soon">Em breve</span>
+                      </span>
+                    </v-expansion-panel-title>
+                  </v-expansion-panel>
                 </v-expansion-panels>
               </template>
 
-              <template v-else>
+              <template v-else-if="activeSection === 'address'">
                 <h2>Endereço</h2>
                 <div class="form-grid form-grid--address">
                   <v-text-field v-model="profile.postalCode" label="CEP" variant="outlined" hide-details />
@@ -1510,6 +1704,13 @@ onBeforeUnmount(() => {
                   <v-text-field v-model="profile.city" label="Cidade" variant="outlined" hide-details />
                   <v-text-field v-model="profile.state" label="Estado" variant="outlined" hide-details />
                 </div>
+              </template>
+
+              <template v-else>
+                <h2>Núcleo Familiar</h2>
+                <p class="pending-section-message">
+                  Esta seção estará disponível em breve.
+                </p>
               </template>
 
               <div class="form-actions">
@@ -1555,6 +1756,16 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </v-card-text>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="isRgInfoDialogOpen" max-width="620">
+      <v-card class="cic-info-dialog">
+        <header class="cic-info-dialog__header">
+          <span class="cic-info-dialog__icon" aria-hidden="true"><v-icon :icon="mdiCardAccountDetailsOutline" size="32" /></span>
+          <div><h2>RG - Registro Geral</h2><span>Validade do documento legado</span></div>
+          <v-btn :icon="mdiClose" variant="text" aria-label="Fechar informações sobre o RG" @click="isRgInfoDialogOpen = false" />
+        </header>
+        <v-card-text><div class="cic-info-dialog__notice"><v-icon :icon="mdiInformationOutline" size="20" /><div><strong>Prazo de validade</strong><p>O RG legado é válido até fevereiro de 2032. Para pessoas com 60 anos ou mais, a validade é por prazo indeterminado.</p></div></div></v-card-text>
       </v-card>
     </v-dialog>
 
@@ -1802,18 +2013,6 @@ onBeforeUnmount(() => {
       @change="handleReplacementImageSelection"
     >
 
-    <v-snackbar v-model="showLayoutNotice" color="#315f50" timeout="5000">
-      O layout está pronto. A persistência desta seção ainda não foi conectada ao back-end.
-    </v-snackbar>
-    <v-snackbar v-model="showLogoutError" color="error" timeout="5000">
-      Não foi possível sair da conta. Tente novamente.
-    </v-snackbar>
-    <v-snackbar v-model="isSaveMessageVisible" color="#315f50" timeout="5000">
-      {{ saveMessage }}
-    </v-snackbar>
-    <v-snackbar v-model="isSaveErrorVisible" color="error" timeout="5000">
-      {{ saveError }}
-    </v-snackbar>
   </v-main>
 </template>
 
@@ -1942,7 +2141,6 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #e5e8e5;
 }
 
-.topbar__context,
 .topbar__account {
   display: flex;
   align-items: center;
@@ -1959,11 +2157,6 @@ onBeforeUnmount(() => {
 .sidebar-toggle {
   flex: 0 0 auto;
   color: #334d44;
-}
-
-.topbar__context {
-  gap: 12px;
-  color: #60736a;
 }
 
 .topbar__stage-banner {
@@ -1983,21 +2176,6 @@ onBeforeUnmount(() => {
   place-items: center;
   margin-right: 18px;
   color: #334d44;
-}
-
-.notification__badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  color: #173d32;
-  background: #e3b94f;
-  font-size: 0.67rem;
-  font-weight: 800;
 }
 
 .topbar__user-button {
@@ -2891,6 +3069,30 @@ onBeforeUnmount(() => {
   color: #218354;
 }
 
+.cpf-panel-status-icons {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+.cpf-panel-verified-icon {
+  display: inline-flex;
+  align-items: center;
+  color: #497b67;
+  opacity: .34;
+}
+
+.cpf-document-panel--unavailable { opacity: .58; }
+.document-coming-soon {
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #68766f;
+  background: #edf0ee;
+  font-size: .74rem;
+  font-weight: 700;
+}
+
 :deep(.cpf-document-content .v-expansion-panel-text__wrapper) {
   padding: 18px 24px 24px;
 }
@@ -3720,7 +3922,6 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 620px) {
-  .topbar__context,
   .notification,
   .topbar__name {
     display: none;

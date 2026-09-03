@@ -5,6 +5,12 @@ namespace YaeaY.Account.Domain.Errors.UserDocuments;
 
 public static class UserDocumentErrors
 {
+    public static readonly Error RgRequired = new(
+        Code: "user-document.rg.required",
+        Message: "An RG document must contain valid RG details.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.Required);
+
     public static readonly Error CpfRequired = new(
         Code: "user-document.cpf.required",
         Message: "A CPF document must contain a valid CPF.",
@@ -26,6 +32,12 @@ public static class UserDocumentErrors
     public static readonly Error CpfSingleCurrentRequired = new(
         Code: "user-document.cpf.single-current-required",
         Message: "Only one current CPF document can be updated at a time.",
+        Category: ErrorCategory.Validation,
+        Rule: ErrorRule.InvalidValue);
+
+    public static readonly Error RgSingleCurrentRequired = new(
+        Code: "user-document.rg.single-current-required",
+        Message: "Only one current RG document can be updated at a time.",
         Category: ErrorCategory.Validation,
         Rule: ErrorRule.InvalidValue);
 

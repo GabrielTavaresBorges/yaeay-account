@@ -93,9 +93,7 @@ public sealed class UnitOfWork : IUnitOfWork
         }
     }
 
-    public async Task<TResult> ExecuteInTransactionAsync<TResult>(
-        Func<CancellationToken, Task<TResult>> operation,
-        CancellationToken cancellationToken = default)
+    public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation,  CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
 
