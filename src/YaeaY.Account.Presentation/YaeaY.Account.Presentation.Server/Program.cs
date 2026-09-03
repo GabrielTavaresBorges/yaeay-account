@@ -143,7 +143,7 @@ var spaProxyEnabled = builder.Environment.IsDevelopment()
 
 if (spaProxyEnabled)
 {
-    var clientPort = Environment.GetEnvironmentVariable("DEV_SERVER_PORT") ?? "57830";
+    var clientPort = Environment.GetEnvironmentVariable("DEV_SERVER_PORT") ?? "57930";
     app.Lifetime.ApplicationStarted.Register(() =>
         app.Logger.LogInformation("Cliente Vite disponível em: https://localhost:{ClientPort}", clientPort));
 }

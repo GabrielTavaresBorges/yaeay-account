@@ -29,13 +29,18 @@ public sealed record DocumentResponse(
     Guid Id,
     string Type,
     string? Number,
+    DateOnly? IssuedAt,
+    string? IssuingAuthority,
+    string? IssuingState,
     DateTimeOffset CreatedAt,
     IReadOnlyCollection<DocumentImageResponse> Images);
 
 public sealed record DocumentImageResponse(
     Guid Id,
     int Position,
+    string StorageObjectKey,
     string OriginalFileName,
     string ContentType,
     long FileSizeBytes,
+    string Sha256Hash,
     DateTimeOffset CreatedAt);

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import {
   mdiAccountOutline,
@@ -9,6 +9,7 @@ import {
   mdiBriefcaseOutline,
   mdiCalendarMonthOutline,
   mdiCheck,
+  mdiClockOutline,
   mdiChevronDown,
   mdiCogOutline,
   mdiDotsVertical,
@@ -33,8 +34,11 @@ import {
 import StageEnvironmentBanner from '@/components/layout/StageEnvironmentBanner.vue'
 import { useSidebarState } from '@/composables/use-sidebar-state'
 import { getMyData } from '@/services/users/users-service'
+import { enqueueSnackbar } from '@/services/ui/snackbar-queue'
 
 const router = useRouter()
+const route = useRoute()
+const currentRouteName = computed(() => typeof route.name === 'string' ? route.name : '')
 const {
   isSidebarCollapsed,
   isMobileSidebarOpen,
@@ -43,22 +47,45 @@ const {
 } = useSidebarState()
 const session = ref<CurrentSessionResponse | null>(getCachedCurrentSession())
 const isLoggingOut = ref(false)
-const showLogoutError = ref(false)
 const profileCompletion = ref(0)
 
-const baseNavigationItems = [
-  { label: 'Home', icon: mdiHomeVariant, active: true, to: { name: 'home' } },
+const baseNavigationItems = computed(() => [
+  { label: 'Home', icon: mdiHomeVariant, active: currentRouteName.value === 'home', to: { name: 'home' } },
   { label: 'Meus dados', icon: mdiAccountOutline, active: false, to: { name: 'my-data-section', params: { section: 'basic' } } },
-  { label: 'Apps', icon: mdiViewGridOutline, active: false, to: null },
+  { label: 'Apps', icon: mdiViewGridOutline, active: currentRouteName.value === 'account-apps', to: { name: 'account-apps' } },
   { label: 'Calendário', icon: mdiCalendarMonthOutline, active: false, to: null },
-]
+])
 
 const navigationItems = computed(() => [
-  ...baseNavigationItems,
+  ...baseNavigationItems.value,
   ...(session.value?.canManageAccount
     ? [{ label: 'Administração', icon: mdiShieldCrownOutline, active: false, to: { name: 'administration' } }]
     : []),
 ])
+
+const comingSoonContent = computed(() => {
+  if (currentRouteName.value === 'account-apps') {
+    return {
+      eyebrow: 'APLICATIVOS YAEAY',
+      title: 'Apps',
+      description: 'Aqui você encontrará os aplicativos liberados para a sua conta, reunidos em um único lugar.',
+      detail: 'No momento, ainda não há aplicativos disponíveis. Novas experiências aparecerão nesta área assim que estiverem prontas para você.',
+      icon: mdiViewGridOutline,
+    }
+  }
+
+  if (currentRouteName.value === 'account-settings') {
+    return {
+      eyebrow: 'PREFERÊNCIAS DA CONTA',
+      title: 'Configurações',
+      description: 'Esta área reunirá as configurações que ajudam você a personalizar e proteger o seu Account.',
+      detail: 'As opções de preferência e segurança serão disponibilizadas gradualmente, sempre com clareza sobre seus efeitos.',
+      icon: mdiCogOutline,
+    }
+  }
+
+  return null
+})
 
 const futureApps = [
   { title: 'Gerenciamento de Saúde', icon: mdiHeartPulse },
@@ -154,13 +181,11 @@ async function handleLogout() {
   if (isLoggingOut.value) return
 
   isLoggingOut.value = true
-  showLogoutError.value = false
-
   try {
     await logout()
     await router.replace({ name: 'login' })
   } catch {
-    showLogoutError.value = true
+    enqueueSnackbar('N\u00e3o foi poss\u00edvel sair da conta. Tente novamente.', 'error')
   } finally {
     isLoggingOut.value = false
   }
@@ -209,10 +234,15 @@ async function handleLogout() {
         </nav>
 
         <div class="sidebar__footer">
-          <div class="navigation-item">
+          <button
+            type="button"
+            class="navigation-item"
+            aria-label="Configurações"
+            @click="navigateTo({ name: 'account-settings' })"
+          >
             <v-icon :icon="mdiCogOutline" size="23" />
             <span>Configurações</span>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -255,7 +285,6 @@ async function handleLogout() {
           <div class="topbar__account">
             <div class="notification" aria-label="Notificações">
               <v-icon :icon="mdiBellOutline" size="25" />
-              <span class="notification__badge">3</span>
             </div>
 
             <v-menu location="bottom end" :close-on-content-click="!isLoggingOut">
@@ -302,7 +331,7 @@ async function handleLogout() {
         </header>
 
         <div class="dashboard">
-          <div class="dashboard-grid">
+          <div v-if="!comingSoonContent" class="dashboard-grid">
             <section class="primary-content">
               <div class="summary-row">
                 <article class="status-card">
@@ -388,13 +417,29 @@ async function handleLogout() {
               <span class="agenda-card__add">Adicionar compromisso</span>
             </aside>
           </div>
+
+          <section v-else class="coming-soon-page" :aria-labelledby="`${currentRouteName}-title`">
+            <article class="coming-soon-card">
+              <span class="coming-soon-card__icon">
+                <v-icon :icon="comingSoonContent.icon" size="38" />
+              </span>
+              <span class="coming-soon-card__eyebrow">{{ comingSoonContent.eyebrow }}</span>
+              <h1 :id="`${currentRouteName}-title`">{{ comingSoonContent.title }}</h1>
+              <p class="coming-soon-card__description">{{ comingSoonContent.description }}</p>
+
+              <div class="coming-soon-card__notice">
+                <v-icon :icon="mdiClockOutline" size="23" />
+                <div>
+                  <strong>Em breve</strong>
+                  <p>{{ comingSoonContent.detail }}</p>
+                </div>
+              </div>
+            </article>
+          </section>
         </div>
       </section>
     </div>
 
-    <v-snackbar v-model="showLogoutError" color="error" timeout="5000">
-      Não foi possível sair da conta. Tente novamente.
-    </v-snackbar>
   </v-main>
 </template>
 
@@ -610,21 +655,6 @@ async function handleLogout() {
   color: #334d44;
 }
 
-.notification__badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: #e3b94f;
-  color: #173d32;
-  font-size: 0.67rem;
-  font-weight: 800;
-}
-
 .topbar__name {
   font-weight: 650;
 }
@@ -640,6 +670,79 @@ async function handleLogout() {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
   gap: 42px;
   align-items: stretch;
+}
+
+.coming-soon-page {
+  display: grid;
+  min-height: 560px;
+  place-items: center;
+}
+
+.coming-soon-card {
+  width: min(100%, 760px);
+  padding: clamp(30px, 5vw, 52px);
+  border: 1px solid #dce7df;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(24, 63, 49, .07);
+}
+
+.coming-soon-card__icon {
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 28px;
+  border-radius: 19px;
+  color: #23704f;
+  background: #e8f3ec;
+}
+
+.coming-soon-card__eyebrow {
+  display: block;
+  color: #3d7160;
+  font-size: .73rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+}
+
+.coming-soon-card h1 {
+  margin: 10px 0 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -.04em;
+  line-height: 1.05;
+}
+
+.coming-soon-card__description {
+  max-width: 590px;
+  margin: 16px 0 0;
+  color: #52685f;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.coming-soon-card__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 30px;
+  padding: 18px;
+  border-left: 4px solid #d2a530;
+  border-radius: 10px;
+  color: #5f4c20;
+  background: #fff8e5;
+}
+
+.coming-soon-card__notice strong {
+  display: block;
+  font-weight: 800;
+}
+
+.coming-soon-card__notice p {
+  margin: 4px 0 0;
+  color: #706147;
+  line-height: 1.5;
 }
 
 .primary-content {

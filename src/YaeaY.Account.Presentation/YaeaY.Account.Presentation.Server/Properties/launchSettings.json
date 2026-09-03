@@ -8,7 +8,7 @@
       "applicationUrl": "http://localhost:5281",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DEV_SERVER_PORT": "57830",
+        "DEV_SERVER_PORT": "57930",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy"
       }
     },
@@ -20,7 +20,7 @@
       "applicationUrl": "https://localhost:7125;http://localhost:5281",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DEV_SERVER_PORT": "57830",
+        "DEV_SERVER_PORT": "57930",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy"
       }
     }

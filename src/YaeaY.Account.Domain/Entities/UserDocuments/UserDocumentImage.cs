@@ -76,6 +76,29 @@ public sealed partial class UserDocumentImage : Entity
         return new UserDocumentImage(position, normalizedStorageObjectKey, normalizedOriginalFileName, normalizedContentType, fileSizeBytes, normalizedHash);
     }
 
+    internal bool Update(UserDocumentImage source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (_position == source._position
+            && _storageObjectKey == source._storageObjectKey
+            && _originalFileName == source._originalFileName
+            && _contentType == source._contentType
+            && _fileSizeBytes == source._fileSizeBytes
+            && _sha256Hash == source._sha256Hash)
+        {
+            return false;
+        }
+
+        _position = source._position;
+        _storageObjectKey = source._storageObjectKey;
+        _originalFileName = source._originalFileName;
+        _contentType = source._contentType;
+        _fileSizeBytes = source._fileSizeBytes;
+        _sha256Hash = source._sha256Hash;
+        return true;
+    }
+
     [GeneratedRegex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant)]
     private static partial Regex Sha256HashRegex();
 }

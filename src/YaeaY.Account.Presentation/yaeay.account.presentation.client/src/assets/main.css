@@ -8,3 +8,12 @@ html, body {
 #app {
   min-height: 100vh;
 }
+
+/* Mantém o conteúdo dos campos afastado das bordas em todos os componentes Vuetify. */
+.v-field .v-field__input {
+  padding-inline: 18px;
+}
+
+.v-field .v-field-label:not(.v-field-label--floating) {
+  margin-inline-start: 18px;
+}

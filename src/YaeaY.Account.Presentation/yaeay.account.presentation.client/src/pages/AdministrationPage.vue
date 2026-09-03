@@ -62,7 +62,7 @@ const firstName = computed(() => session.value?.fullName.trim().split(/\s+/).at(
 const navigationItems = [
   { label: 'Home', icon: mdiHomeVariant, to: { name: 'home' } },
   { label: 'Meus dados', icon: mdiAccountOutline, to: { name: 'my-data-section', params: { section: 'basic' } } },
-  { label: 'Apps', icon: mdiViewGridOutline, to: null },
+  { label: 'Apps', icon: mdiViewGridOutline, to: { name: 'account-apps' } },
   { label: 'Calendário', icon: mdiCalendarMonthOutline, to: null },
   { label: 'Administração', icon: mdiShieldCrownOutline, to: { name: 'administration' } },
 ]
@@ -113,10 +113,10 @@ onMounted(async () => {
         </nav>
 
         <div class="sidebar__footer">
-          <div class="navigation-item">
+          <button type="button" class="navigation-item" aria-label="Configurações" @click="navigate({ name: 'account-settings' })">
             <v-icon :icon="mdiCogOutline" size="23" />
             <span>Configurações</span>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -137,7 +137,6 @@ onMounted(async () => {
           <div class="topbar__account">
             <div class="notification" aria-label="Notificações">
               <v-icon :icon="mdiBellOutline" size="25" />
-              <span class="notification__badge">3</span>
             </div>
             <button type="button" class="topbar__user-button" aria-label="Menu do usuário">
               <span>{{ firstName }}</span>

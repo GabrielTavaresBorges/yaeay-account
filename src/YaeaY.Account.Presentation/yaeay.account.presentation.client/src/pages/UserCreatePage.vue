@@ -19,6 +19,7 @@
   } from '@mdi/js'
 
   import { createUser } from '@/services/users/users-service'
+  import { enqueueSnackbar } from '@/services/ui/snackbar-queue'
   import { rules } from '@/validators'
   import AppTopbar from '@/components/layout/AppTopbar.vue'
   import AppFooter from '@/components/layout/AppFooter.vue'
@@ -60,11 +61,8 @@
 
   /* password */
 
-  /* snackbar (visual) */
-  const snackbar = reactive({ show: false, text: '' })
-  function notify(text: string) {
-    snackbar.text = text
-    snackbar.show = true
+  function notify(text: string, type: 'success' | 'info' | 'error' = 'info') {
+    enqueueSnackbar(text, type)
   }
 
   /* form model (visual) */
@@ -224,7 +222,7 @@
     // 2) valida o que estiver montado agora (inclui os painéis recém-abertos)
     const validation = await formRef.value?.validate()
     if (validation && !validation.valid) {
-      notify('Revise os campos obrigatórios.')
+      notify('Revise os campos obrigatórios.', 'error')
       return
     }
 
@@ -255,7 +253,7 @@
       await nextTick()
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e: any) {
-      notify(e?.message || 'Erro ao criar usuário.')
+      notify(e?.message || 'Erro ao criar usuário.', 'error')
     } finally {
       loading.value = false
     }
@@ -513,13 +511,6 @@
                   Voltar
                 </v-btn>
 
-                <!-- SNACKBAR -->
-                <v-snackbar v-model="snackbar.show" :timeout="4500" location="top">
-                  {{ snackbar.text }}
-                  <template #actions>
-                    <v-btn variant="text" @click="snackbar.show = false">Fechar</v-btn>
-                  </template>
-                </v-snackbar>
               </v-form>
             </div>
           </v-card>

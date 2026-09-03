@@ -13,6 +13,7 @@ using YaeaY.Account.Application.Services.Scheduling.Interfaces;
 using YaeaY.Account.Application.Services.Security.Interfaces;
 using YaeaY.Account.Application.Services.Identity.Interfaces;
 using YaeaY.Account.Application.Services.TelephoneNumbers.Interfaces;
+using YaeaY.Account.Application.Services.DocumentImages.Interfaces;
 using YaeaY.Account.Domain.Abstraction.Interfaces;
 using YaeaY.Account.Domain.Policies.EmailConfirmations;
 using YaeaY.Account.Domain.Repositories.EmailConfirmationTemplates;
@@ -24,6 +25,7 @@ using YaeaY.Account.Domain.Repositories.PasswordRecoveryTemplates;
 using YaeaY.Account.Domain.Policies.PasswordRecoveries;
 using YaeaY.Account.Infrastructure.Data.Context;
 using YaeaY.Account.Infrastructure.Data.Persistence;
+using YaeaY.Account.Infrastructure.Data.Persistence.DocumentImages;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTemplates;
 using YaeaY.Account.Infrastructure.Data.Repositories.EmailConfirmationTokens;
 using YaeaY.Account.Infrastructure.Data.Repositories.Users;
@@ -44,6 +46,8 @@ using YaeaY.Account.Infrastructure.Scheduling.Quartz;
 using YaeaY.Account.Infrastructure.Services.TelephoneNumbers.Libraries.LibPhoneNumber;
 using YaeaY.Account.Infrastructure.Services.Emails;
 using YaeaY.Account.Infrastructure.Services.Emails.Smtp;
+using YaeaY.Account.Infrastructure.Services.DocumentImages.Minio;
+using YaeaY.Account.Infrastructure.Services.DocumentImages.Local;
 
 namespace YaeaY.Account.Infrastructure;
 
@@ -64,6 +68,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ICurrentCpfDocumentWriter, CurrentCpfDocumentWriter>();
         services.AddSingleton<IDomainEventSerializer, JsonDomainEventSerializer>();
         services.AddScoped<IOutboxMessageProcessor, OutboxMessageProcessor>();
         services.AddSingleton<ReadModelConnectionFactory>();
@@ -229,6 +234,26 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddScoped<IEmailSender, HostingerSmtpEmailSender>();
+        services.AddOptions<MinioDocumentImageStorageOptions>()
+            .Bind(configuration.GetSection(MinioDocumentImageStorageOptions.SectionName))
+            .Validate(options => options.Provider is "Minio" or "LocalFileSystem",
+                "DocumentImageStorage:Provider must be Minio or LocalFileSystem.")
+            .Validate(options => options.Provider != "LocalFileSystem" || !string.IsNullOrWhiteSpace(options.LocalRootPath),
+                "DocumentImageStorage:LocalRootPath is required for LocalFileSystem.")
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.Endpoint),
+                "DocumentImageStorage:Endpoint is required when document image storage is enabled.")
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.AccessKey),
+                "DocumentImageStorage:AccessKey is required when document image storage is enabled.")
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.SecretKey),
+                "DocumentImageStorage:SecretKey is required when document image storage is enabled.")
+            .Validate(options => !options.Enabled || options.Provider != "Minio" || !string.IsNullOrWhiteSpace(options.BucketName),
+                "DocumentImageStorage:BucketName is required when document image storage is enabled.")
+            .ValidateOnStart();
+        var imageStorageProvider = configuration[$"{MinioDocumentImageStorageOptions.SectionName}:Provider"] ?? "Minio";
+        if (string.Equals(imageStorageProvider, "LocalFileSystem", StringComparison.Ordinal))
+            services.AddSingleton<IDocumentImageStorage, LocalFileSystemDocumentImageStorage>();
+        else
+            services.AddSingleton<IDocumentImageStorage, MinioDocumentImageStorage>();
 
         // Domain event dispatching
         services.AddScoped<DomainEventDispatcher>();

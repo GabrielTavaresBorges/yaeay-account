@@ -20,4 +20,16 @@ public sealed class UserDocumentCpf : Entity
 
         return new UserDocumentCpf(cpf);
     }
+
+    internal bool Update(Cpf cpf)
+    {
+        if (cpf is null)
+            throw new DomainException(UserDocumentErrors.CpfRequired);
+
+        if (_cpf.Number == cpf.Number)
+            return false;
+
+        _cpf = cpf;
+        return true;
+    }
 }

@@ -278,13 +278,19 @@ public class User : Entity, IAggregateRoot
     #endregion
 
     #region Documents
-    public UserDocument AddCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images = null)
+    public UserDocument UpsertCpfDocument(Cpf cpf, IEnumerable<UserDocumentImage>? images, out bool changed)
     {
         if (cpf is null)
             throw new DomainException(UserDocumentErrors.CpfRequired);
 
         var documentImages = images?.ToArray() ?? [];
+        var existingCpfDocument = _documents
+            .Where(document => document.DocumentType == DocumentType.Cpf)
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+
         var existingStorageKeys = _documents
+            .Where(document => document != existingCpfDocument)
             .SelectMany(document => document.Images)
             .Select(image => image.StorageObjectKey)
             .ToHashSet(StringComparer.Ordinal);
@@ -292,12 +298,64 @@ public class User : Entity, IAggregateRoot
         if (documentImages.Any(image => image is not null && existingStorageKeys.Contains(image.StorageObjectKey)))
             throw new DomainException(UserDocumentErrors.ImageStorageObjectKeyAlreadyExists);
 
+        if (existingCpfDocument is not null)
+        {
+            var sameCpf = existingCpfDocument.Cpf?.Cpf.Number == cpf.Number;
+            var sameImages = existingCpfDocument.Images.Count == documentImages.Length
+                && existingCpfDocument.Images.OrderBy(image => image.Position).Select(image => image.StorageObjectKey)
+                    .SequenceEqual(documentImages.OrderBy(image => image.Position).Select(image => image.StorageObjectKey), StringComparer.Ordinal);
+            if (sameCpf && sameImages)
+            {
+                changed = false;
+                return existingCpfDocument;
+            }
+
+            // CPF possui somente um estado atual. Substituir o agregado-filho evita
+            // depender de identidades legadas inconsistentes dos detalhes e imagens.
+            _documents.Remove(existingCpfDocument);
+            var replacement = UserDocument.CreateFromCpf(cpf, documentImages);
+            _documents.Add(replacement);
+            changed = true;
+            AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+            return replacement;
+        }
+
         var document = UserDocument.CreateFromCpf(cpf, documentImages);
         _documents.Add(document);
-        AddDomainEvent(new UserDocumentAddedDomainEvent(Id));
+        changed = true;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+        return document;
+    }
+
+    public UserDocument UpsertRgDocument(Rg rg, IEnumerable<UserDocumentImage>? images, out bool changed)
+    {
+        if (rg is null)
+            throw new DomainException(UserDocumentErrors.RgRequired);
+
+        var documentImages = images?.ToArray() ?? [];
+        var existingRgDocument = _documents
+            .Where(document => document.DocumentType == DocumentType.Rg)
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+
+        if (existingRgDocument is not null)
+        {
+            changed = existingRgDocument.UpdateRg(rg, documentImages);
+            if (changed)
+                AddDomainEvent(new UserProfileChangedDomainEvent(Id));
+
+            return existingRgDocument;
+        }
+
+        var document = UserDocument.CreateFromRg(rg, documentImages);
+        _documents.Add(document);
+        changed = true;
+        AddDomainEvent(new UserProfileChangedDomainEvent(Id));
         return document;
     }
     #endregion
+
+    public void RegisterDocumentChanged() => AddDomainEvent(new UserProfileChangedDomainEvent(Id));
 
     public void RegisterSuccessfulLogin(DateTimeOffset occurredAtUtc)
     {

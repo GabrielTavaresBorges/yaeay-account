@@ -29,11 +29,19 @@ export type CreateUserResponse = {
   message: string
 }
 
-export type UpdateUserRequest = {
+export type UpdateBasicDataRequest = {
   fullName?: string
   birthDate?: string
   gender?: Gender
+}
+
+export type UpdatePhonesRequest = {
   phones?: UpdateUserPhoneRequest[]
+}
+
+export type UpdateDocumentsRequest = {
+  cpfDocumentsToAdd?: CpfDocumentRequest[]
+  rgDocumentsToAdd?: RgDocumentRequest[]
 }
 
 export type UpdateUserPhoneRequest = {
@@ -46,11 +54,51 @@ export type UpdateUserPhoneRequest = {
   isPrimary: boolean
 }
 
-/** Campos retornados pelo Update (conforme seu handler) */
-export type UpdateUserResponse = {
+export type CpfDocumentRequest = {
+  number: string
+  images: DocumentImageRequest[]
+}
+
+export type RgDocumentRequest = {
+  number: string
+  issuedAt: string
+  issuingAuthority: string
+  issuingState: string
+  images: DocumentImageRequest[]
+}
+
+export type DocumentImageRequest = {
+  position: number
+  storageObjectKey: string
+  originalFileName: string
+  contentType: string
+  fileSizeBytes: number
+  sha256Hash: string
+}
+
+export type UploadedDocumentImageResponse = Omit<DocumentImageRequest, 'position'>
+
+export type UpdateBasicDataResponse = {
   id: UserId
-  updatedFields: string[]
-  addedCpfDocuments: unknown[]
+  fullName: string
+  birthDate: string
+  gender: Gender
+  hasChanges: boolean
+  message: string
+}
+
+export type UpdatePhonesResponse = {
+  id: UserId
+  phones: UpdateUserPhoneRequest[]
+  hasChanges: boolean
+  message: string
+}
+
+export type UpdateDocumentsResponse = {
+  id: UserId
+  cpfDocuments: unknown[]
+  rgDocuments: unknown[]
+  hasChanges: boolean
   message: string
 }
 
@@ -69,6 +117,21 @@ export type MyDataDocumentResponse = {
   id: string
   type: string
   number: string | null
+  issuedAt: string | null
+  issuingAuthority: string | null
+  issuingState: string | null
+  createdAt: string
+  images: MyDataDocumentImageResponse[]
+}
+
+export type MyDataDocumentImageResponse = {
+  id: string
+  position: number
+  storageObjectKey: string
+  originalFileName: string
+  contentType: string
+  fileSizeBytes: number
+  sha256Hash: string
   createdAt: string
 }
 
